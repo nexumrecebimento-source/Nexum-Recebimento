@@ -1,0 +1,1118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b2d5b">
+<title>Nexum Escritório</title>
+<link rel="icon" href="assets/favicon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="assets/base.css">
+<style>
+/* Painel do escritório: abas no cabeçalho; indicadores por status; fichas em cartões; mapa FP-11 em tabela rolável; cadastros em colunas */
+html{padding-top:env(safe-area-inset-top,0px)}
+.wrap{max-width:1560px}
+.tabs{max-width:none}
+main{padding-block:18px 60px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}.kpis .k:first-child{grid-column:1/-1}}
+.k{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;text-align:left;font:inherit;color:inherit;display:grid;gap:2px;border-top:4px solid var(--line)}
+.k b{font-family:var(--f-display);font-weight:700;font-size:2rem;line-height:1;font-variant-numeric:tabular-nums}
+.k span{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.k em{font-style:normal;font-size:.76rem;color:var(--muted)}
+.k.sem_acao{border-top-color:var(--idle)} .k.em_andamento{border-top-color:var(--wait)} .k.cert_pendente{border-top-color:var(--warn)} .k.finalizado{border-top-color:var(--ok)}
+.k.sem_acao b{color:var(--idle)} .k.em_andamento b{color:var(--wait)} .k.cert_pendente b{color:var(--warn)} .k.finalizado b{color:var(--ok)}
+.flow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:10px}
+.flow i{font-style:normal;opacity:.5}
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:1100px){.cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+.col h3{margin:0 0 8px;font:600 .78rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:flex;gap:6px;align-items:center}
+.list{display:grid;gap:8px}
+.card{display:grid;gap:5px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--wait);border-radius:6px;padding:11px 13px;text-align:left;font:inherit;color:inherit;width:100%;cursor:pointer}
+.card.sem_acao{border-left-color:var(--idle)} .card.cert_pendente{border-left-color:var(--warn)} .card.finalizado{border-left-color:var(--ok)}
+.card .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card .num{font-family:var(--f-display);font-weight:700;font-size:1.25rem}
+.card .meta{font-size:.82rem;color:var(--muted);overflow-wrap:anywhere}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.filters input{flex:1 1 240px;min-width:0}
+.filters select{width:auto;flex:0 1 auto}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 11px;font:500 .8rem var(--f-body);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:8px}
+/* mapa */
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table.mapa{border-collapse:collapse;font-size:.78rem;min-width:1300px;width:100%}
+table.mapa th{position:sticky;top:0;background:var(--head);color:var(--head-ink);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:.68rem;padding:8px 8px;text-align:left;white-space:nowrap}
+table.mapa td{padding:7px 8px;border-top:1px solid var(--line);vertical-align:top;font-variant-numeric:tabular-nums}
+table.mapa td.d{min-width:260px}
+table.mapa tr:hover td{background:var(--surface-2)}
+.mapa-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.mapa-head .grow{font-size:.85rem;color:var(--muted)}
+/* folha de detalhe */
+.sheet-bg{position:fixed;inset:0;background:rgba(10,16,20,.55);z-index:30;display:flex;justify-content:center;align-items:flex-end}
+.sheet{background:var(--bg);width:100%;max-width:980px;max-height:94%;overflow:auto;border-radius:12px 12px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+@media (min-width:760px){.sheet-bg{align-items:center}.sheet{border-radius:12px;max-height:92%}}
+.sheet-head{position:sticky;top:0;z-index:2;background:var(--head);color:var(--head-ink);display:flex;align-items:center;gap:10px;padding:12px 16px}
+.sheet-head h3{margin:0;font-family:var(--f-display);font-size:1.35rem;text-transform:uppercase;letter-spacing:.03em}
+.sheet-body{padding:14px 16px;display:grid;gap:14px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;display:grid;gap:12px}
+.box h4{margin:0;font-family:var(--f-display);font-size:1.05rem;text-transform:uppercase;letter-spacing:.05em}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:700px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.it-wrap{overflow-x:auto}
+table.its{border-collapse:collapse;width:100%;min-width:1180px;font-size:.82rem}
+table.its th{font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:4px 4px;font-weight:600}
+table.its td{padding:3px 3px;vertical-align:top}
+table.its input,table.its select{min-height:36px;padding:6px 7px;font-size:.82rem}
+table.its tr.zero td{opacity:.5}
+table.its .del{background:none;border:0;color:var(--bad);cursor:pointer;font-size:1rem;padding:6px}
+.sign{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:600px){.sign{grid-template-columns:1fr}}
+.sign label{display:flex;gap:8px;align-items:center;font-weight:600;font-size:.85rem}
+.sign input[type=checkbox]{width:20px;height:20px;min-height:0}
+.soon{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.soon .btn[disabled]::after{content:"em breve";font:600 .62rem var(--f-body);text-transform:uppercase;letter-spacing:.06em;background:var(--surface-2);color:var(--muted);padding:2px 5px;border-radius:3px;margin-left:4px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.actions .sp{flex:1}
+/* conferência */
+.sheet{max-width:1240px}
+.sheet-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:14px;padding:14px 16px;align-items:start}
+@media (max-width:980px){.sheet-grid{grid-template-columns:1fr}}
+.viewer{position:sticky;top:64px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:10px}
+@media (max-width:980px){.viewer{position:static}}
+.viewer .stage{background:var(--surface-2);border-radius:6px;min-height:220px;display:grid;place-items:center;overflow:hidden;cursor:zoom-in}
+.viewer .stage img{width:100%;height:auto;display:block}
+.viewer .none{color:var(--muted);font-size:.85rem;padding:30px 16px;text-align:center}
+.vtabs{display:flex;gap:6px;flex-wrap:wrap}
+.vthumbs{display:flex;gap:6px;overflow-x:auto}
+.vthumbs button{border:2px solid transparent;border-radius:5px;padding:0;background:none;cursor:pointer;flex:0 0 auto}
+.vthumbs button[aria-pressed="true"]{border-color:var(--accent)}
+.vthumbs img{width:58px;height:58px;object-fit:cover;border-radius:3px;display:block}
+.confbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.confbar .grow{min-width:0}
+.devolve{display:grid;gap:10px;border:1px solid var(--bad);border-radius:8px;padding:12px;background:var(--bad-bg)}
+.devolve h5{margin:0;font:600 .85rem var(--f-body);color:var(--bad);text-transform:uppercase;letter-spacing:.05em}
+.devolve label.ck{display:flex;gap:8px;align-items:flex-start;font-size:.88rem;color:var(--ink)}
+.devolve input[type=checkbox]{width:18px;height:18px;min-height:0;margin-top:2px;flex:0 0 auto}
+.itchips{display:flex;gap:6px;flex-wrap:wrap}
+.itchips button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 10px;font:600 .8rem var(--f-mono);cursor:pointer}
+.itchips button[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:#fff}
+.hist{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:.82rem}
+.hist li{display:grid;grid-template-columns:auto 1fr;gap:2px 10px}
+.hist .when{color:var(--muted);font-family:var(--f-mono);font-size:.74rem}
+table.its tr.flag td:first-child{box-shadow:inset 4px 0 0 var(--bad);color:var(--bad);font-weight:700}
+.lightbox{position:fixed;inset:0;z-index:50;background:rgba(5,8,10,.92);overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:calc(50px + env(safe-area-inset-top,0px)) 12px 20px}
+.lightbox img{max-width:100%;height:auto;cursor:zoom-in;background:#fff}
+.lightbox.zoom img{max-width:none;width:220%;cursor:zoom-out}
+.lightbox .close{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));z-index:2}
+.ref{display:block;font-size:.7rem;color:var(--muted);margin-top:3px;font-family:var(--f-mono)}
+.ref .dl{background:var(--wait-bg);color:var(--wait);border-radius:3px;padding:0 4px;font-family:var(--f-body);font-weight:600;margin-right:4px}
+.ref .div{color:var(--warn);font-weight:600}
+.cval{display:flex;gap:4px;align-items:center;font-size:.7rem;color:var(--muted);margin-top:3px;white-space:nowrap}
+.cval input{width:15px;height:15px;min-height:0}
+td.ck{text-align:center}
+table.its td:nth-child(2) input{min-width:280px}
+table.its td:nth-child(3) input{min-width:118px}
+table.its td:nth-child(5) input:not([type=checkbox]){min-width:110px}
+table.its td:nth-child(6) select{min-width:76px}
+table.its td:nth-child(8) input{min-width:110px}
+table.its .cval input[type=checkbox]{width:15px;height:15px;min-width:0;min-height:0;padding:0}
+table.its td.ck input{min-width:0}
+td.ck input{width:18px;height:18px;min-height:0}
+.st-it{display:inline-block;font-size:.66rem;font-weight:600;padding:3px 6px;border-radius:4px;white-space:nowrap}
+.cob-list{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.cob-list li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:.86rem;border-bottom:1px solid var(--line);padding-bottom:6px}
+.cob-mail{display:grid;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px}
+.cob-mail pre{margin:0;white-space:pre-wrap;font:inherit;font-size:.84rem;max-height:280px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px}
+
+.marca{display:flex;align-items:center;gap:12px;min-width:0}
+.marca .nx-mark{width:40px}
+.dash-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.dash-t{margin:0;font:700 1.35rem var(--f-display);letter-spacing:-.02em;color:var(--ink)}
+.dash-sub{font-size:.78rem;color:var(--muted)}
+.seg.per button{min-height:36px;padding:6px 14px;border-radius:999px;font-weight:600;font-size:.8rem}
+.seg.per button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.notice.demo{background:var(--wait-bg);color:var(--wait);margin-bottom:12px;display:flex;gap:8px;align-items:center}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+@media (max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:620px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kp{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow);display:grid;gap:8px;text-align:left;font:inherit;color:inherit}
+.kp-h{display:flex;align-items:center;gap:10px;font-size:.76rem;font-weight:600;color:var(--muted)}
+.kp-i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--wait-bg);color:var(--wait)}
+.kp-i .ico{width:18px;height:18px}
+.kp b{font:700 1.85rem var(--f-display);letter-spacing:-.02em;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.kp b small{font-size:.9rem;font-weight:600;color:var(--muted);margin-left:2px}
+.kp em{font-style:normal;font-size:.74rem;color:var(--muted)}
+.kp.w .kp-i{background:var(--warn-bg);color:var(--warn)} .kp.g .kp-i{background:var(--ok-bg);color:var(--ok)}
+.dgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+@media (max-width:1000px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.dgrid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow);min-width:0}
+.panel.span2{grid-column:span 2}
+@media (max-width:700px){.panel.span2{grid-column:auto}}
+.ph{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.ph h3{margin:0;font:700 .92rem var(--f-display);color:var(--ink)}
+.ph-s{font-size:.74rem;color:var(--muted)}
+.viz{--c1:#2a78d6;--o1:#86b6ef;--o2:#3987e5;--o3:#1c5cab;--o4:#0d366b;--s-ok:#0ca30c;--s-prog:#2a78d6;--s-warn:#c98500;--s-crit:#d03b3b;--grid:#e3e9f1;--axis:#6b7684}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .viz{--c1:#3987e5;--o1:#256abf;--o2:#3987e5;--o3:#6da7ec;--o4:#b7d3f6;--s-prog:#3987e5;--grid:#1d3a62;--axis:#9fb0c6}}
+:root[data-theme="dark"] .viz{--c1:#3987e5;--o1:#256abf;--o2:#3987e5;--o3:#6da7ec;--o4:#b7d3f6;--s-prog:#3987e5;--grid:#1d3a62;--axis:#9fb0c6}
+.ch-svg{width:100%;height:auto;display:block}
+.ch-grid{stroke:var(--grid);stroke-width:1}
+.ch-base{stroke:var(--axis);stroke-width:1;opacity:.6}
+.ch-ax{fill:var(--axis);font:500 10.5px var(--f-body)}
+.ch-val{fill:var(--ink);font:700 11px var(--f-body)}
+.ch-bar{fill:var(--c1);opacity:.55}
+.ch-bar.ult{opacity:1}
+.ch-vazio{color:var(--muted);font-size:.84rem;padding:28px 0;text-align:center}
+.bl{display:grid;gap:9px}
+.bl-r{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 34px;gap:10px;align-items:center;font-size:.8rem}
+.bl-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.bl-t{height:10px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+.bl-t i{display:block;height:100%;background:var(--c1);border-radius:5px}
+.bl-t i.o1{background:var(--o1)} .bl-t i.o2{background:var(--o2)} .bl-t i.o3{background:var(--o3)} .bl-t i.o4{background:var(--o4)}
+.bl-r b{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.stk{display:flex;gap:2px;height:16px;border-radius:6px;overflow:hidden;margin-bottom:14px}
+.stk i{display:block;min-width:4px}
+.stk .ok,.lg-s.ok{background:var(--s-ok)} .stk .prog,.lg-s.prog{background:var(--s-prog)} .stk .warn,.lg-s.warn{background:var(--s-warn)} .stk .crit,.lg-s.crit{background:var(--s-crit)}
+.lg{display:grid;gap:8px}
+.lg-r{display:grid;grid-template-columns:10px 16px 1fr auto 40px;gap:8px;align-items:center;font-size:.8rem;color:var(--ink)}
+.lg-s{width:10px;height:10px;border-radius:3px}
+.lg-r .ico{color:var(--muted)}
+.lg-r b{font-variant-numeric:tabular-nums}
+.lg-p{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.ch-tip{position:fixed;z-index:95;pointer-events:none;background:var(--ink);color:var(--bg);font-size:.78rem;line-height:1.4;padding:7px 10px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.2);max-width:260px}
+.col h3{margin:0 0 10px;font:700 .82rem var(--f-body);color:var(--ink);display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0}
+.col h3 .cnt{font:700 .7rem var(--f-body);background:var(--surface-2);color:var(--muted);border-radius:999px;padding:1px 8px}
+.col .list{display:grid;gap:8px}
+.col{background:color-mix(in srgb,var(--surface-2) 55%,transparent);border-radius:16px;padding:12px;min-width:0}
+.col .fc{flex-direction:column-reverse;gap:8px;padding:12px 14px;min-width:0}
+.col .fc-r{justify-items:start}
+.col .fc-l{width:100%}
+.tbl-f{border-radius:14px;box-shadow:var(--shadow)}
+.tab-n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:#c98500;color:#fff;font:700 .68rem var(--f-body);vertical-align:1px}
+table.ct tbody tr{cursor:default}
+.ctrsel{display:flex;gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--head-line);margin-right:10px}
+.ctrsel button{border:0;background:none;color:#c9d6e8;font:600 .78rem var(--f-body);padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.ctrsel button[aria-pressed="true"]{background:#fff;color:#0b2d5b}
+.ctrsel button small{font-weight:500;opacity:.75;margin-left:4px}
+@media (max-width:900px){.ctrsel button small{display:none}}
+.ro-note{margin:14px 0 12px;background:#eef3fa;border:1px solid #c9d8ee;color:#1c3b66;border-radius:10px;padding:10px 14px;font-size:.86rem}
+body.ro #btnSalvar,body.ro #btnExcluir,body.ro #btnAprovar,body.ro #btnDevolver,body.ro #cobBox,body.ro #btnAddIt,body.ro [data-anexar],body.ro [data-reg],body.ro [data-validar],body.ro #btnAutoFill,body.ro [data-conf-auto],body.ro [data-cancelar],body.ro #pendBulk{display:none!important}
+.mais{display:flex;justify-content:center;gap:10px;align-items:center;padding:12px 0;color:var(--muted);font-size:.82rem}
+.mais:empty{display:none}
+.pcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:4px 0 14px}
+.pcard{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;display:grid;gap:2px}
+.pcard b{font:700 1.5rem var(--f-display);color:var(--ink)}
+.pcard span{font-size:.8rem;color:var(--muted)}
+.pcard.w b{color:#c98500}.pcard.i b{color:#2a78d6}
+.bulk{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:-4px 0 10px;font-size:.84rem;color:var(--muted)}
+.tagauto{display:inline-block;font:600 .68rem var(--f-body);letter-spacing:.03em;padding:2px 7px;border-radius:999px;background:#e6f0fc;color:#1c5cab}
+.tagfalta{display:inline-block;font:600 .68rem var(--f-body);letter-spacing:.03em;padding:2px 7px;border-radius:999px;background:#fdf1dc;color:#8a5a00}
+.rels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start}
+.rel{display:grid;gap:8px}
+.rel h4{margin:0}
+.rel .btn{justify-self:start}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.imp-res{display:grid;gap:8px;margin-top:6px}
+.imp-c{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:4px;font-size:.84rem}
+.imp-c b{font-size:.92rem}
+table.ct td.it{max-width:340px}
+table.ct .cn{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+table.ct .cn input{width:150px;padding:6px 8px;font-size:.82rem}
+table.ct .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+table.ft{border-collapse:collapse;width:100%;min-width:900px;font-size:.84rem}
+table.ft th{background:var(--surface-2);color:var(--muted);font:700 .7rem var(--f-body);letter-spacing:.05em;text-transform:uppercase;text-align:left;padding:10px 12px;white-space:nowrap}
+table.ft td{padding:11px 12px;border-top:1px solid var(--line);vertical-align:middle}
+table.ft tbody tr{cursor:pointer}
+table.ft tbody tr:hover td{background:var(--surface-2)}
+table.ft .n{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+table.ft .s{color:var(--muted);font-size:.78rem}
+table.ft .al{display:flex;gap:10px;flex-wrap:wrap;font-size:.76rem;font-weight:600}
+table.ft .al span{display:inline-flex;gap:4px;align-items:center}
+/* cadastros */
+.cad{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;align-items:start}
+@media (max-width:860px){.cad{grid-template-columns:1fr}}
+.grp{display:grid;gap:10px}
+.forn{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.forn:first-child{border-top:0;padding-top:0}
+.forn .top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.forn b{font-weight:600}
+.forn .em{font-size:.82rem;color:var(--muted);overflow-wrap:anywhere}
+.hint{font-size:.8rem;color:var(--muted);margin:0}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="hbar">
+      <div class="grow marca"><svg class="nx-mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80"><defs><linearGradient id="ofa" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d6e6fa"/></linearGradient><linearGradient id="ofb" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#2D8CFF"/><stop offset="1" stop-color="#8CC2FF"/></linearGradient></defs><path fill="url(#ofa)" d="M3 76 30 6h17L20 76z"/><path fill="url(#ofa)" opacity=".82" d="M30 6h17l19 49-9 21z"/><path fill="url(#ofb)" d="M42 54 57 76h7L99 3 88 7 61 63 52 47z"/></svg>
+<span style="width:1px;height:34px;background:var(--head-line)"></span><div><h1 class="wm">Nexum</h1><small>Recebimento <span class="wm-tag" style="font-weight:700">inteligente</span> · AMR · <span id="hdCtr">Flotação Recleaner</span> · Escritório</small></div></div>
+      <div class="ctrsel" id="ctrSel" role="group" aria-label="Contrato"></div>
+      <span class="badge-demo" id="badgeDemo">Modo exemplo</span>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-v="painel" aria-selected="true">Painel</button>
+      <button class="tab" role="tab" data-v="fichas" aria-selected="false">Fichas</button>
+      <button class="tab" role="tab" data-v="certs" aria-selected="false">Certificados <span class="tab-n" id="tabCertN" hidden></span></button>
+      <button class="tab" role="tab" data-v="pend" aria-selected="false">Pendências <span class="tab-n" id="tabPendN" hidden></span></button>
+      <button class="tab" role="tab" data-v="rel" aria-selected="false">Relatórios</button>
+      <button class="tab" role="tab" data-v="mapa" aria-selected="false">Mapa FP-11</button>
+      <button class="tab" role="tab" data-v="cadastros" aria-selected="false">Cadastros</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="notice ro-note" id="roNote" hidden></div>
+  <section id="v-painel">
+    <div class="dash-top">
+      <div><h2 class="dash-t">Visão geral</h2><span class="dash-sub" id="dashSub"></span></div>
+      <div class="seg per" id="per" role="group" aria-label="Período"></div>
+    </div>
+    <div class="notice demo" id="dashDemo" hidden></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="dgrid" id="dgrid">
+      <div class="panel span2"><div class="ph"><h3>Recebimentos</h3><span class="ph-s" id="semSub"></span></div><div id="chSem"></div></div>
+      <div class="panel"><div class="ph"><h3>Andamento das fichas</h3></div><div id="chFunil"></div></div>
+      <div class="panel"><div class="ph"><h3>Certificados · materiais críticos</h3><span class="ph-s" id="certSub"></span></div><div id="chCert"></div></div>
+      <div class="panel"><div class="ph"><h3>Fornecedores com certificado pendente</h3></div><div id="chForn"></div></div>
+      <div class="panel"><div class="ph"><h3>Materiais críticos recebidos</h3><span class="ph-s">por grupo do CMC</span></div><div id="chCmc"></div></div>
+    </div>
+    <div class="sec-h"><h2>O que precisa de atenção</h2><span class="grow"></span><span class="dash-sub">fichas reais, sem filtro de período</span></div>
+    <div class="cols" id="cols"></div>
+  </section>
+
+  <section id="v-fichas" hidden>
+    <div class="filters">
+      <input id="q" type="search" placeholder="Buscar ficha, NF, romaneio, fornecedor, TAG, descrição…" aria-label="Buscar">
+      <select id="fTipo" aria-label="Tipo"><option value="">NF e romaneio</option><option value="NF">Só nota fiscal</option><option value="ROM">Só romaneio Anglo</option></select>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="tbl-wrap tbl-f"><table class="ft" id="lista"></table></div>
+    <div class="mais" id="listaMais"></div>
+  </section>
+
+  <section id="v-certs" hidden>
+    <div class="sec-h" style="margin-bottom:10px"><div><h2 style="margin:0;font:700 1.15rem var(--f-display)">Certificados</h2><p class="hint" style="margin:2px 0 0">Itens que exigem certificado (CMC). Ao anexar, a pendência sai sozinha e a ficha e o relatório se atualizam.</p></div></div>
+    <div class="filters">
+      <input id="qCert" type="search" placeholder="Buscar ficha, NF, fornecedor, item, TAG, nº do certificado…" aria-label="Buscar certificados">
+    </div>
+    <div class="chips" id="chipsCert"></div>
+    <div class="tbl-wrap tbl-f"><table class="ft ct" id="tCert"></table></div>
+    <div class="mais" id="certMais"></div>
+    <input type="file" id="certFile" accept="image/*,application/pdf" multiple hidden>
+  </section>
+
+  <section id="v-pend" hidden>
+    <div class="sec-h" style="margin-bottom:10px"><div><h2 class="dash-t">Pendências de dados</h2><p class="hint" style="margin:2px 0 0">O Nexum procura informações faltantes e preenche sozinho o que dá para deduzir dos outros registros. Cada preenchimento fica marcado para revisão.</p></div>
+      <button class="btn" type="button" id="btnAutoFill">Preencher automaticamente agora</button></div>
+    <div class="pcards" id="pendCards"></div>
+    <div class="filters"><input id="qPend" type="search" placeholder="Buscar ficha, campo, regra…" aria-label="Buscar pendências"></div>
+    <div class="chips" id="chipsPend"></div>
+    <div class="bulk" id="pendBulk" hidden></div>
+    <div class="tbl-wrap tbl-f"><table class="ft ct" id="tPend"></table></div>
+    <div class="mais" id="pendMais"></div>
+  </section>
+
+  <section id="v-rel" hidden>
+    <div class="sec-h" style="margin-bottom:12px"><div><h2 class="dash-t">Relatórios</h2><p class="hint" style="margin:2px 0 0">Gerados na hora, direto dos registros do contrato <b id="relCtr"></b>. Nada é montado à mão.</p></div></div>
+    <div class="rels">
+      <div class="box rel"><h4>Mapa de recebimento (FP-11)</h4><p class="hint">Uma linha por item, no layout do 447.QUA.FP-11. Arquivo Excel (.xlsx).</p>
+        <label class="hint" for="relMapaPer">Período</label><select id="relMapaPer"></select>
+        <button class="btn primary" type="button" id="relMapa">Baixar mapa (.xlsx)</button></div>
+      <div class="box rel"><h4>Fichas FP-01 em lote (PDF)</h4><p class="hint">Todas as fichas do intervalo num único PDF, no modelo 447.OPE.FP-01. Até 150 fichas por vez.</p>
+        <div class="row2"><div><label class="hint" for="relDe">Da ficha</label><input id="relDe" type="number" min="1" inputmode="numeric"></div><div><label class="hint" for="relAte">Até a ficha</label><input id="relAte" type="number" min="1" inputmode="numeric"></div></div>
+        <button class="btn primary" type="button" id="relFichas">Gerar PDF das fichas</button><span class="hint" id="relFichasInfo"></span></div>
+      <div class="box rel"><h4>Pendências (.xlsx)</h4><p class="hint">Certificados pendentes, informações faltantes, preenchimentos automáticos a revisar e números sem ficha, em abas separadas.</p>
+        <button class="btn primary" type="button" id="relPend">Baixar pendências (.xlsx)</button></div>
+      <div class="box rel"><h4>Resumo das fichas (.xlsx)</h4><p class="hint">Uma linha por ficha: documento, fornecedor, data, itens, status, conferência e pendências.</p>
+        <button class="btn primary" type="button" id="relResumo">Baixar resumo (.xlsx)</button></div>
+    </div>
+  </section>
+
+  <section id="v-mapa" hidden>
+    <div class="mapa-head">
+      <div class="grow" id="mapaInfo"></div>
+      <input id="qMapa" type="search" placeholder="Filtrar o mapa…" style="width:auto;flex:1 1 200px" aria-label="Filtrar o mapa">
+      <button class="btn primary" type="button" id="btnExport">Exportar mapa (.xlsx)</button>
+    </div>
+    <div class="tbl-wrap"><table class="mapa" id="tMapa"></table></div>
+    <div class="mais" id="mapaMais"></div>
+  </section>
+
+  <section id="v-cadastros" hidden>
+    <div class="cad">
+      <div class="grp">
+        <div class="box" id="impBox">
+          <h4>Importar histórico (Mapa FP-11)</h4>
+          <p class="hint">Escolha a planilha 447.QUA.FP-11 do computador. O Nexum separa as abas por contrato (Flotação Recleaner e Upgrade do Espessador), monta as fichas, padroniza os dados e preenche o que faltar. A planilha é lida aqui no computador e não é publicada.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" id="btnImpEscolher">Escolher planilha FP-11</button><input type="file" id="impFile" accept=".xlsx,.xlsm,.xls" hidden></div>
+          <div class="imp-res" id="impRes"></div>
+        </div>
+        <div class="box">
+          <h4>Numeração das fichas</h4>
+          <p class="hint">Sequência única para NF e romaneio Anglo. O app usa o maior entre este número e a última ficha lançada + 1.</p>
+          <div style="display:flex;gap:8px"><input id="fichaIni" type="number" min="1" inputmode="numeric" style="max-width:160px"><button class="btn" type="button" id="btnFichaIni">Salvar</button></div>
+          <span class="code" id="proxFicha"></span>
+        </div>
+        <div class="box">
+          <h4>Ficha FP-01 (PDF)</h4>
+          <p class="hint">Dados do cabeçalho do modelo 447.OPE.FP-01 Rev.02.</p>
+          <div class="f"><label for="cfgResp">Responsável por este documento</label><input id="cfgResp" autocomplete="off"></div>
+          <div class="f"><label for="cfgProj">Projeto Nº Cliente</label><input id="cfgProj" autocomplete="off" placeholder="(em branco no modelo atual)"></div>
+          <div><button class="btn small" type="button" id="btnCfgDoc">Salvar</button></div>
+        </div>
+        <div class="box" id="dlCfg">
+          <h4>Planilha de Diligenciamento</h4>
+          <p class="hint">Conecte a pasta <b>RELATORIO DILIGENCIAMENTO</b> sincronizada pelo OneDrive neste computador. O app confere a cada 3 minutos se chegou uma planilha nova e passa a usar a mais recente.</p>
+          <div class="notice" id="dlPastaSt">Nenhuma pasta conectada.</div>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn primary small" type="button" id="btnDlConectar">Conectar pasta</button>
+            <button class="btn small" type="button" id="btnDlReativar" hidden>Reativar acesso à pasta</button>
+            <button class="btn small" type="button" id="btnDlVerificar" hidden>Verificar agora</button>
+            <button class="btn ghost small" type="button" id="btnDlDesc" hidden>Desconectar</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="dlTeste" hidden>
+            <input id="dlTNf" placeholder="Nº da NF" inputmode="numeric" style="flex:0 1 130px">
+            <input id="dlTForn" placeholder="Fornecedor (opcional)" style="flex:1 1 180px">
+            <button class="btn small" type="button" id="btnDlTestar">Testar busca</button>
+          </div>
+          <div class="hint" id="dlTRes"></div>
+        </div>
+        <div class="box">
+          <h4>Materiais críticos (CMC)</h4>
+          <p class="hint">Itens de NF que se encaixam nestes grupos exigem certificado de qualidade. O inspetor ou a Qualidade podem marcar ou desmarcar item a item.</p>
+          <div id="cmcLista" style="display:grid;gap:8px"></div>
+        </div>
+        <div class="box">
+          <h4>Aviso de certificado pendente</h4>
+          <p class="hint">Quem recebe o e-mail quando uma NF chega sem certificado, além do fornecedor. Um e-mail por linha. O envio é ligado na etapa 5.</p>
+          <div id="grupos" class="grp"></div>
+        </div>
+      </div>
+      <div class="box">
+        <div style="display:flex;align-items:center;gap:8px"><h4 class="grow">Fornecedores</h4><button class="btn primary small" type="button" id="btnNovoForn">+ Fornecedor</button></div>
+        <div id="fornForm" class="box" hidden style="background:var(--bg)">
+          <div class="g4">
+            <div class="f" style="grid-column:span 2"><label for="foNome">Nome</label><input id="foNome" autocomplete="off"></div>
+            <div class="f"><label for="foCnpj">CNPJ</label><input id="foCnpj" inputmode="numeric" autocomplete="off"></div>
+            <div class="f"><label for="foCod">Código (Diligenciamento)</label><input id="foCod" inputmode="numeric" autocomplete="off"></div>
+            <div class="f" style="grid-column:1/-1"><label for="foEmails">E-mails para aviso (um por linha)</label><textarea id="foEmails" rows="3"></textarea></div>
+          </div>
+          <div class="actions"><button class="btn danger small" type="button" id="btnExcForn" hidden>Excluir</button><span class="sp"></span><button class="btn ghost small" type="button" id="btnCancForn">Cancelar</button><button class="btn primary small" type="button" id="btnSalvForn">Salvar fornecedor</button></div>
+        </div>
+        <input id="qForn" type="search" placeholder="Buscar fornecedor…" aria-label="Buscar fornecedor">
+        <div id="fornList"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="sheet-bg" id="sheetBg" hidden>
+  <div class="sheet rise" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+    <div class="sheet-head"><h3 id="shTitle">Ficha</h3><span class="grow"></span><button class="btn onhead small" type="button" id="btnFechar">Fechar</button></div>
+    <div class="sheet-grid">
+     <aside class="viewer" aria-label="Documentos recebidos">
+      <div class="vtabs" id="vTabs"></div>
+      <div class="stage" id="vStage" title="Toque para ampliar"></div>
+      <div class="vthumbs" id="vThumbs"></div>
+      <p class="hint">Confira o documento com os dados ao lado. Toque na imagem para ampliar.</p>
+     </aside>
+     <div class="sheet-body" style="padding:0">
+      <div class="box">
+        <div class="confbar"><span class="pill" id="dConf"></span><span class="grow"></span><button class="btn small" type="button" id="btnDevolver" style="color:var(--bad);border-color:var(--bad)">Devolver ao campo</button><button class="btn small" type="button" id="btnAprovar" style="color:var(--ok);border-color:var(--ok)">Aprovar conferência</button></div>
+        <div class="devolve" id="devPanel" hidden>
+          <h5>Devolver como inconforme</h5>
+          <div id="devMotivos" style="display:grid;gap:6px"></div>
+          <div class="f"><span class="lbl">Itens com problema (opcional)</span><div class="itchips" id="devItens"></div></div>
+          <div class="f"><label for="devCom">Comentário para o campo</label><textarea id="devCom" rows="2" placeholder="Ex.: refazer a foto da NF, o nº do lote não está legível"></textarea></div>
+          <div class="actions"><button class="btn ghost small" type="button" id="devCancel">Cancelar</button><button class="btn small" type="button" id="devOk" style="background:var(--bad);border-color:var(--bad);color:#fff">Confirmar devolução</button></div>
+        </div>
+        <div class="notice bad" id="dDevolInfo" hidden></div>
+      </div>
+      <div class="box">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill" id="dTipo"></span><span class="code" id="dOrigem"></span></div>
+        <div class="f"><span class="lbl">Status</span><div class="seg" id="dStatus"></div></div>
+        <div class="g4">
+          <div class="f" data-t="NF"><label for="dNf">Nota fiscal</label><input id="dNf"></div>
+          <div class="f" data-t="NF"><label for="dForn">Fornecedor</label><input id="dForn" list="dlForn"></div>
+          <div class="f"><label for="dRom" id="lRom">Romaneio</label><input id="dRom"></div>
+          <div class="f"><label for="dData">Data de recebimento</label><input id="dData" type="date"></div>
+        </div>
+        <div class="f" id="dChave" hidden></div>
+        <datalist id="dlForn"></datalist>
+        <div class="notice bad" id="dDup" hidden></div>
+        <div class="notice" id="dCert" hidden></div>
+      </div>
+      <div class="box">
+        <div style="display:flex;align-items:center;gap:8px"><h4 class="grow">Itens <span class="code" id="dCount"></span></h4><button class="btn small" type="button" id="btnAddIt">+ Item</button></div>
+        <div class="it-wrap"><table class="its"><thead><tr><th>#</th><th style="width:30%">Descrição</th><th>TAG</th><th title="Exige certificado">Exige cert.</th><th>Certificado</th><th>Und</th><th>Qtd</th><th>Local</th><th>Inspeção</th><th>Situação</th><th></th></tr></thead><tbody id="dItens"></tbody></table></div>
+        <p class="hint" id="dZero" hidden>Itens com quantidade 0 no romaneio aparecem apagados e não entram na ficha nem no mapa.</p>
+      </div>
+      <div class="box" id="cobBox" hidden>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h4 class="grow">Cobrança de certificados</h4><span class="pill" id="cobPill"></span></div>
+        <ul class="cob-list" id="cobLista"></ul>
+        <p class="hint" id="cobDest"></p>
+        <div class="actions" style="justify-content:flex-start"><button class="btn small" type="button" id="btnCobVer">Ver e-mail de cobrança</button></div>
+        <div class="cob-mail" id="cobMail" hidden>
+          <div class="f"><span class="lbl">Para</span><span class="code" id="cobPara" style="overflow-wrap:anywhere"></span></div>
+          <div class="f"><span class="lbl">Assunto</span><span id="cobAssunto"></span></div>
+          <pre id="cobCorpo"></pre>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn small" type="button" id="btnCobCopiar">Copiar e-mail</button>
+            <a class="btn small" id="btnCobOutlook" href="#" target="_blank" rel="noopener">Abrir no Outlook</a>
+            <span class="sp"></span>
+            <button class="btn primary small" type="button" id="btnCobReg">Registrar envio</button>
+          </div>
+          <p class="hint">O envio automático entra na etapa 5. Até lá, envie pelo Outlook e toque em <b>Registrar envio</b>: o app guarda no histórico e não cobra de novo os mesmos itens.</p>
+        </div>
+      </div>
+      <div class="box">
+        <h4>Observação</h4>
+        <textarea id="dObs" rows="3"></textarea>
+      </div>
+      <div class="box">
+        <h4>Assinaturas</h4>
+        <div class="sign" id="dSign"></div>
+      </div>
+      <div class="box">
+        <h4>Histórico</h4>
+        <ul class="hist" id="dHist"></ul>
+      </div>
+      <div class="soon">
+        <button class="btn primary" type="button" id="btnPdfVer">Ver Ficha FP-01 (PDF)</button>
+        <button class="btn" type="button" id="btnPdfBaixar">Baixar PDF</button>
+        <button class="btn" type="button" disabled>Baixar pacote</button>
+        
+      </div>
+      <div class="actions">
+        <button class="btn danger" type="button" id="btnExcluir">Excluir ficha</button>
+        <span class="sp"></span>
+        <button class="btn ghost" type="button" id="btnCancelar">Cancelar</button>
+        <button class="btn primary" type="button" id="btnSalvar">Salvar alterações</button>
+      </div>
+     </div>
+    </div>
+  </div>
+</div>
+<div class="lightbox" id="lb" hidden><button class="btn onhead small close" type="button" id="lbClose">Fechar</button><img id="lbImg" alt="Documento ampliado"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>window.NEXUM_APP="escritorio"</script>
+<script src="assets/vendor/xlsx.mini.min.js"></script>
+<script src="assets/vendor/jspdf.umd.min.js"></script>
+<script src="assets/logos.js"></script>
+<script src="assets/ficha-pdf.js"></script>
+<script src="assets/exemplo-docs.js"></script>
+<script src="assets/dados.js"></script>
+<script src="assets/vendor/firebase-app-compat.js"></script>
+<script src="assets/vendor/firebase-auth-compat.js"></script>
+<script src="assets/vendor/firebase-firestore-compat.js"></script>
+<script src="assets/nuvem-config.js"></script>
+<script src="assets/nuvem.js"></script>
+<script src="assets/ui.js"></script>
+<script src="assets/dashboard.js"></script>
+<script src="assets/atualizacao.js"></script>
+<script src="assets/diligenciamento.js"></script>
+<script src="assets/importar.js"></script>
+<script src="assets/planilhas.js"></script>
+<script>
+(function(){
+const A=window.AMR,$=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let fichas=[],todas=[],lacs=[],cad=null,fStatus="todas",ed=null,edItens=[];
+let ctr="recleaner";try{ctr=localStorage.getItem("nx_ctr")||"recleaner"}catch(e){}if(!A.CONTRATOS[ctr])ctr="recleaner";
+const lim={lista:300,mapa:300,cert:300,pend:300};
+const CT=()=>A.CONTRATOS[ctr];
+function filtrar(){const d=todas.filter(f=>A.ctrDe(f)===ctr);fichas=d.filter(f=>!f.lacuna);lacs=d.filter(f=>f.lacuna&&!f.cancelada)}
+function maisBtn(el,total,k,fn){$(el).innerHTML=total>lim[k]?`Mostrando ${lim[k].toLocaleString("pt-BR")} de ${total.toLocaleString("pt-BR")} · <button class="btn small" type="button">Mostrar mais</button>`:"";const b=$(el).querySelector("button");if(b)b.onclick=()=>{lim[k]+=600;fn()}}
+function renderCtr(){
+  $("ctrSel").innerHTML=Object.values(A.CONTRATOS).map(c=>`<button type="button" data-c="${c.id}" aria-pressed="${c.id===ctr}">${c.nome}${c.ativo?"":"<small>· encerrado</small>"}</button>`).join("");
+  $("ctrSel").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{if(b.dataset.c===ctr)return;ctr=b.dataset.c;try{localStorage.setItem("nx_ctr",ctr)}catch(e){}Object.keys(lim).forEach(k=>lim[k]=300);fStatus="todas";filtrar();renderCtr();renderTudo()});
+  $("hdCtr").textContent=CT().nome;document.body.classList.toggle("ro",!CT().ativo);
+  $("roNote").hidden=CT().ativo;
+  if(!CT().ativo)$("roNote").innerHTML=`<b>${esc(CT().nome)} · contrato encerrado.</b> Os registros ficam guardados só para consulta: dá para ver, filtrar, exportar e gerar os relatórios, mas não para lançar ou alterar.`;
+  document.title="Nexum · Escritório · "+CT().nome;
+}
+function toast(t,bad){const e=$("toast");e.textContent=t;e.className="toast"+(bad?" bad":"");e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200)}
+
+/* abas */
+function show(v){document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===v));["painel","fichas","certs","pend","rel","mapa","cadastros"].forEach(x=>$("v-"+x).hidden=x!==v);if(v==="certs")renderCerts();if(v==="pend")renderPend();if(v==="rel")renderRel();if(v==="mapa")renderMapa();if(v==="painel")renderPainel()}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>show(t.dataset.v));
+
+function docTxt(f){return f.tipo==="ROM"?"Romaneio "+(f.romaneio||"—"):"NF "+(f.nf||"—")+" · "+(f.fornecedor||"—")}
+function card(f){return NXUI.fichaCard(A,f,{mostrarConferencia:true})}
+function bind(root){root.querySelectorAll("[data-id]").forEach(c=>c.onclick=()=>abrir(fichas.find(f=>f.id===c.dataset.id)))}
+
+/* painel / dashboard */
+let periodo="90";try{periodo=localStorage.getItem("nx_periodo")||"90"}catch(e){}
+NXDASH.tooltip($("v-painel"));
+let rszT;window.addEventListener("resize",()=>{clearTimeout(rszT);rszT=setTimeout(()=>{if(!$("v-painel").hidden)renderPainel()},200)});
+function renderPainel(){
+  $("per").innerHTML=Object.entries(NXDASH.PER).map(([k,l])=>`<button type="button" data-p="${k}" aria-pressed="${k===periodo}">${l}</button>`).join("");
+  $("per").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{periodo=b.dataset.p;renderPainel.manual=true;try{localStorage.setItem("nx_periodo",periodo)}catch(e){}renderPainel()});
+  if(!CT().ativo&&periodo!=="tudo"&&!renderPainel.manual)periodo="tudo";
+  const reais=fichas.filter(f=>!f.exemplo);
+  const usarDemo=A.store.modo==="exemplo"&&reais.length<5;
+  const base=(usarDemo?NXDASH.demo(A):fichas).filter(f=>NXDASH.noPeriodo(f,periodo));
+  $("dashDemo").hidden=!usarDemo;
+  if(usarDemo)$("dashDemo").innerHTML=NXUI.icon("chart")+"<span><b>Dados de demonstração.</b> Os gráficos usam fichas fictícias até o sistema entrar em uso com o Firebase. O quadro \"O que precisa de atenção\" mostra as fichas de verdade.</span>";
+  $("dashSub").textContent=NXDASH.PER[periodo]+" · "+base.length+" "+(base.length===1?"ficha":"fichas");
+  const m=NXDASH.metricas(A,base);
+  const kp=(cls,ic,tit,val,sub,s)=>`<button class="kp ${cls}" type="button" ${s?`data-s="${s}"`:""}><span class="kp-h"><span class="kp-i">${NXUI.icon(ic)}</span>${tit}</span><b>${val}</b><em>${sub}</em></button>`;
+  $("kpis").innerHTML=[
+    kp("","doc","Fichas",m.fichas,`${m.nf} NF · ${m.rom} romaneio`,"todas"),
+    kp("","box","Itens recebidos",m.itens.toLocaleString("pt-BR"),"em todas as fichas"),
+    kp("g","shield","Conformidade",m.conf===null?"—":`${(m.conf*100).toFixed(1).replace(".",",")}<small>%</small>`,m.inspecionados?`${m.nc} ${m.nc===1?"item não conforme":"itens não conformes"} de ${m.inspecionados}`:"sem inspeções"),
+    kp("w","cert","Certificados pendentes",m.cert.pendente+m.cert.naorec,`${m.cert.naorec} não recebidos · ${m.cert.avalidar} a validar`,"cert_pendente"),
+    kp("","clock","Tempo até a conferência",m.tm===null?"—":`${m.tm.toFixed(1).replace(".",",")}<small> dias</small>`,m.nTempos?`média de ${m.nTempos} fichas aprovadas`:"nenhuma aprovada")
+  ].join("");
+  if(!usarDemo)$("kpis").querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{fStatus=b.dataset.s;show("fichas");renderLista()});
+  const serie=NXDASH.serieTempo(base,periodo);
+  $("semSub").textContent=serie.length&&serie[0].mensal?"fichas por mês":"fichas por semana";
+  NXDASH.barrasTempo($("chSem"),serie);
+  NXDASH.listaBarras($("chFunil"),A.ORDEM_STATUS.map((s,i)=>[A.STATUS[s].rotulo,m.porStatus[s],"o"+(i+1)]),{unid:"fichas"});
+  $("certSub").textContent=m.critTotal?`${m.critTotal} itens exigem certificado`:"";
+  NXDASH.certChart($("chCert"),m.cert,m.critTotal);
+  NXDASH.listaBarras($("chForn"),Object.entries(m.porForn).sort((a,b)=>b[1]-a[1]).slice(0,6),{unid:"itens sem certificado",vazio:"Nenhum fornecedor com pendência no período."});
+  NXDASH.listaBarras($("chCmc"),Object.entries(m.porCmc).sort((a,b)=>b[1]-a[1]),{unid:"itens",vazio:"Nenhum material crítico no período."});
+  $("dgrid").classList.add("viz");
+  /* quadro de atenção (fichas reais) */
+  const col=(tit,l)=>`<div class="col"><h3>${tit}<span class="cnt">${l.length}</span></h3><div class="list">${l.length?l.slice(0,6).map(card).join(""):`<div class="empty" style="padding:16px">Nada aqui.</div>`}</div></div>`;
+  const aConf=fichas.filter(f=>f.status!=="sem_acao"&&f.status!=="finalizado"&&A.conf(f).situacao==="pendente");
+  const devol=fichas.filter(f=>A.conf(f).situacao==="devolvida");
+  const ord=l=>l.sort((a,b)=>(a.dataRecebimento||"").localeCompare(b.dataRecebimento||""));
+  $("cols").innerHTML=col("A conferir",ord(aConf))+col("Com informação faltando",ord(fichas.filter(f=>f.status!=="finalizado"&&NXIMP.faltantes(f).some(x=>x.tipo==="falta"))))+col("Sem ação",ord(fichas.filter(f=>f.status==="sem_acao")))+col("Certificado pendente",ord(fichas.filter(f=>f.status==="cert_pendente")));
+  bind($("cols"));
+}
+
+/* fichas (tabela) */
+const CHIPS={todas:"Todas",...Object.fromEntries(A.ORDEM_STATUS.map(s=>[s,A.STATUS[s].rotulo]))};
+function renderLista(){
+  $("chips").innerHTML=Object.entries(CHIPS).map(([k,l])=>`<button class="chip" aria-pressed="${k===fStatus}" data-k="${k}">${l}</button>`).join("");
+  $("chips").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{fStatus=c.dataset.k;renderLista()});
+  const q=A.norm($("q").value),t=$("fTipo").value;
+  const l=fichas.filter(f=>(fStatus==="todas"||f.status===fStatus)&&(!t||f.tipo===t)&&(!q||A.norm([f.numero,f.nf,f.romaneio,f.fornecedor,...(f.itens||[]).flatMap(i=>[i.tag,i.descricao,i.certificado])].join(" ")).includes(q)))
+    .sort((a,b)=>b.numero-a.numero);
+  const total=l.length;l.splice(lim.lista);
+  const I=NXUI.icon;
+  $("lista").innerHTML=`<thead><tr><th>Ficha</th><th>Tipo</th><th>Documento</th><th>Fornecedor</th><th>Recebimento</th><th>Itens</th><th>Pendências</th><th>Status</th></tr></thead><tbody>${l.length?l.map(f=>{
+    const p=A.pendencias(f),c=A.conf(f),al=[];
+    if(c.situacao==="devolvida")al.push(`<span style="color:var(--bad)">${I("undo")}Devolvida</span>`);
+    else if(f.status!=="sem_acao"&&f.status!=="finalizado"&&c.situacao==="pendente")al.push(`<span style="color:var(--wait)">${I("eye")}A conferir</span>`);
+    if(f.status!=="finalizado"&&p.includes("certificado"))al.push(`<span style="color:var(--warn)">${I("cert")}${A.semCertificado(f).length} sem cert.</span>`);
+    if(p.includes("validar certificado"))al.push(`<span style="color:var(--wait)">${I("check")}Validar cert.</span>`);
+    if(p.includes("não conformidade"))al.push(`<span style="color:var(--bad)">${I("alert")}NC</span>`);
+    return `<tr data-id="${f.id}"><td class="n">${f.numero}${f.exemplo?' <span class="ex">exemplo</span>':""}</td><td><span class="pill ${f.tipo}">${f.tipo==="ROM"?"ROMANEIO":"NF"}</span></td><td>${esc(f.tipo==="ROM"?f.romaneio:f.nf)}</td><td>${esc(f.tipo==="ROM"?"Anglo American":f.fornecedor)}</td><td class="s">${A.fmtData(f.dataRecebimento)}</td><td>${A.itensValidos(f).length}</td><td><div class="al">${al.join("")||'<span class="s">—</span>'}</div></td><td><span class="pill ${f.status}">${A.STATUS[f.status].rotulo}</span></td></tr>`}).join(""):`<tr><td colspan="8" style="padding:28px;text-align:center;color:var(--muted)">Nenhuma ficha encontrada. Ajuste a busca ou os filtros.</td></tr>`}</tbody>`;
+  bind($("lista"));maisBtn("listaMais",total,"lista",renderLista);
+}
+$("q").oninput=renderLista;$("fTipo").onchange=renderLista;
+
+/* mapa */
+function renderMapa(){
+  if($("v-mapa").hidden)return;
+  const q=A.norm($("qMapa").value);
+  const todasL=A.linhasMapa(fichas).filter(r=>!q||A.norm(r.join(" ")).includes(q)),linhas=todasL.slice(0,lim.mapa);
+  $("mapaInfo").textContent=`${todasL.length.toLocaleString("pt-BR")} linhas · ${A.DOC_MAPA} · ${CT().nome} · uma linha por item, gerada das fichas`;
+  $("tMapa").innerHTML=`<thead><tr>${A.COLS_MAPA.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>${linhas.map(r=>`<tr>${r.map((v,i)=>`<td${i===3?' class="d"':""}>${esc(v)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="15" style="padding:20px;color:var(--muted)">Nenhuma linha.</td></tr>`}</tbody>`;
+  maisBtn("mapaMais",todasL.length,"mapa",renderMapa);
+}
+$("qMapa").oninput=()=>{lim.mapa=300;renderMapa()};
+
+/* ---------- Excel (.xlsx) ---------- */
+function dataXL(iso){if(!iso)return "";const [y,m,d]=String(iso).slice(0,10).split("-").map(Number);return y?new Date(y,m-1,d):""}
+const semAcentoArq=n=>String(n).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[\\/:*?"<>|]+/g,"-");
+const fmtAgora=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}).replace(","," às");
+function infoXL(extra){const c=CT();return `${c.nome}${c.numero?" · Contrato "+c.numero:""}${extra?" · "+extra:""} · Atualizado em ${fmtAgora()} · Gerado pelo Nexum – Recebimento inteligente`}
+async function xl(nome,abas,btn){
+  nome=semAcentoArq(nome);const txt=btn?btn.textContent:"";
+  if(btn){btn.disabled=true;btn.textContent="Gerando planilha…"}
+  try{await NXXL.gerar(nome,abas);toast("Planilha gerada: "+nome)}
+  catch(e){console.error(e);toast("Não consegui gerar o Excel: "+(e.message||e),true)}
+  finally{if(btn){btn.disabled=false;btn.textContent=txt}}
+}
+const numQ=v=>{if(v===""||v===null||v===undefined)return "";const q=typeof v==="number"?v:Number(String(v).replace(/\./g,"").replace(",","."));return isFinite(q)?q:v};
+function abaMapa(lista,ctrObj){
+  const datas=new Map();lista.forEach(f=>datas.set(String(f.numero),f.dataRecebimento));
+  const linhas=A.linhasMapa(lista).map(r=>{const o=r.slice();o[1]=isFinite(Number(o[1]))?Number(o[1]):o[1];if(o[2]!==""&&isFinite(Number(o[2])))o[2]=Number(o[2]);o[9]=numQ(o[9]);o[10]=dataXL(datas.get(String(r[1])))||"";return o});
+  const cnt=s=>lista.filter(f=>f.status===s).length;
+  return {nome:"Mapa FP-11",titulo:"MAPA - RECEBIMENTO DE MATERIAIS",subtitulo:`${A.DOC_MAPA} · ${ctrObj.projeto}`,info:infoXL(),congelarCol:2,
+    kpis:[["Fichas",lista.length],["Itens",linhas.length],["Finalizadas",cnt("finalizado"),"ok"],["Em andamento",cnt("em_andamento"),"prog"],["Certificado pendente",cnt("cert_pendente"),"warn"]],
+    cols:[{h:"STATUS",w:17,tipo:"cor"},{h:"FICHA N°",w:9,tipo:"int",forte:true},{h:"ITEM",w:6,tipo:"int"},{h:"DESCRIÇÃO",w:56},{h:"TAG",w:18},{h:"NOTA FISCAL",w:13,al:"center"},{h:"ROMANEIO",w:17,al:"center"},{h:"CERTIFICADO",w:22,tipo:"cor"},{h:"UND",w:7,al:"center"},{h:"QUANT. RECEBIDA",w:11,tipo:"num"},{h:"DATA RECEBIMENTO",w:13,tipo:"data"},{h:"FORNECIMENTO",w:21},{h:"FORNECEDOR",w:32},{h:"LOCALIZAÇÃO / ARMAZENAMENTO",w:22},{h:"STATUS ITEM",w:9,tipo:"cor"}],
+    linhas,vazio:"Nenhuma ficha no período."};
+}
+function exportarMapa(lista,sufixo,btn){
+  if(!lista.length){toast("Não há fichas para exportar nesse período.",true);return}
+  xl(`${A.DOC_MAPA} - Mapa Recebimento - ${CT().nome}${sufixo?" - "+sufixo:""} - ${A.hoje()}.xlsx`,[abaMapa(lista,CT())],btn);
+}
+$("btnExport").onclick=()=>{
+  const q=A.norm($("qMapa").value);
+  const l=q?fichas.filter(f=>A.linhasMapa([f]).some(r=>A.norm(r.join(" ")).includes(q))):fichas;
+  exportarMapa(l,q?"filtrado":"",$("btnExport"));
+};
+
+/* detalhe / edição */
+function abrir(f){
+  ed=JSON.parse(JSON.stringify(f)); edItens=ed.itens||[];
+  $("shTitle").textContent="Ficha Nº "+ed.numero;
+  $("dTipo").className="pill "+ed.tipo; $("dTipo").textContent=A.TIPOS[ed.tipo].rotulo;
+  $("dOrigem").textContent=(ed.exemplo?"Exemplo · ":"")+(ed.lacuna?"número sem ficha no mapa · preencha e salve para criar a ficha":ed.origem==="importacao"?"importada do mapa FP-11"+((ed.auto||[]).length?` · ${ed.auto.length} informação(ões) preenchida(s) automaticamente (veja Pendências)`:""):"lançado pelo "+(ed.origem==="campo"?"campo":"escritório")+(ed.criadoEm?" em "+A.fmtData(ed.criadoEm):""));
+  $("dChave").hidden=!ed.chaveNFe;if(ed.chaveNFe)$("dChave").innerHTML=`<span class="lbl">Chave de acesso (lida do código de barras)</span><span class="code">${ed.chaveNFe.replace(/(\d{4})/g,"$1 ").trim()}</span>${ed.cnpjFornecedor?`<span class="code">CNPJ ${esc(ed.cnpjFornecedor)}${ed.serie?" · série "+esc(ed.serie):""}</span>`:""}`;
+  document.querySelectorAll("[data-t]").forEach(e=>e.hidden=e.dataset.t!==ed.tipo);
+  $("lRom").textContent=ed.tipo==="ROM"?"Romaneio Anglo":"Romaneio (PC-REV)";
+  $("dNf").value=ed.nf||"";$("dForn").value=ed.fornecedor||"";$("dRom").value=ed.romaneio||"";$("dData").value=ed.dataRecebimento||"";$("dObs").value=ed.observacao||"";
+  $("dlForn").innerHTML=(cad?.fornecedores||[]).map(x=>`<option value="${esc(x.nome)}">`).join("");
+  $("dStatus").innerHTML=A.ORDEM_STATUS.map(s=>`<button type="button" data-s="${s}" aria-pressed="${s===ed.status}">${A.STATUS[s].rotulo}</button>`).join("");
+  $("dStatus").querySelectorAll("button").forEach(b=>b.onclick=()=>{ed.status=b.dataset.s;$("dStatus").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));avisos()});
+  ed.assinaturas=ed.assinaturas||{};
+  $("dSign").innerHTML=[["producao","Produção Milplan"],["qualidade","Qualidade Milplan"],["fiscalizacao","Fiscalização Anglo"]].map(([k,l])=>`<div class="f"><label><input type="checkbox" data-sg="${k}" ${ed.assinaturas[k]?"checked":""}>${l}</label><input type="date" data-sgd="${k}" value="${ed.assinaturas[k]?.em||""}" ${ed.assinaturas[k]?"":"disabled"} aria-label="Data da assinatura ${l}"></div>`).join("");
+  $("dSign").querySelectorAll("[data-sg]").forEach(cb=>cb.onchange=()=>{const d=$("dSign").querySelector(`[data-sgd="${cb.dataset.sg}"]`);d.disabled=!cb.checked;if(cb.checked&&!d.value)d.value=A.hoje()});
+  $("btnExcluir").dataset.armed="";$("btnExcluir").textContent="Excluir ficha";
+  vTab="doc";vIdx=0;renderViewer();
+  if(A.store.carregarAnexos){const alvo=ed;A.store.carregarAnexos(ed).then(()=>{if(ed===alvo)renderViewer()}).catch(()=>{})}renderConf();$("devPanel").hidden=true;
+  renderItens();avisos();$("sheetBg").hidden=false;document.body.style.overflow="hidden";
+}
+function fechar(){$("sheetBg").hidden=true;document.body.style.overflow="";ed=null}
+$("btnFechar").onclick=fechar;$("btnCancelar").onclick=fechar;
+$("sheetBg").onclick=e=>{if(e.target===$("sheetBg"))fechar()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheetBg").hidden)fechar()});
+
+function renderItens(){
+  const und=A.UNIDADES.map(u=>`<option>${u}</option>`).join("");
+  $("dItens").innerHTML=edItens.map((it,i)=>{const zero=ed.tipo==="ROM"&&it.qtd!==""&&Number(it.qtd)===0;
+    const flag=A.conf(ed).situacao==="devolvida"&&(A.conf(ed).itens||[]).includes(i);
+    const ex=A.exigeCert(ed,it),st=A.statusItem({...ed,itens:edItens},it),S=A.STATUS_ITEM[st];
+    const divU=it.undPedido&&A.norm(it.undPedido)!==A.norm(it.und);
+    const ref=it.pc?`<span class="ref">${it.origem==="diligenciamento"?'<span class="dl" title="Preenchido pela planilha de Diligenciamento">Dilig.</span>':""}PC ${esc(it.pc)}/${esc(it.itemPc)}${it.qtdPedido!==undefined&&it.qtdPedido!==""?` · pedido ${A.fmtQtd(it.qtdPedido)} ${esc(it.undPedido||"")}`:""}${divU?' <span class="div">· unidade diferente do pedido</span>':""}${it.conferirNF?' <span class="div">· qtd/unidade não conferidas com a NF</span>':""}</span>`:"";
+    const cr=ed.tipo==="NF"?A.materialCritico(it.descricao,it.tag):null;
+    const crit=cr?`<span class="ref" title="${esc(cr.doc)} · Setor: ${esc(cr.setor)} · CQ: ${esc(cr.cq)} · Cliente: ${esc(cr.cliente)} — ${esc(cr.cq.split(", ").map(x=>x+" = "+(A.LEGENDA_CMC[x]||x)).join("; "))}"><span class="dl" style="background:var(--warn-bg);color:var(--warn)">Crítico</span>${esc(cr.rotulo)} · CQ ${esc(cr.cq)} · Cliente ${esc(cr.cliente)}${cr.evidencia?`<br>${esc(cr.evidencia)}`:""}</span>`:(it.pedidoPedeCertificado&&ed.tipo==="NF"?'<span class="ref">O pedido de compra pede certificado</span>':"");
+    return `<tr class="${zero?"zero":""}${flag?" flag":""}" data-i="${i}"><td class="code">${i+1}</td>
+    <td><input data-k="descricao" value="${esc(it.descricao)}" aria-label="Descrição">${ref}${crit}</td>
+    <td><input data-k="tag" value="${esc(it.tag)}" aria-label="TAG"></td>
+    <td class="ck">${ed.tipo==="NF"?`<input type="checkbox" data-ex="${i}" ${ex?"checked":""} aria-label="Exige certificado">`:'<span class="hint">—</span>'}</td>
+    <td><input data-k="certificado" value="${esc(ed.tipo==="ROM"&&!it.certificado?"":it.certificado)}" placeholder="${ed.tipo==="ROM"?"OBS 1":it.certStatus==="nao_recebido"?"não recebido":ex?"pendente":"não exige"}" aria-label="Certificado">${it.certStatus==="nao_recebido"&&!A.temCert(it)?'<span class="ref" style="color:var(--bad);font-weight:600">✕ Não recebido no campo</span>':""}${(()=>{const anx=(ed.anexos?.cert||[]).map((a,k)=>({a,k})).filter(x=>x.a.item===i);return anx.length?`<button type="button" class="cval" data-vercert="${anx[0].k}" style="background:none;border:0;padding:0;cursor:pointer;color:var(--accent);font-weight:600">📎 ver ${anx.length} ${anx.length===1?"arquivo":"arquivos"}</button>`:""})()}${ex&&A.temCert(it)?`<label class="cval"><input type="checkbox" data-val="${i}" ${it.certValidado?"checked":""}>validado pela Qualidade</label>`:""}</td>
+    <td><select data-k="und" aria-label="Unidade">${A.UNIDADES.includes(it.und)?"":`<option>${esc(it.und)}</option>`}${und}</select></td>
+    <td><input data-k="qtd" type="number" step="any" min="0" value="${esc(it.qtd)}" style="width:80px" aria-label="Quantidade"></td>
+    <td><input data-k="local" value="${esc(it.local)}" aria-label="Local"></td>
+    <td><select data-k="conf" aria-label="Inspeção do item"><option value="C">C</option><option value="NC">NC</option><option value="NA">N/A</option></select></td>
+    <td><span class="st-it pill ${S.cls}">${S.rotulo}</span></td>
+    <td><button class="del" type="button" data-del="${i}" aria-label="Remover item">×</button></td></tr>`}).join("");
+  $("dItens").querySelectorAll("tr").forEach(tr=>{const i=+tr.dataset.i;
+    tr.querySelector('[data-k="und"]').value=edItens[i].und||"UND";tr.querySelector('[data-k="conf"]').value=edItens[i].conf||"C";
+    tr.querySelectorAll("[data-k]").forEach(inp=>inp.addEventListener("change",()=>{const k=inp.dataset.k;edItens[i][k]=k==="qtd"?(inp.value===""?"":Number(inp.value)):(["descricao","tag","local"].includes(k)?inp.value.toUpperCase():inp.value);if(k==="certificado"){edItens[i].certValidado=false;if(inp.value.trim())edItens[i].certStatus="recebido"}if(k==="qtd"||k==="und")edItens[i].conferirNF=false;if(k==="qtd"||k==="certificado"||k==="conf"||k==="descricao"||k==="tag")renderItens();avisos()}));
+    tr.querySelector("[data-del]").onclick=()=>{edItens.splice(i,1);renderItens();avisos()};
+    const ex=tr.querySelector("[data-ex]");if(ex)ex.onchange=()=>{edItens[i].exigeCertificado=ex.checked;renderItens();avisos()};
+    const vc=tr.querySelector("[data-vercert]");if(vc)vc.onclick=()=>{vTab="cert";vIdx=(ed.anexos?.cert||[]).length?Math.max(0,+vc.dataset.vercert):0;renderViewer();document.querySelector(".viewer").scrollIntoView({behavior:"smooth",block:"start"})};
+    const va=tr.querySelector("[data-val]");if(va)va.onchange=()=>{edItens[i].certValidado=va.checked;renderItens();avisos()};
+  });
+  const v=A.itensValidos({...ed,itens:edItens}).length;
+  $("dCount").textContent=`· ${v} na ficha${v>15?" ("+Math.ceil(v/15)+" folhas)":""}`;
+  $("dZero").hidden=!(ed.tipo==="ROM"&&edItens.some(i=>i.qtd!==""&&Number(i.qtd)===0));
+}
+$("btnAddIt").onclick=()=>{edItens.push({descricao:"",tag:"",und:ed.tipo==="ROM"?"PÇ":"UND",qtd:"",certificado:"",local:edItens.at(-1)?.local||"",conf:"C"});renderItens();$("dItens").lastElementChild.querySelector("input").focus()};
+
+function coletar(){
+  const f={...ed,itens:edItens,observacao:$("dObs").value.trim(),dataRecebimento:$("dData").value,romaneio:A.norm($("dRom").value)};
+  if(f.tipo==="NF"){f.nf=$("dNf").value.trim();f.fornecedor=A.norm($("dForn").value)}
+  if(f.lacuna&&(f.nf||f.romaneio||A.itensValidos(f).length))f.lacuna=false;
+  f.assinaturas={};$("dSign").querySelectorAll("[data-sg]").forEach(cb=>{if(cb.checked)f.assinaturas[cb.dataset.sg]={em:$("dSign").querySelector(`[data-sgd="${cb.dataset.sg}"]`).value}});
+  return f;
+}
+function avisos(){
+  if(!ed)return;const f=coletar(),d=A.duplicada(f,fichas);
+  $("dDup").hidden=!d;if(d)$("dDup").textContent=A.msgDuplicada(f,d);
+  const pend=A.pendencias(f),sem=pend.includes("certificado"),val=pend.includes("validar certificado");
+  $("dCert").hidden=!(sem||val);
+  if(sem||val)$("dCert").textContent=[sem?`${A.semCertificado(f).length} item(ns) exigem certificado e estão sem ele.${f.status!=="cert_pendente"&&f.status!=="sem_acao"?" Considere o status Certificado pendente.":""}`:"",val?"Há certificado vinculado aguardando validação da Qualidade.":""].filter(Boolean).join(" ");
+  renderCobranca(f);
+  $("btnSalvar").disabled=!!d;
+}
+["dNf","dForn","dRom"].forEach(id=>$(id).addEventListener("input",avisos));
+$("btnSalvar").onclick=async()=>{
+  const f=coletar();
+  if(f.status==="finalizado"&&A.pendencias(f).includes("certificado")){toast("Não dá para finalizar com item sem certificado obrigatório. Use Certificado pendente.",true);return}
+  if(f.status==="finalizado"&&A.pendencias(f).includes("validar certificado")){toast("Valide os certificados (coluna Certificado) antes de finalizar.",true);return}
+  if(f.status==="finalizado"&&A.conf(f).situacao!=="aprovada"){toast("Aprove a conferência antes de finalizar.",true);return}
+  const orig=fichas.find(x=>x.id===f.id),oi=orig?.itens||[];let g=f;
+  const vinc=edItens.map((it,n)=>it.certificado&&it.certificado!==oi[n]?.certificado?n+1:0).filter(Boolean);
+  const vali=edItens.map((it,n)=>it.certValidado&&!oi[n]?.certValidado?n+1:0).filter(Boolean);
+  if(vinc.length)g=A.registrar(g,"cert_vinculado",{por:"Qualidade",itensTxt:vinc.join(", ")});
+  if(vali.length)g=A.registrar(g,"cert_validado",{por:"Qualidade",itensTxt:vali.join(", ")});
+  try{await A.store.salvar(g);toast("Ficha "+f.numero+" salva");fechar()}catch(e){toast(e.message||"Não foi possível salvar.",true)}
+};
+/* cobrança de certificados (ponto 5) */
+let cobEmail=null;
+function renderCobranca(f){
+  const box=$("cobBox");if(f.tipo!=="NF"){box.hidden=true;return}
+  const sem=A.semCertificado(f),pend=A.pendentesDeCobranca(f),pk=new Set(pend.map(x=>x.k)),ja=new Set(sem.filter(x=>!pk.has(x.k)).map(x=>x.k));
+  box.hidden=!sem.length&&!(f.cobrancas||[]).length;if(box.hidden)return;
+  const ult=(f.cobrancas||[]).at(-1);
+  $("cobPill").className="pill "+(pend.length?"cert_pendente":"finalizado");
+  $("cobPill").textContent=pend.length?`${pend.length} a cobrar`:sem.length?"Todos já cobrados":"Sem pendências";
+  $("cobLista").innerHTML=sem.length?sem.map(x=>`<li><span class="code">Item ${x.n+1}</span><span>${esc(x.i.tag)} · ${esc(x.i.descricao)}</span><span class="code">${A.fmtQtd(x.i.qtd)} ${esc(x.i.und)}</span>${ja.has(x.k)?`<span class="pill finalizado">Cobrado${ult?" em "+A.fmtData(ult.em):""}</span>`:'<span class="pill cert_pendente">A cobrar</span>'}</li>`).join(""):'<li class="hint">Nenhum item sem certificado.</li>';
+  const dest=A.destinatariosCertPendente(f);
+  $("cobDest").textContent=dest.length?`Destinatários: ${dest.length} (fornecedor + Suprimentos, Logística, Qualidade e Planejamento, conforme Cadastros).`:"Nenhum destinatário cadastrado. Cadastre os e-mails do fornecedor e dos grupos em Cadastros.";
+  $("btnCobVer").disabled=!pend.length;$("btnCobVer").textContent=pend.length?"Ver e-mail de cobrança":"Nada novo a cobrar";
+  if(!pend.length)$("cobMail").hidden=true;
+}
+$("btnCobVer").onclick=()=>{
+  const f=coletar(),pend=A.pendentesDeCobranca(f);if(!pend.length)return;
+  cobEmail=A.montarEmailCobranca(f,pend);
+  $("cobPara").textContent=cobEmail.para.join("; ")||"(sem destinatários cadastrados)";
+  $("cobAssunto").textContent=cobEmail.assunto;$("cobCorpo").textContent=cobEmail.corpo;
+  $("btnCobOutlook").href="mailto:"+encodeURIComponent(cobEmail.para.join(";")).replace(/%3B/g,";").replace(/%40/g,"@")+"?subject="+encodeURIComponent(cobEmail.assunto)+"&body="+encodeURIComponent(cobEmail.corpo);
+  $("cobMail").hidden=false;$("cobMail").scrollIntoView({behavior:"smooth",block:"nearest"});
+};
+$("btnCobCopiar").onclick=async()=>{const t=`Para: ${cobEmail.para.join("; ")}\nAssunto: ${cobEmail.assunto}\n\n${cobEmail.corpo}`;
+  try{await navigator.clipboard.writeText(t);toast("E-mail copiado")}catch(e){const r=document.createRange();r.selectNodeContents($("cobCorpo"));const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Selecionei o texto: use Ctrl+C para copiar")}};
+$("btnCobReg").onclick=async()=>{
+  if(!cobEmail)return;let f=A.registrarCobranca(coletar(),cobEmail,"Qualidade");
+  if(f.status!=="cert_pendente"&&f.status!=="sem_acao"&&f.status!=="finalizado")f.status="cert_pendente";
+  try{await A.store.salvar(f);ed=JSON.parse(JSON.stringify(f));edItens=ed.itens;cobEmail=null;$("cobMail").hidden=true;renderConf();renderItens();avisos();
+    $("dStatus").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.s===ed.status));toast("Envio registrado no histórico")}catch(e){toast(e.message,true)}
+};
+$("btnExcluir").onclick=async()=>{const b=$("btnExcluir");if(!b.dataset.armed){b.dataset.armed="1";b.textContent="Toque de novo para excluir";return}await A.store.excluir(ed.id);toast("Ficha excluída");fechar()};
+
+/* prévia dos documentos */
+let vTab="doc",vIdx=0;
+function renderViewer(){
+  const an=ed.anexos||{},docs=an.doc||[],certs=an.cert||[];
+  const tabs=[["doc",ed.tipo==="ROM"?"Romaneio":"Nota fiscal",docs]];if(ed.tipo==="NF")tabs.push(["cert","Certificados",certs]);
+  $("vTabs").innerHTML=`<div class="seg" style="width:100%">${tabs.map(([k,l,a])=>`<button type="button" data-vt="${k}" aria-pressed="${k===vTab}">${l} (${a.length})</button>`).join("")}</div>`;
+  $("vTabs").querySelectorAll("[data-vt]").forEach(b=>b.onclick=()=>{vTab=b.dataset.vt;vIdx=0;renderViewer()});
+  const arr=vTab==="cert"?certs:docs,cur=arr[vIdx];
+  $("vStage").innerHTML=cur?(cur.img?`<img src="${cur.img}" alt="${esc(cur.nome||"Documento")}">`:`<div class="none">Arquivo PDF: ${esc(cur.nome||"")}<br>${cur.data?'<button class="btn small" type="button" id="vPdfAbrir">Abrir PDF</button>':"Arquivo registrado só pelo nome."}</div>`):`<div class="none">${vTab==="cert"?"Nenhum certificado anexado.":"Nenhuma foto do documento."}<br>Se faltar, devolva ao campo pedindo a foto.</div>`;
+  const vpa=$("vPdfAbrir");if(vpa)vpa.onclick=e=>{e.stopPropagation();abrirArquivo(cur)};
+  $("vStage").onclick=()=>{if(cur&&cur.img){$("lbImg").src=cur.img;$("lb").classList.remove("zoom");$("lb").hidden=false}};
+  $("vThumbs").innerHTML=arr.length>1?arr.map((a,i)=>`<button type="button" data-vi="${i}" aria-pressed="${i===vIdx}" aria-label="Página ${i+1}">${a.img?`<img src="${a.img}" alt="">`:'<span class="code" style="display:grid;place-items:center;width:58px;height:58px">PDF</span>'}</button>`).join(""):"";
+  $("vThumbs").querySelectorAll("[data-vi]").forEach(b=>b.onclick=()=>{vIdx=+b.dataset.vi;renderViewer()});
+}
+$("lb").onclick=e=>{if(e.target.id==="lbImg")$("lb").classList.toggle("zoom");else if(e.target.id==="lb")$("lb").hidden=true};
+$("lbClose").onclick=()=>$("lb").hidden=true;
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("lb").hidden){$("lb").hidden=true;e.stopImmediatePropagation()}},true);
+
+/* conferência */
+const ACOES={enviada:"Enviada pelo campo",reenviada:"Reenviada corrigida pelo campo",aprovada:"Conferência aprovada",devolvida:"Devolvida ao campo como inconforme",anexos:"Documentos anexados",cert_vinculado:"Certificado vinculado",cert_validado:"Certificado validado",cert_nao_recebido:"Sem certificado (informado pelo campo)",cert_recebido:"Certificado recebido (anexado depois)",email:"Cobrança de certificado enviada"};
+function renderConf(){
+  const c=A.conf(ed);
+  $("dConf").className="pill "+(c.situacao==="aprovada"?"finalizado":c.situacao==="devolvida"?"bad":"em_andamento");
+  $("dConf").textContent=A.CONFER[c.situacao];
+  $("btnAprovar").hidden=c.situacao==="aprovada";$("btnDevolver").hidden=true;/* nada volta para o campo: o escritório corrige */
+  $("dDevolInfo").hidden=c.situacao!=="devolvida";
+  if(c.situacao==="devolvida")$("dDevolInfo").innerHTML=`<strong>Aguardando correção do campo.</strong> ${(c.motivos||[]).map(m=>esc(A.MOTIVOS[m]||m)).join(" · ")}${(c.itens||[]).length?` · itens ${c.itens.map(i=>i+1).join(", ")}`:""}${c.comentario?`<br>“${esc(c.comentario)}”`:""}`;
+  const h=(c.historico||[]).slice().reverse();
+  $("dHist").innerHTML=h.length?h.map(ev=>`<li><span class="when">${A.fmtData(ev.em)}</span><span><strong>${ACOES[ev.acao]||ev.acao}</strong>${ev.por?" · "+esc(ev.por):""}${ev.motivos&&ev.motivos.length?"<br>"+ev.motivos.map(m=>esc(A.MOTIVOS[m]||m)).join(" · "):""}${ev.comentario?"<br>“"+esc(ev.comentario)+"”":""}${ev.itensTxt?"<br>Itens "+esc(ev.itensTxt):""}${ev.acao==="email"?`<br>${ev.qtd} item(ns) · ${ev.para} destinatário(s)`:""}${ev.acao==="anexos"?`<br>${esc(ev.txt||"")}`:""}</span></li>`).join(""):'<li class="hint">Sem registros.</li>';
+}
+$("btnAprovar").onclick=async()=>{
+  const f=A.marcarConferencia(coletar(),"aprovada",{por:"Qualidade"});
+  try{await A.store.salvar(f);ed=f;renderConf();renderItens();toast("Conferência aprovada. Agora a ficha pode ser finalizada.")}catch(e){toast(e.message,true)}
+};
+let devSel=new Set();
+$("btnDevolver").onclick=()=>{
+  devSel=new Set();
+  $("devMotivos").innerHTML=Object.entries(A.MOTIVOS).map(([k,l])=>`<label class="ck"><input type="checkbox" value="${k}">${l}</label>`).join("");
+  const n=edItens.length;
+  $("devItens").innerHTML=n?edItens.map((_,i)=>`<button type="button" data-di="${i}" aria-pressed="false">${i+1}</button>`).join(""):'<span class="hint">Sem itens.</span>';
+  $("devItens").querySelectorAll("[data-di]").forEach(b=>b.onclick=()=>{const i=+b.dataset.di;devSel.has(i)?devSel.delete(i):devSel.add(i);b.setAttribute("aria-pressed",devSel.has(i))});
+  $("devCom").value="";$("devPanel").hidden=false;$("devPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
+};
+$("devCancel").onclick=()=>$("devPanel").hidden=true;
+$("devOk").onclick=async()=>{
+  const motivos=[...$("devMotivos").querySelectorAll("input:checked")].map(i=>i.value),comentario=$("devCom").value.trim();
+  if(!motivos.length){toast("Marque pelo menos um motivo.",true);return}
+  if(motivos.includes("outro")&&!comentario){toast("Explique o motivo no comentário.",true);$("devCom").focus();return}
+  let f=coletar();if(f.status==="finalizado")f.status="em_andamento";
+  f=A.marcarConferencia(f,"devolvida",{por:"Qualidade",motivos,itens:[...devSel].sort((a,b)=>a-b),comentario});
+  try{await A.store.salvar(f);toast("Ficha "+f.numero+" devolvida ao campo como inconforme");fechar()}catch(e){toast(e.message,true)}
+};
+
+/* ficha FP-01 em PDF */
+function gerarPdf(){
+  const f=coletar();
+  if(!A.itensValidos(f).length){toast("A ficha não tem itens para imprimir.",true);return null}
+  try{return {doc:window.FICHA_PDF.gerar(A,f,{...A.cadastros.documento(),ctr:CT()}),nome:window.FICHA_PDF.nomeArquivo(A,f)}}
+  catch(e){toast(e.message||"Não foi possível gerar o PDF.",true);return null}
+}
+$("btnPdfVer").onclick=()=>{const g=gerarPdf();if(!g)return;const url=g.doc.output("bloburl");const w=window.open(url,"_blank");if(!w){g.doc.save(g.nome);toast("O navegador bloqueou a nova aba; o PDF foi baixado.")}};
+$("btnPdfBaixar").onclick=()=>{const g=gerarPdf();if(!g)return;g.doc.save(g.nome);toast("PDF baixado: "+g.nome)};
+$("btnCfgDoc").onclick=async()=>{await A.cadastros.salvarDocumento({responsavel:$("cfgResp").value,projetoCliente:$("cfgProj").value});toast("Dados da ficha salvos")};
+
+/* cadastros */
+let foEd=null;
+function renderCad(){
+  if(!cad)return;
+  if(document.activeElement!==$("cfgResp"))$("cfgResp").value=cad.responsavel||"";
+  if(document.activeElement!==$("cfgProj"))$("cfgProj").value=cad.projetoCliente||"";
+  $("cmcLista").innerHTML=A.CMC.map(g=>`<div style="display:grid;gap:2px;border-top:1px solid var(--line);padding-top:8px"><strong style="font-size:.9rem">${esc(g.rotulo)} <span class="code">${esc(g.doc)}</span></strong><span class="hint">${esc(g.tipo)} · Setor ${esc(g.setor)} · CQ ${esc(g.cq)} · Cliente ${esc(g.cliente)}</span>${g.evidencia?`<span class="hint">Evidência: ${esc(g.evidencia)}</span>`:""}</div>`).join("")+'<p class="hint" style="margin-top:6px">C inspeção de produto · R verificação da documentação · V exame visual · M amostragem · W testemunho opcional</p>';
+  $("fichaIni").value=cad.fichaInicial;
+  $("proxFicha").textContent="Próxima ficha: Nº "+A.proximoNumero(todas,cad.fichaInicial,"recleaner")+" (Flotação Recleaner)";
+  $("grupos").innerHTML=Object.entries(A.GRUPOS).map(([k,l])=>`<div class="f"><label for="g_${k}">${l} <span class="code">(${cad.grupos[k].length})</span></label><textarea id="g_${k}" rows="2" placeholder="nome@milplan.com.br">${esc(cad.grupos[k].join("\n"))}</textarea></div>`).join("")+`<div><button class="btn small" type="button" id="btnGrupos">Salvar grupos</button></div>`;
+  $("btnGrupos").onclick=async()=>{const v=Object.fromEntries(Object.keys(A.GRUPOS).map(k=>[k,$("g_"+k).value.split(/[\n,;]+/)]));try{for(const k of Object.keys(v)){const bad=v[k].map(x=>x.trim()).filter(Boolean).find(x=>!A.emailOk(x));if(bad)throw new Error("E-mail inválido em "+A.GRUPOS[k]+": "+bad)}for(const k of Object.keys(v))await A.cadastros.salvarGrupo(k,v[k]);toast("Grupos salvos")}catch(e){toast(e.message,true)}};
+  const q=A.norm($("qForn").value);
+  const l=cad.fornecedores.filter(f=>!q||A.norm(f.nome+" "+f.cnpj).includes(q)).sort((a,b)=>a.nome.localeCompare(b.nome));
+  $("fornList").innerHTML=l.length?l.map(f=>`<div class="forn"><div class="top"><b>${esc(f.nome)}</b>${f.cnpj?`<span class="code">${esc(f.cnpj)}</span>`:""}${f.codigoErp?`<span class="code">cód. ${esc(f.codigoErp)}</span>`:""}${f.exemplo?'<span class="pill warn">Exemplo</span>':""}<span class="grow"></span><button class="btn ghost small" type="button" data-fo="${f.id}">Editar</button></div><div class="em">${f.emails.length?esc(f.emails.join(" · ")):'<span style="color:var(--warn)">Sem e-mail cadastrado</span>'}</div></div>`).join(""):`<div class="empty" style="padding:16px">Nenhum fornecedor${q?" encontrado":" cadastrado"}.</div>`;
+  $("fornList").querySelectorAll("[data-fo]").forEach(b=>b.onclick=()=>editForn(cad.fornecedores.find(f=>f.id===b.dataset.fo)));
+}
+function editForn(f){foEd=f||null;$("fornForm").hidden=false;$("foNome").value=f?.nome||"";$("foCnpj").value=f?.cnpj||"";$("foCod").value=f?.codigoErp||"";$("foEmails").value=(f?.emails||[]).join("\n");$("btnExcForn").hidden=!f;$("btnExcForn").dataset.armed="";$("btnExcForn").textContent="Excluir";$("foNome").focus()}
+$("btnNovoForn").onclick=()=>editForn(null);
+$("btnCancForn").onclick=()=>{$("fornForm").hidden=true};
+$("btnSalvForn").onclick=async()=>{try{await A.cadastros.salvarFornecedor({id:foEd?.id,nome:$("foNome").value,cnpj:$("foCnpj").value.trim(),codigoErp:$("foCod").value.trim(),emails:$("foEmails").value.split(/[\n,;]+/)});$("fornForm").hidden=true;toast("Fornecedor salvo")}catch(e){toast(e.message,true)}};
+$("btnExcForn").onclick=async()=>{const b=$("btnExcForn");if(!b.dataset.armed){b.dataset.armed="1";b.textContent="Toque de novo";return}await A.cadastros.excluirFornecedor(foEd.id);$("fornForm").hidden=true;toast("Fornecedor excluído")};
+$("qForn").oninput=renderCad;
+$("btnFichaIni").onclick=async()=>{await A.cadastros.salvarFichaInicial($("fichaIni").value);toast("Numeração salva")};
+
+/* ponte da planilha de Diligenciamento pela pasta do OneDrive */
+const DL=window.DILIG;
+function dlPastaUI(estado,msg,cls){
+  const st=$("dlPastaSt");st.className="notice"+(cls?" "+cls:"");
+  const f=DL.fonteAtual(),ver=DL.pasta.ultimaVerificacao();
+  st.innerHTML=msg||(f&&f.tipo==="pasta"?`<b>Conectada:</b> pasta ${esc(DL.pasta.nome())} · <b>${esc(f.nome)}</b> · modificada em ${new Date(f.modificado).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"})} · ${f.total.toLocaleString("pt-BR")} linhas${ver?` · verificada às ${new Date(ver).toLocaleTimeString("pt-BR",{timeStyle:"short"})}`:""}`:"Nenhuma pasta conectada.");
+  if(!msg&&f&&f.tipo==="pasta")st.style.cssText="background:var(--ok-bg);color:var(--ok)";else st.style.cssText="";
+  $("btnDlConectar").hidden=estado==="ativa";$("btnDlReativar").hidden=estado!=="precisa_permissao";
+  $("btnDlVerificar").hidden=$("btnDlDesc").hidden=estado!=="ativa";$("dlTeste").hidden=estado!=="ativa";
+}
+let dlEstado="nenhuma";
+if(!DL.pasta.suportada()){dlPastaUI("nenhuma","Para conectar a pasta, abra o app do escritório no <b>Chrome</b> ou no <b>Edge</b> do computador.");$("btnDlConectar").disabled=true}
+else{
+  DL.pasta.ouvir(ev=>{if(ev.tipo==="lendo")dlPastaUI(dlEstado,`Lendo ${esc(ev.nome)}… pode levar alguns segundos.`);else if(ev.tipo==="vazia")dlPastaUI(dlEstado,"A pasta conectada não tem planilha .xlsx. Confira se é a pasta RELATORIO DILIGENCIAMENTO.","bad");else if(ev.tipo==="erro")dlPastaUI(dlEstado,"Não consegui ler a pasta. Toque em Reativar acesso à pasta.","bad");else dlPastaUI(dlEstado)});
+  DL.pasta.retomar().then(e=>{dlEstado=e;dlPastaUI(e,e==="precisa_permissao"?"A pasta está conectada, mas o navegador pede para confirmar o acesso. Toque em <b>Reativar acesso à pasta</b>.":null)}).catch(()=>dlPastaUI("nenhuma"));
+}
+$("btnDlConectar").onclick=async()=>{try{await DL.pasta.conectar();dlEstado="ativa";dlPastaUI("ativa");toast("Pasta conectada")}catch(e){if(e&&e.name!=="AbortError")dlPastaUI(dlEstado,"Não consegui ler a planilha: "+esc(e.message||e),"bad")}};
+$("btnDlReativar").onclick=async()=>{try{if(await DL.pasta.reativar()){dlEstado="ativa";dlPastaUI("ativa")}}catch(e){dlPastaUI(dlEstado,"Não consegui ler a pasta: "+esc(e.message||e),"bad")}};
+$("btnDlVerificar").onclick=async()=>{const m=await DL.pasta.verificarAgora().catch(()=>null);dlPastaUI("ativa");toast(m?"Planilha nova carregada":"Sem planilha nova")};
+$("btnDlDesc").onclick=async()=>{await DL.pasta.desconectar();dlEstado="nenhuma";dlPastaUI("nenhuma");$("dlTRes").textContent=""};
+$("btnDlTestar").onclick=async()=>{
+  const nf=$("dlTNf").value.trim();if(!nf){$("dlTNf").focus();return}
+  try{const r=await DL.buscar({nf,fornecedor:$("dlTForn").value.trim()});
+    $("dlTRes").innerHTML=r.situacao==="encontrada"?`✓ <b>${r.itens.length} itens</b> da NF ${esc(nf)} · ${esc(r.fornecedor.nomeForn)} · PC ${esc(r.itens[0].pc)}`:r.situacao==="varios_fornecedores"?`A NF ${esc(nf)} aparece para ${r.opcoes.length} fornecedores: ${r.opcoes.map(o=>esc(o.nomeForn)).join("; ")}. Informe o fornecedor.`:r.situacao==="pendentes_fornecedor"?`NF ainda sem pré-nota. ${r.itens.length} itens pendentes de ${esc(r.fornecedor.nomeForn)}.`:`NF ${esc(nf)} não encontrada na planilha.`}
+  catch(e){$("dlTRes").textContent="Erro: "+(e.message||e)}
+};
+
+/* aba Certificados */
+let fCert="pendente",certAlvo=null;
+const SIT_CERT={pendente:["Pendente – Certificado","cert_pendente"],recebido:["Recebido · a validar","em_andamento"],validado:["Recebido · validado","finalizado"]};
+function linhasCert(){
+  return fichas.filter(f=>f.tipo==="NF").flatMap(f=>A.itensValidos(f).map(it=>({f,it,idx:f.itens.indexOf(it),sit:A.certSituacao(f,it)}))).filter(x=>x.sit!=="nao_exige"&&(A.exigeCert(x.f,x.it)||A.temCert(x.it)))
+    .sort((a,b)=>({pendente:0,recebido:1,validado:2}[a.sit]-{pendente:0,recebido:1,validado:2}[b.sit])||b.f.numero-a.f.numero||a.idx-b.idx);
+}
+async function abrirArquivo(a){
+  if(a&&a.ref&&!a.img&&!a.data&&A.store.carregarAnexo){toast("Abrindo arquivo…");try{a=await A.store.carregarAnexo(a)}catch(e){toast("Não consegui baixar o arquivo.",true);return}}
+  if(a.img){$("lbImg").src=a.img;$("lb").classList.remove("zoom");$("lb").hidden=false;return}
+  if(a.data){try{const b=atob(a.data.split(",")[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);window.open(URL.createObjectURL(new Blob([u],{type:"application/pdf"})),"_blank")}catch(e){toast("Não consegui abrir o PDF.",true)}return}
+  toast("Este PDF foi registrado só pelo nome (sem o arquivo).",true);
+}
+function renderCerts(){
+  const todas=linhasCert(),n={pendente:0,recebido:0,validado:0};todas.forEach(x=>n[x.sit]++);
+  $("tabCertN").hidden=!n.pendente;$("tabCertN").textContent=n.pendente;
+  if($("v-certs").hidden)return;
+  $("chipsCert").innerHTML=[["pendente","Pendentes"],["recebido","A validar"],["validado","Validados"],["todos","Todos"]].map(([k,l])=>`<button class="chip" type="button" data-k="${k}" aria-pressed="${k===fCert}">${l} · ${k==="todos"?todas.length:n[k]}</button>`).join("");
+  $("chipsCert").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{fCert=c.dataset.k;renderCerts()});
+  const q=A.norm($("qCert").value||"");
+  const ls=todas.filter(x=>(fCert==="todos"||x.sit===fCert)&&(!q||A.norm([x.f.numero,x.f.nf,x.f.fornecedor,x.it.descricao,x.it.tag,x.it.codigo,x.it.certificado].join(" ")).includes(q)));
+  const totalC=ls.length;ls.splice(lim.cert);setTimeout(()=>maisBtn("certMais",totalC,"cert",renderCerts));
+  const vazio={pendente:"Nenhum certificado pendente. Tudo em dia.",recebido:"Nenhum certificado aguardando validação.",validado:"Nenhum certificado validado ainda.",todos:"Nenhum item que exija certificado."}[fCert];
+  $("tCert").innerHTML=`<thead><tr><th>Ficha</th><th>NF · Fornecedor</th><th>Item</th><th>Certificado</th><th>Situação</th><th style="text-align:right">Ações</th></tr></thead><tbody>${ls.length?ls.map(x=>{
+    const anx=(x.f.anexos?.cert||[]).map((a,k)=>({a,k})).filter(y=>y.a.item===x.idx);
+    const [rot,cls]=SIT_CERT[x.sit],key=x.f.id+"|"+x.idx;
+    const sem=x.it.certStatus==="nao_recebido"&&x.sit==="pendente";
+    return `<tr data-key="${esc(key)}">
+      <td><span class="n">${x.f.numero}</span><div class="s">${A.fmtData(x.f.dataRecebimento)}</div></td>
+      <td>NF ${esc(x.f.nf||"—")}<div class="s">${esc(x.f.fornecedor||"—")}</div></td>
+      <td class="it"><b>Item ${x.idx+1}</b> · ${esc(x.it.descricao)}<div class="s">${[x.it.tag,x.it.codigo,A.fmtQtd(x.it.qtd)+" "+(x.it.und||"")].filter(Boolean).map(esc).join(" · ")}</div></td>
+      <td>${x.sit==="pendente"?`<div class="cn"><input data-num placeholder="Nº (opcional)" aria-label="Número do certificado"></div>${sem?'<div class="s">Campo marcou “Sem certificado”</div>':""}`:`<b>${esc(x.it.certificado||"RECEBIDO")}</b>${anx.length?`<div class="s">${anx.length} arquivo(s)</div>`:""}`}</td>
+      <td><span class="pill ${cls}">${rot}</span></td>
+      <td><div class="acts">${x.sit==="pendente"?`<button class="btn small primary" type="button" data-anexar>Anexar arquivo</button><button class="btn small" type="button" data-reg title="Registrar só o número, sem arquivo">Só o nº</button>`:""}${anx.length?`<button class="btn small" type="button" data-ver="${anx[0].k}">Ver</button>`:""}${x.sit==="recebido"?`<button class="btn small" type="button" data-validar>Validar</button>`:""}<button class="btn small ghost" type="button" data-ficha>Ficha</button></div></td></tr>`}).join(""):`<tr><td colspan="6" class="hint" style="padding:22px 12px">${vazio}</td></tr>`}</tbody>`;
+  $("tCert").querySelectorAll("tbody tr[data-key]").forEach(tr=>{
+    const [id,ix]=tr.dataset.key.split("|"),f=fichas.find(z=>z.id===id),idx=+ix;
+    const num=()=>tr.querySelector("[data-num]")?.value.trim()||"";
+    tr.querySelector("[data-anexar]")?.addEventListener("click",()=>{certAlvo={id,idx,numero:num()};$("certFile").click()});
+    tr.querySelector("[data-reg]")?.addEventListener("click",async()=>{const n=num();if(!n){toast("Digite o número do certificado ou use Anexar arquivo.",true);tr.querySelector("[data-num]").focus();return}await salvarCert(f,idx,{numero:n,anexos:[]})});
+    tr.querySelector("[data-ver]")?.addEventListener("click",e=>abrirArquivo(f.anexos.cert[+e.currentTarget.dataset.ver]));
+    tr.querySelector("[data-validar]")?.addEventListener("click",async()=>{const g=JSON.parse(JSON.stringify(f));g.itens[idx].certValidado=true;try{await A.store.salvar(A.registrar(g,"cert_validado",{por:"Qualidade",itensTxt:String(idx+1)}));toast(`Certificado do item ${idx+1} (ficha ${f.numero}) validado`)}catch(e){toast(e.message,true)}});
+    tr.querySelector("[data-ficha]").addEventListener("click",()=>abrir(f));
+  });
+}
+async function salvarCert(f,idx,d){
+  try{const g=A.anexarCertificado(f,idx,d,"Qualidade");await A.store.salvar(g);
+    toast(`Certificado do item ${idx+1} anexado · ficha ${f.numero}${g.status!==f.status?" agora "+A.STATUS[g.status].rotulo:""}`)}catch(e){toast(e.message||"Não foi possível salvar.",true)}
+}
+function lerArquivos(files){return Promise.all([...files].map(file=>new Promise(res=>{
+  if(file.type==="application/pdf"){if(file.size>2.5e6){toast(`PDF ${file.name} muito grande (${(file.size/1e6).toFixed(1)} MB). Use até 2,5 MB.`,true);return res(null)}const fr=new FileReader();fr.onload=()=>res({nome:file.name,pdf:true,data:fr.result});fr.readAsDataURL(file);return}
+  const img=new Image(),url=URL.createObjectURL(file);img.onerror=()=>res(null);
+  img.onload=()=>{const s=Math.min(1,1400/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res({nome:file.name,img:c.toDataURL("image/jpeg",.7)})};img.src=url;
+}))).then(a=>a.filter(Boolean))}
+$("certFile").onchange=async e=>{const files=e.target.files;if(!certAlvo||!files.length)return;const alvo=certAlvo;certAlvo=null;
+  const anexos=await lerArquivos(files);e.target.value="";if(!anexos.length)return;
+  const f=fichas.find(z=>z.id===alvo.id);if(f)await salvarCert(f,alvo.idx,{numero:alvo.numero,anexos})};
+$("qCert").addEventListener("input",renderCerts);
+
+/* ---------- Pendências de dados ---------- */
+let fPend="todas";
+function itensPend(){
+  const out=[];
+  fichas.forEach(f=>NXIMP.faltantes(f).forEach((p,k)=>out.push({f,p,k})));
+  lacs.forEach(f=>out.push({f,p:{campo:"lacuna",tipo:"falta"},k:0}));
+  return out;
+}
+function grupoPend(x){return x.p.tipo==="auto"?"auto:"+x.p.campo:"falta:"+x.p.campo}
+function renderPend(){
+  const all=itensPend();
+  const nFalta=all.filter(x=>x.p.tipo==="falta"&&x.p.campo!=="lacuna").length,nAuto=all.filter(x=>x.p.tipo==="auto").length,nLac=lacs.length;
+  const nCert=fichas.reduce((s,f)=>s+A.itensValidos(f).filter(i=>A.certSituacao(f,i)==="pendente").length,0);
+  $("tabPendN").hidden=!(nFalta+nLac);$("tabPendN").textContent=nFalta+nLac;
+  if($("v-pend").hidden)return;
+  $("pendCards").innerHTML=[["w",nFalta,"informações faltando","falta"],["i",nAuto,"preenchidas automaticamente · a revisar","auto"],["",nLac,"números sem ficha no mapa","falta:lacuna"],["w",nCert,"certificados pendentes (aba Certificados)",""]].map(([c,n,t,k])=>`<button class="pcard ${c}" type="button" ${k?`data-g="${k}"`:'data-cert="1"'} style="text-align:left;cursor:pointer"><b>${n.toLocaleString("pt-BR")}</b><span>${t}</span></button>`).join("");
+  $("pendCards").querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{fPend=b.dataset.g;lim.pend=300;renderPend()});
+  $("pendCards").querySelector("[data-cert]").onclick=()=>show("certs");
+  const grupos={};all.forEach(x=>{const g=grupoPend(x);grupos[g]=(grupos[g]||0)+1});
+  const nomeG=g=>{const [t,c]=g.split(":");return (t==="auto"?"Automático · ":"Falta · ")+(NXIMP.ROT[c]||c)};
+  const chips=[["todas","Todas · "+all.length],["falta","Faltando · "+(nFalta+nLac)],["auto","Automáticas · "+nAuto],...Object.entries(grupos).sort((a,b)=>b[1]-a[1]).map(([g,n])=>[g,nomeG(g)+" · "+n.toLocaleString("pt-BR")])];
+  $("chipsPend").innerHTML=chips.map(([k,l])=>`<button class="chip" type="button" data-k="${k}" aria-pressed="${k===fPend}">${l}</button>`).join("");
+  $("chipsPend").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{fPend=c.dataset.k;lim.pend=300;renderPend()});
+  const q=A.norm($("qPend").value||"");
+  const ls=all.filter(x=>(fPend==="todas"||x.p.tipo===fPend||grupoPend(x)===fPend)&&(!q||A.norm([x.f.numero,NXIMP.ROT[x.p.campo],x.p.regra,x.p.valor,x.f.nf,x.f.romaneio,x.f.fornecedor].join(" ")).includes(q)))
+    .sort((a,b)=>(a.p.tipo==="falta"?0:1)-(b.p.tipo==="falta"?0:1)||b.f.numero-a.f.numero);
+  const autos=ls.filter(x=>x.p.tipo==="auto");
+  $("pendBulk").hidden=!autos.length;
+  $("pendBulk").innerHTML=autos.length?`<span>${autos.length.toLocaleString("pt-BR")} preenchimento(s) automático(s) nesta lista.</span><button class="btn small" type="button" id="btnConfTodos">Confirmar todos</button>`:"";
+  if(autos.length)$("btnConfTodos").onclick=()=>confirmarAutos(autos);
+  const total=ls.length;ls.splice(lim.pend);
+  $("tPend").innerHTML=`<thead><tr><th>Ficha</th><th>Documento</th><th>Informação</th><th>Situação</th><th>Valor / regra</th><th style="text-align:right">Ações</th></tr></thead><tbody>${ls.length?ls.map((x,j)=>{
+    const f=x.f,p=x.p,it=p.item!==undefined?f.itens[p.item]:null;
+    const doc=f.lacuna?"—":f.tipo==="ROM"?"Romaneio "+esc(f.romaneio||"—"):"NF "+esc(f.nf||"—")+" · "+esc(f.fornecedor||"—");
+    const inf=(NXIMP.ROT[p.campo]||p.campo)+(it?`<div class="s">Item ${p.item+1} · ${esc((it.descricao||it.tag||"").slice(0,70))}</div>`:"");
+    const sit=p.tipo==="auto"?'<span class="tagauto">Preenchido automaticamente</span>':'<span class="tagfalta">Faltando</span>';
+    const val=p.campo==="lacuna"?"Número pulado na sequência do mapa. Abra para lançar a ficha ou marque como cancelado.":p.tipo==="auto"?`<b>${esc(p.campo==="dataRecebimento"?A.fmtData(p.valor):p.campo==="status"?(A.STATUS[p.valor]?.rotulo||p.valor):p.valor)}</b><div class="s">${esc(p.regra)}</div>`:'<span class="s">Não dá para deduzir dos outros registros. Complete na ficha.</span>';
+    return `<tr data-j="${j}"><td><span class="n">${f.numero}</span></td><td>${doc}</td><td>${inf}</td><td>${sit}</td><td>${val}</td><td><div class="acts">${p.tipo==="auto"?'<button class="btn small" type="button" data-conf-auto>Confirmar</button>':""}${p.campo==="lacuna"?'<button class="btn small" type="button" data-cancelar>Cancelado</button>':""}<button class="btn small ghost" type="button" data-ficha>${p.campo==="lacuna"?"Lançar":"Ficha"}</button></div></td></tr>`}).join(""):'<tr><td colspan="6" class="hint" style="padding:22px 12px">Nenhuma pendência de dados aqui.</td></tr>'}</tbody>`;
+  $("tPend").querySelectorAll("tr[data-j]").forEach(tr=>{const x=ls[+tr.dataset.j];
+    tr.querySelector("[data-ficha]").onclick=()=>abrir(x.f);
+    const c=tr.querySelector("[data-conf-auto]");if(c)c.onclick=()=>confirmarAutos([x]);
+    const k=tr.querySelector("[data-cancelar]");if(k)k.onclick=async()=>{await A.store.salvarVarias([{...x.f,cancelada:true}]);toast(`Número ${x.f.numero} marcado como cancelado`)};
+  });
+  maisBtn("pendMais",total,"pend",renderPend);
+}
+async function confirmarAutos(lista){
+  const por=new Map();lista.forEach(x=>{if(!por.has(x.f.id))por.set(x.f.id,{f:x.f,rem:new Set()});por.get(x.f.id).rem.add(JSON.stringify(x.p.item===undefined?[x.p.campo]:[x.p.campo,x.p.item]))});
+  const muda=[...por.values()].map(({f,rem})=>({...f,auto:(f.auto||[]).filter(a=>!rem.has(JSON.stringify(a.item===undefined?[a.campo]:[a.campo,a.item]))),autoConfirmado:[...(f.autoConfirmado||[]),...(f.auto||[]).filter(a=>rem.has(JSON.stringify(a.item===undefined?[a.campo]:[a.campo,a.item]))).map(a=>({...a,em:A.hoje()}))]}));
+  await A.store.salvarVarias(muda);toast(`${lista.length.toLocaleString("pt-BR")} preenchimento(s) confirmado(s)`);
+}
+$("qPend").addEventListener("input",()=>{lim.pend=300;renderPend()});
+let autoRodando=false;
+async function autoPreencher(manual){
+  if(autoRodando||!CT().ativo)return 0;autoRodando=true;
+  try{const base=todas.filter(f=>A.ctrDe(f)===ctr&&!f.lacuna&&!f.exemplo);const m=NXIMP.completarExistentes(base);
+    if(m.length){await A.store.salvarVarias(m);const n=m.reduce((s,g)=>s+(g.auto||[]).length-((base.find(f=>f.id===g.id)||{}).auto||[]).length,0);toast(`${n.toLocaleString("pt-BR")} informação(ões) preenchida(s) automaticamente em ${m.length} ficha(s)`)}
+    else if(manual)toast("Nada novo para preencher: o que falta não dá para deduzir dos outros registros.");
+    return m.length}finally{autoRodando=false}
+}
+$("btnAutoFill").onclick=()=>autoPreencher(true);
+
+/* ---------- Relatórios ---------- */
+function renderRel(){
+  $("relCtr").textContent=CT().nome;
+  const anos=[...new Set(fichas.map(f=>(f.dataRecebimento||"").slice(0,4)).filter(Boolean))].sort().reverse();
+  const meses=[...new Set(fichas.map(f=>(f.dataRecebimento||"").slice(0,7)).filter(Boolean))].sort().reverse().slice(0,12);
+  const cur=$("relMapaPer").value;
+  $("relMapaPer").innerHTML=`<option value="">Todo o período</option>${anos.map(a=>`<option value="${a}">Ano ${a}</option>`).join("")}${meses.map(m=>`<option value="${m}">${["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][+m.slice(5)-1]}/${m.slice(0,4)}</option>`).join("")}`;
+  if(cur)$("relMapaPer").value=cur;
+  const nums=fichas.filter(f=>A.itensValidos(f).length).map(f=>+f.numero).sort((a,b)=>a-b);
+  if(nums.length&&(renderRel.k!==ctr+nums.length||!loteSel().length)){renderRel.k=ctr+nums.length;$("relAte").value=nums.at(-1);$("relDe").value=nums[Math.max(0,nums.length-20)]}
+  infoLote();
+}
+function loteSel(){const de=+$("relDe").value||0,ate=+$("relAte").value||0;return fichas.filter(f=>+f.numero>=Math.min(de,ate)&&+f.numero<=Math.max(de,ate)&&A.itensValidos(f).length).sort((a,b)=>a.numero-b.numero)}
+function infoLote(){const n=loteSel().length;$("relFichasInfo").textContent=n?`${n} ficha(s) com itens no intervalo${n>150?" · reduza para até 150":""}`:"Nenhuma ficha com itens nesse intervalo."}
+$("relDe").oninput=$("relAte").oninput=infoLote;
+$("relMapa").onclick=()=>{const p=$("relMapaPer").value;exportarMapa(p?fichas.filter(f=>(f.dataRecebimento||"").startsWith(p)):fichas,p,$("relMapa"))};
+$("relFichas").onclick=async()=>{
+  const l=loteSel();if(!l.length){toast("Nenhuma ficha com itens nesse intervalo.",true);return}
+  if(l.length>150){toast("São "+l.length+" fichas. Gere em lotes de até 150.",true);return}
+  const b=$("relFichas");b.disabled=true;
+  try{let doc=null;const cfg={...A.cadastros.documento(),ctr:CT()};
+    for(let k=0;k<l.length;k++){b.textContent=`Gerando ${k+1} de ${l.length}…`;doc=window.FICHA_PDF.gerar(A,l[k],cfg,doc);if(k%10===9)await new Promise(r=>setTimeout(r))}
+    doc.setProperties({title:`Fichas FP-01 ${l[0].numero} a ${l.at(-1).numero} - ${CT().nome}`,creator:"Nexum"});
+    let nome=`447.OPE.FP-01 - Fichas ${l[0].numero} a ${l.at(-1).numero} - ${CT().nome}.pdf`;nome=semAcentoArq(nome);doc.save(nome);toast("PDF gerado: "+nome)}
+  catch(e){toast(e.message||"Não foi possível gerar o PDF.",true)}finally{b.disabled=false;b.textContent="Gerar PDF das fichas"}
+};
+$("relPend").onclick=()=>{
+  const cert=fichas.flatMap(f=>A.itensValidos(f).map(i=>({f,i,n:f.itens.indexOf(i)})).filter(x=>A.certSituacao(x.f,x.i)==="pendente")).sort((a,b)=>a.f.numero-b.f.numero||a.n-b.n)
+    .map(x=>[x.f.numero,x.f.nf,x.f.fornecedor,dataXL(x.f.dataRecebimento),x.n+1,x.i.descricao,x.i.tag,x.i.und,numQ(x.i.qtd),(A.materialCritico(x.i.descricao,x.i.tag)||{}).rotulo||"","Pendente – Certificado",(x.f.cobrancas||[]).length?"Sim":"Não"]);
+  const all=itensPend(),lin=p=>p.item!==undefined?p.item+1:"",docF=f=>f.tipo==="ROM"?"Romaneio "+(f.romaneio||"—"):"NF "+(f.nf||"—");
+  const desc=x=>x.p.item!==undefined?(x.f.itens[x.p.item]?.descricao||x.f.itens[x.p.item]?.tag||""):"";
+  const falta=all.filter(x=>x.p.tipo==="falta"&&x.p.campo!=="lacuna").sort((a,b)=>a.f.numero-b.f.numero).map(x=>[x.f.numero,docF(x.f),x.f.fornecedor,A.STATUS[x.f.status]?.rotulo||"",NXIMP.ROT[x.p.campo]||x.p.campo,lin(x.p),desc(x),"Faltando"]);
+  const auto=all.filter(x=>x.p.tipo==="auto").sort((a,b)=>a.f.numero-b.f.numero).map(x=>[x.f.numero,docF(x.f),NXIMP.ROT[x.p.campo]||x.p.campo,lin(x.p),desc(x),x.p.campo==="dataRecebimento"?dataXL(x.p.valor):x.p.campo==="status"?(A.STATUS[x.p.valor]?.rotulo||x.p.valor):x.p.valor,x.p.regra,"Preenchido automaticamente"]);
+  const lac=lacs.slice().sort((a,b)=>a.numero-b.numero).map(f=>[f.numero,"Número pulado na sequência do mapa","Lançar a ficha ou marcar como cancelado no Nexum","Pendente"]);
+  const info=infoXL();
+  const resumo=[["Certificados pendentes",cert.length,"Itens de material crítico (CMC) recebidos sem certificado","Anexar o certificado na aba Certificados (PC) ou em Certificados pendentes (celular)"],
+    ["Informações faltando",falta.length,"Dados que não dá para deduzir dos outros registros","Completar na ficha"],
+    ["Preenchidas automaticamente",auto.length,"Informações completadas pelo Nexum a partir de outros registros","Revisar e confirmar na aba Pendências"],
+    ["Números sem ficha",lac.length,"Números pulados na sequência do mapa","Lançar a ficha ou marcar como cancelado"]];
+  const sub=`PENDÊNCIAS · ${CT().projeto}`;
+  xl(`Nexum - Pendencias - ${CT().nome} - ${A.hoje()}.xlsx`,[
+    {nome:"Resumo",titulo:"RELATÓRIO DE PENDÊNCIAS",subtitulo:sub,info,kpis:[["Certificados pendentes",cert.length,"warn"],["Informações faltando",falta.length,"warn"],["Preenchidas automaticamente",auto.length,"prog"],["Números sem ficha",lac.length,"crit"]],
+      cols:[{h:"PENDÊNCIA",w:30,forte:true},{h:"QUANTIDADE",w:14,tipo:"num"},{h:"O QUE É",w:58},{h:"O QUE FAZER",w:62}],linhas:resumo},
+    {nome:"Certificados pendentes",titulo:"CERTIFICADOS PENDENTES",subtitulo:sub,info,
+      cols:[{h:"FICHA",w:8,tipo:"int",forte:true},{h:"NF",w:12,al:"center"},{h:"FORNECEDOR",w:32},{h:"DATA RECEBIMENTO",w:13,tipo:"data"},{h:"ITEM",w:6,tipo:"int"},{h:"DESCRIÇÃO",w:52},{h:"TAG",w:16},{h:"UND",w:7,al:"center"},{h:"QTD",w:9,tipo:"num"},{h:"MATERIAL CRÍTICO (CMC)",w:22},{h:"SITUAÇÃO",w:22,tipo:"cor"},{h:"COBRADO",w:10,tipo:"cor"}],linhas:cert,vazio:"Nenhum certificado pendente."},
+    {nome:"Informações faltando",titulo:"INFORMAÇÕES FALTANDO",subtitulo:sub,info,
+      cols:[{h:"FICHA",w:8,tipo:"int",forte:true},{h:"DOCUMENTO",w:22},{h:"FORNECEDOR",w:32},{h:"STATUS DA FICHA",w:18,tipo:"cor"},{h:"INFORMAÇÃO",w:22,forte:true},{h:"ITEM",w:6,tipo:"int"},{h:"DESCRIÇÃO DO ITEM",w:46},{h:"SITUAÇÃO",w:13,tipo:"cor"}],linhas:falta,vazio:"Nenhuma informação faltando."},
+    {nome:"Preenchidas automaticamente",titulo:"INFORMAÇÕES PREENCHIDAS AUTOMATICAMENTE",subtitulo:sub,info,
+      cols:[{h:"FICHA",w:8,tipo:"int",forte:true},{h:"DOCUMENTO",w:22},{h:"INFORMAÇÃO",w:20,forte:true},{h:"ITEM",w:6,tipo:"int"},{h:"DESCRIÇÃO DO ITEM",w:42},{h:"VALOR PREENCHIDO",w:18,al:"center",tipo:""},{h:"REGRA USADA",w:46},{h:"SITUAÇÃO",w:24,tipo:"cor"}],linhas:auto.map(r=>{if(r[5] instanceof Date)return r;return r}),vazio:"Nenhum preenchimento automático a revisar."},
+    {nome:"Números sem ficha",titulo:"NÚMEROS SEM FICHA",subtitulo:sub,info,
+      cols:[{h:"Nº",w:10,tipo:"int",forte:true},{h:"OBSERVAÇÃO",w:40},{h:"O QUE FAZER",w:48},{h:"SITUAÇÃO",w:14,tipo:"cor"}],linhas:lac,vazio:"Nenhum número pulado."}
+  ],$("relPend"));
+};
+$("relResumo").onclick=()=>{
+  const l=fichas.slice().sort((a,b)=>a.numero-b.numero);
+  const rows=l.map(f=>[f.numero,f.tipo==="ROM"?"Romaneio Anglo":"Nota fiscal",f.tipo==="ROM"?f.romaneio:f.nf,f.fornecedor,f.fornecimento,dataXL(f.dataRecebimento),A.itensValidos(f).length,A.STATUS[f.status]?.rotulo||"",A.CONFER[A.conf(f).situacao],A.pendencias(f).join(", "),NXIMP.faltantes(f).filter(x=>x.tipo==="falta").length,(f.auto||[]).length,f.origem==="importacao"?"Mapa FP-11":f.origem==="campo"?"Campo":"Escritório"]);
+  const comPend=l.filter(f=>A.pendencias(f).length||NXIMP.faltantes(f).some(x=>x.tipo==="falta")).length;
+  xl(`Nexum - Resumo das fichas - ${CT().nome} - ${A.hoje()}.xlsx`,[{nome:"Resumo das fichas",titulo:"RESUMO DAS FICHAS DE RECEBIMENTO",subtitulo:`${A.DOC_FICHA} · ${CT().projeto}`,info:infoXL(),congelarCol:1,
+    kpis:[["Fichas",l.length],["Notas fiscais",l.filter(f=>f.tipo==="NF").length],["Romaneios Anglo",l.filter(f=>f.tipo==="ROM").length],["Finalizadas",l.filter(f=>f.status==="finalizado").length,"ok"],["Com pendência",comPend,"warn"]],
+    cols:[{h:"FICHA",w:8,tipo:"int",forte:true},{h:"TIPO",w:15},{h:"DOCUMENTO",w:18,al:"center"},{h:"FORNECEDOR",w:34},{h:"FORNECIMENTO",w:20},{h:"DATA RECEBIMENTO",w:13,tipo:"data"},{h:"ITENS",w:8,tipo:"int"},{h:"STATUS",w:18,tipo:"cor"},{h:"CONFERÊNCIA",w:15,tipo:"cor"},{h:"PENDÊNCIAS",w:28,tipo:"cor"},{h:"INFORMAÇÕES FALTANDO",w:13,tipo:"int"},{h:"PREENCH. AUTOMÁTICO",w:15,tipo:"int"},{h:"ORIGEM",w:13,al:"center"}],linhas:rows}],$("relResumo"));
+};
+
+/* ---------- Importação do histórico (FP-11) ---------- */
+let impRes=null;
+$("btnImpEscolher").onclick=()=>$("impFile").click();
+$("impFile").onchange=async e=>{
+  const file=e.target.files[0];e.target.value="";if(!file)return;
+  $("impRes").innerHTML=`<p class="hint">Lendo ${esc(file.name)}… pode levar alguns segundos.</p>`;
+  await new Promise(r=>setTimeout(r,30));
+  try{const buf=new Uint8Array(await file.arrayBuffer());const wb=NXIMP.lerArquivo(buf);await A.store.carregado;
+    impRes=NXIMP.processar(wb,todas);
+    if(!impRes.length){$("impRes").innerHTML='<p class="hint" style="color:var(--bad)">Não achei nenhuma aba de mapa (FP-11) com o cabeçalho FICHA N° / DESCRIÇÃO nessa planilha.</p>';return}
+    renderImp();
+  }catch(err){console.error(err);$("impRes").innerHTML=`<p class="hint" style="color:var(--bad)">Não consegui ler a planilha: ${esc(err.message||err)}</p>`}
+};
+function renderImp(){
+  $("impRes").innerHTML=impRes.map((r,k)=>{const c=A.CONTRATOS[r.contrato],ja=todas.filter(f=>A.ctrDe(f)===r.contrato&&f.importado&&!f.lacuna).length;
+    const st=A.ORDEM_STATUS.filter(s=>r.porStatus[s]).map(s=>`${r.porStatus[s].toLocaleString("pt-BR")} ${A.STATUS[s].rotulo.toLowerCase()}`).join(" · ");
+    return `<div class="imp-c"><b>${esc(c.nome)}</b><span class="hint">Aba “${esc(r.aba)}”${r.atualizacao?" · atualizada em "+esc(r.atualizacao):""}</span>
+      <span><b>${r.fichas.length.toLocaleString("pt-BR")}</b> fichas (${r.primeira} a ${r.ultima}) · <b>${r.itens.toLocaleString("pt-BR")}</b> itens · ${r.linhas.toLocaleString("pt-BR")} linhas lidas</span>
+      <span>${st}</span>
+      <span><span class="tagauto">${r.autoN.toLocaleString("pt-BR")} preenchidas automaticamente</span> <span class="tagfalta">${r.faltaN.toLocaleString("pt-BR")} faltando</span>${r.lacunas.length?` <span class="tagfalta">${r.lacunas.length} números sem ficha</span>`:""}</span>
+      ${ja?`<span class="hint">Já existem ${ja.toLocaleString("pt-BR")} fichas importadas deste contrato: elas serão substituídas por esta versão. Fichas lançadas no Nexum não são tocadas.</span>`:""}
+      <div><button class="btn primary small" type="button" data-imp="${k}">Importar ${esc(c.nome)}</button></div></div>`}).join("")+(impRes.length>1?`<div><button class="btn small" type="button" id="btnImpTudo">Importar os ${impRes.length} contratos</button></div>`:"");
+  $("impRes").querySelectorAll("[data-imp]").forEach(b=>b.onclick=()=>importar([impRes[+b.dataset.imp]]));
+  const t=$("btnImpTudo");if(t)t.onclick=()=>importar(impRes);
+}
+async function importar(lista){
+  try{for(const r of lista){
+      const novos=r.fichas.filter(f=>!todas.some(o=>A.ctrDe(o)===r.contrato&&!o.importado&&!o.exemplo&&+o.numero===+f.numero));
+      await A.store.importar(r.contrato,novos.concat(r.lacunas));
+    }
+    toast(`Histórico importado: ${lista.map(r=>A.CONTRATOS[r.contrato].nome+" ("+r.fichas.length.toLocaleString("pt-BR")+" fichas)").join(" e ")}`);
+    $("impRes").innerHTML=`<p class="hint" style="color:var(--ok)">✓ Importação concluída. Veja as abas Painel, Fichas, Pendências e Relatórios.</p>`;impRes=null;
+  }catch(e){console.error(e);toast("Não consegui importar: "+(e.message||e),true)}
+}
+
+function renderTudo(){renderPainel();renderLista();renderCerts();renderPend();if(!$("v-rel").hidden)renderRel();renderMapa();renderCad();if(ed)avisos()}
+$("badgeDemo").hidden=A.store.modo!=="exemplo";
+A.cadastros.ouvir(c=>{cad=c;renderCad();if(ed)avisos()});
+renderCtr();
+let autoT;
+A.store.ouvir(l=>{todas=l;filtrar();if(A.store.modo==="exemplo"){const ex=l.some(f=>f.exemplo);$("badgeDemo").textContent=ex?"Modo exemplo":"Dados só neste computador";$("badgeDemo").title=ex?"Fichas de exemplo para teste":"Os dados ficam salvos neste navegador até o Firebase ser ligado"}renderTudo();clearTimeout(autoT);autoT=setTimeout(()=>autoPreencher(false),1500)});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b2d5b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nexum">
+<title>Nexum Campo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../assets/favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="../assets/base.css">
+<style>
+/* App de campo: uma coluna, alvos de toque grandes, barra de ação fixa no rodapé */
+html{padding-top:env(safe-area-inset-top,0px)}
+.wrap{max-width:640px}
+main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
+.start{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.go{display:grid;gap:6px;align-content:end;min-height:138px;padding:16px;border-radius:16px;border:0;text-align:left;cursor:pointer;font:inherit;color:#fff;background:linear-gradient(145deg,#2d8cff 0%,#1f6fd6 100%);position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(31,111,214,.28)}
+.go.rom{background:linear-gradient(145deg,#123f7a 0%,#0b2d5b 100%);box-shadow:0 10px 24px rgba(11,45,91,.28)}
+.go::after{content:"";position:absolute;right:-30px;bottom:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.08)}
+.go b{font-family:var(--f-display);font-weight:700;font-size:1.22rem;line-height:1.1;letter-spacing:-.01em}
+.go span{font-size:.8rem;opacity:.85}
+.go svg{position:absolute;top:12px;right:12px;width:30px;height:30px;opacity:.9}
+.install{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:.85rem;margin-top:12px}
+.install .grow{color:var(--muted)}
+.list{display:grid;gap:8px}
+.card{display:grid;gap:5px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--wait);border-radius:6px;padding:11px 13px;text-align:left;font:inherit;color:inherit;width:100%;cursor:pointer}
+.card.sem_acao{border-left-color:var(--idle)} .card.cert_pendente{border-left-color:var(--warn)} .card.finalizado{border-left-color:var(--ok)}
+.card .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card .num{font-family:var(--f-display);font-weight:700;font-size:1.2rem}
+.card .meta{font-size:.82rem;color:var(--muted);overflow-wrap:anywhere}
+/* formulário */
+.block{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:12px;margin-bottom:12px}
+.block h3{margin:0;font-family:var(--f-display);font-weight:700;font-size:1rem;letter-spacing:-.005em;display:flex;align-items:center;gap:8px}
+.block h3 .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:.78rem;font-family:var(--f-body)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:380px){.grid2{grid-template-columns:1fr}}
+.full{grid-column:1/-1}
+.shot{display:grid;gap:8px}
+.shot-btns{display:flex;gap:8px;flex-wrap:wrap}
+.shot-btns .btn{flex:1}
+.thumbs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.thumbs figure{margin:0;position:relative;flex:0 0 auto}
+.thumbs img{width:76px;height:96px;object-fit:cover;border-radius:6px;border:1px solid var(--line);display:block}
+.thumbs button{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;border:0;background:var(--bad);color:#fff;font-size:.9rem;line-height:1;cursor:pointer}
+.ai{display:flex;gap:8px;align-items:center;font-size:.8rem;color:var(--muted);background:var(--surface-2);border-radius:6px;padding:8px 10px}
+.ai i{font-style:normal;font-weight:600;color:var(--accent)}
+.item{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:10px;background:var(--bg)}
+.item.zero{opacity:.6}
+.item-head{display:flex;align-items:center;gap:8px}
+.item-head b{font-family:var(--f-display);font-size:1.05rem;text-transform:uppercase}
+.item-head .x{margin-left:auto;background:none;border:0;color:var(--bad);font:600 .8rem var(--f-body);cursor:pointer;padding:6px}
+.item-ref{font-size:.74rem;color:var(--muted);font-family:var(--f-mono);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.item-ref .dl{background:var(--wait-bg);color:var(--wait);border-radius:3px;padding:1px 5px;font-family:var(--f-body);font-weight:600}
+.item-ref .div{color:var(--warn);font-weight:600;font-family:var(--f-body)}
+.confnf{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:8px 10px;font-size:.82rem;font-weight:500}
+.confnf button{margin-left:auto;border:1px solid currentColor;background:transparent;color:inherit;border-radius:5px;padding:5px 9px;font:600 .78rem var(--f-body);cursor:pointer}
+.certsec{display:grid;gap:10px;border:1px dashed var(--line);border-radius:8px;padding:10px;background:var(--surface)}
+.certsec.req{border-color:var(--warn)}
+.certsec.ok{border-color:var(--ok);border-style:solid}
+.certsec.nr{border-color:var(--warn);border-style:solid;background:var(--warn-bg)}
+.semcert{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);cursor:pointer}
+.semcert input{width:22px;height:22px;min-height:0;flex:0 0 auto;accent-color:var(--warn)}
+.semcert small{color:var(--muted);font-size:.74rem}
+.pc-item{display:grid;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.pc-item:last-child{border-bottom:0}
+.pc-item .pc-t{font-weight:600;font-size:.88rem;color:var(--ink)}
+.pc-item .pc-m{font-size:.76rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px}
+.pc-item .pc-a{display:flex;gap:8px;flex-wrap:wrap}
+.pc-item .pc-a input{flex:1 1 120px;min-width:0;min-height:40px}
+.pc-item .pc-a .btn{flex:1 1 auto;min-height:40px;font-size:.82rem}
+.rs.clic{cursor:pointer;font:inherit;color:inherit;text-align:left}
+.certsec .cs-h{display:flex;align-items:center;gap:8px;font:700 .8rem var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.certsec .cs-st{font-size:.78rem;font-weight:600}
+.certsec .shot-btns .btn{min-height:40px;font-size:.84rem}
+.excert{display:flex;gap:8px;align-items:center;font-size:.85rem;font-weight:500}
+.excert input{width:20px;height:20px;min-height:0}
+.zero-note{font-size:.78rem;color:var(--warn);font-weight:600}
+.dup{display:grid;gap:4px}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar .in{max-width:640px;margin:0 auto;display:flex;gap:8px}
+.bar .btn{flex:1;min-height:48px}
+.done{text-align:center;display:grid;gap:12px;justify-items:center;padding:30px 10px}
+.done .big{font-family:var(--f-display);font-size:3.4rem;line-height:1;color:var(--accent)}
+.devol-card{border-left-color:var(--bad)!important}
+.devol-card .why{font-size:.82rem;color:var(--bad);font-weight:500}
+.item.flag{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad)}
+.devol-msg{display:grid;gap:6px;margin-bottom:12px}
+.devol-msg ul{margin:0;padding-left:18px}
+.hbar h1{font-size:1.3rem}
+.hbar .badge-demo{font-size:.6rem;padding:2px 5px}
+.scanbtn{background:var(--head);border-color:var(--head);color:var(--head-ink)}
+.chave{display:grid;gap:4px;background:var(--ok-bg);color:var(--ok);border-radius:6px;padding:9px 11px;font-size:.82rem}
+.chave .code{color:inherit;word-break:break-all}
+.chave.bad{background:var(--bad-bg);color:var(--bad)}
+.tagwrap{display:flex;gap:6px}
+.tagwrap input{flex:1;min-width:0}
+.tagwrap button{flex:0 0 42px;min-height:42px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.tagwrap svg,.scanbtn svg{width:20px;height:20px}
+.scanner{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column;color:#fff}
+.scanner .sc-top{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px))}
+.scanner .sc-top b{flex:1;font-family:var(--f-display);font-size:1.3rem;text-transform:uppercase;letter-spacing:.03em}
+.scanner .sc-top button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:6px;padding:8px 12px;font:600 .9rem var(--f-body)}
+.scanner #scReader{flex:1;min-height:0;position:relative;overflow:hidden}
+.scanner #scReader video{width:100%!important;height:100%!important;object-fit:cover}
+.scanner .sc-hint{padding:12px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:10px;font-size:.88rem;opacity:.95}
+.scanner .sc-hint input{background:#1c1c1c;color:#fff;border-color:#444}
+.scanner .sc-err{background:#5a1e18;color:#ffd9d4;border-radius:6px;padding:10px;font-size:.85rem}
+.dl{display:grid;gap:10px}
+.dl-st{display:flex;gap:8px;align-items:flex-start;font-size:.84rem;border-radius:6px;padding:9px 11px;background:var(--surface-2);color:var(--muted)}
+.dl-st.ok{background:var(--ok-bg);color:var(--ok)} .dl-st.warn{background:var(--warn-bg);color:var(--warn)} .dl-st.bad{background:var(--bad-bg);color:var(--bad)}
+.dl-list{display:grid;gap:6px}
+.dl-it{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:start;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);cursor:pointer}
+.dl-it input{width:20px;height:20px;min-height:0;margin-top:2px}
+.dl-it .d{font-weight:600;font-size:.88rem;overflow-wrap:anywhere}
+.dl-it .m{grid-column:2;font-size:.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 10px}
+.dl-it .m b{color:var(--ink);font-weight:600}
+.dl-opts{display:grid;gap:6px}
+.dl-opts button{text-align:left}
+.spin{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;flex:0 0 auto;animation:sp .8s linear infinite;margin-top:1px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.marca{display:flex;align-items:center;gap:10px;min-width:0}
+.marca img{width:34px;height:34px;border-radius:7px;flex:0 0 auto}
+.splash{position:fixed;inset:0;z-index:90;color:#fff;background:#0b2d5b;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.splash .sp-bg{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,45,91,.55) 0%,rgba(11,45,91,.88) 45%,#0b2d5b 75%),url(../assets/marca/obra-fundo.jpg) center top/cover no-repeat}
+.splash .sp-bg::after{content:"";position:absolute;inset:auto 0 0 0;height:30%;background:linear-gradient(135deg,#1f6fd6 0%,#2d8cff 100%);clip-path:polygon(100% 0,100% 100%,0 100%,0 78%);opacity:.5}
+.splash .sp-bg::before{content:"";position:absolute;inset:auto 0 0 0;height:20%;background:#0b2d5b;clip-path:polygon(100% 45%,100% 100%,0 100%,0 92%);opacity:.9}
+.splash .sp-in{position:relative;width:100%;max-width:420px;display:grid;justify-items:center;text-align:center;gap:10px;padding:calc(30px + env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px))}
+.splash .sp-mark{width:104px;height:auto;filter:drop-shadow(0 8px 20px rgba(0,0,0,.25))}
+.splash .sp-nome{font-family:var(--f-display);font-weight:700;font-size:3rem;letter-spacing:-.03em;line-height:1}
+.splash .sp-tag{font-weight:500;font-size:1.05rem}
+.splash .sp-tag b{color:#7db8ff;font-weight:700}
+.splash .sp-ico{width:58px;height:58px;color:#e6eef7;margin-top:34px}
+.splash .sp-txt{margin:6px 0 26px;font-size:1rem;line-height:1.5;max-width:28ch}
+.splash .sp-txt b{color:#7db8ff;font-weight:600}
+.splash .sp-btn{width:100%;max-width:320px;min-height:54px;border:0;border-radius:16px;background:linear-gradient(90deg,#2d8cff,#1f7ae8);color:#fff;font:600 1.05rem var(--f-body);cursor:pointer;box-shadow:0 10px 26px rgba(45,140,255,.4);display:flex;align-items:center;justify-content:center;gap:10px}
+.splash .sp-btn span{font-size:1.4rem;line-height:1}
+.splash .sp-rod{margin-top:18px;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;opacity:.65}
+@media (prefers-reduced-motion:no-preference){.splash .sp-in{animation:spIn .5s ease-out}@keyframes spIn{from{opacity:0;transform:translateY(14px)}}}
+.hello{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:2px 0 12px}
+.hello-d{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.hello-t{margin:2px 0 0;font:700 1.35rem var(--f-display);letter-spacing:-.02em;color:var(--ink)}
+.resumo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.rs{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:var(--shadow);display:grid;gap:6px}
+.rs .ri{width:30px;height:30px;border-radius:9px;display:grid;place-items:center}
+.rs .ri .ico{width:16px;height:16px}
+.rs b{font:700 1.4rem var(--f-display);line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.rs small{font-size:.7rem;color:var(--muted);font-weight:600;line-height:1.25}
+.rs.a .ri{background:var(--wait-bg);color:var(--wait)} .rs.b .ri{background:var(--bad-bg);color:var(--bad)} .rs.c .ri{background:var(--warn-bg);color:var(--warn)}
+#devolvidas{display:grid;gap:8px}
+.back{background:none;border:0;color:var(--head-ink);font:600 .9rem var(--f-body);padding:8px 8px 8px 0;cursor:pointer}
+</style>
+</head>
+<body>
+<section class="splash" id="splash" hidden>
+  <div class="sp-bg"></div>
+  <div class="sp-in">
+    <div class="sp-logo"><svg class="sp-mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80"><defs><linearGradient id="spa" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d6e6fa"/></linearGradient><linearGradient id="spb" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#2D8CFF"/><stop offset="1" stop-color="#8CC2FF"/></linearGradient></defs><path fill="url(#spa)" d="M3 76 30 6h17L20 76z"/><path fill="url(#spa)" opacity=".82" d="M30 6h17l19 49-9 21z"/><path fill="url(#spb)" d="M42 54 57 76h7L99 3 88 7 61 63 52 47z"/></svg>
+</div>
+    <div class="sp-nome">Nexum</div>
+    <div class="sp-tag">Recebimento <b>inteligente.</b></div>
+    <svg class="sp-ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="10" y="9" width="28" height="34" rx="4"/><path d="M18 9V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><path d="M17 27l5 5 9-10"/></svg>
+    <p class="sp-txt">Controle o recebimento de materiais de forma <b>simples</b> e <b>eficiente</b>.</p>
+    <button class="sp-btn" type="button" id="btnAcessar">Acessar <span aria-hidden="true">›</span></button>
+    <span class="sp-rod">AMR · Flotação Recleaner · Milplan Engenharia</span>
+  </div>
+</section>
+<header class="top">
+  <div class="wrap">
+    <div class="hbar">
+      <button class="back" id="btnVoltar" type="button" hidden aria-label="Voltar">← Voltar</button>
+      <span id="hIcone" style="display:flex"><svg class="nx-mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80"><defs><linearGradient id="hda" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d6e6fa"/></linearGradient><linearGradient id="hdb" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#2D8CFF"/><stop offset="1" stop-color="#8CC2FF"/></linearGradient></defs><path fill="url(#hda)" d="M3 76 30 6h17L20 76z"/><path fill="url(#hda)" opacity=".82" d="M30 6h17l19 49-9 21z"/><path fill="url(#hdb)" d="M42 54 57 76h7L99 3 88 7 61 63 52 47z"/></svg>
+</span>
+      <div class="grow"><h1 id="hTitulo" class="wm">Nexum</h1><small id="hSub">Recebimento inteligente · AMR · Campo</small></div>
+      <span class="badge-demo" id="badgeDemo" title="Dados de exemplo, ainda sem servidor">Modo exemplo</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- INÍCIO -->
+  <section id="v-inicio">
+    <div class="hello">
+      <div><span class="hello-d" id="helloData"></span><h2 class="hello-t" id="helloT">Bom dia</h2></div>
+    </div>
+    <div class="resumo" id="resumo"></div>
+    <div class="sec-h" style="margin-top:18px"><h2>Novo recebimento</h2></div>
+    <div class="start">
+      <button class="go" type="button" data-novo="NF">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 9h8M8 12h8M8 15h5"/></svg>
+        <b>Nota fiscal</b><span>Material Milplan</span>
+      </button>
+      <button class="go rom" type="button" data-novo="ROM">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 9h3M13 9h3M8 12h3M13 12h3M8 15h3M13 15h3"/></svg>
+        <b>Romaneio</b><span>Material Anglo</span>
+      </button>
+    </div>
+    <div class="install" id="iosBox" hidden>
+      <div class="grow"><strong style="color:var(--ink)">Instalar no iPhone:</strong> abra este link no <b>Safari</b>, toque em <b>Compartilhar</b> (quadrado com seta ↑) e depois em <b>Adicionar à Tela de Início</b>.</div>
+      <button class="btn ghost small" id="btnIosOk" type="button" aria-label="Fechar aviso">OK</button>
+    </div>
+    <div class="install" id="installBox" hidden>
+      <div class="grow">Instale o <b>Nexum</b> no celular para abrir direto da tela inicial.</div>
+      <button class="btn primary small" id="btnInstalar" type="button">Instalar</button>
+    </div>
+    <div id="devolBox" hidden>
+      <div class="sec-h"><h2 style="color:var(--bad)">Devolvidas para correção</h2><span class="cnt" id="devolN"></span></div>
+      <div class="list" id="devolvidas"></div>
+    </div>
+    <div class="sec-h"><h2>Recebimentos de hoje</h2><span class="cnt" id="recN"></span></div>
+    <div class="lista-g" id="recentes"></div>
+  </section>
+
+  <!-- LANÇAMENTO -->
+  <section id="v-lancar" hidden>
+    <div class="notice bad devol-msg" id="devolMsg" hidden></div>
+    <form id="form" novalidate>
+      <div class="block">
+        <h3><span class="n">1</span><span id="tDoc">Nota fiscal</span></h3>
+        <div class="seg" id="segTipo"></div>
+        <div class="shot">
+          <button class="btn scanbtn" type="button" id="btnScanDoc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg><span id="scanDocTxt">Escanear código de barras da NF</span></button>
+          <div class="chave" id="chaveBox" hidden></div>
+          <div class="shot-btns">
+            <label class="btn primary" for="fotoDoc">Fotografar documento</label>
+            <label class="btn" for="fotoDocGal">Galeria / PDF</label>
+          </div>
+          <input id="fotoDoc" type="file" accept="image/*" capture="environment" hidden>
+          <input id="fotoDocGal" type="file" accept="image/*,application/pdf" multiple hidden>
+          <div class="thumbs" id="thumbsDoc"></div>
+          <div class="ai"><i>IA</i><span>A leitura automática do documento será ligada na etapa 4. Por enquanto, preencha os campos abaixo.</span></div>
+        </div>
+        <div class="grid2">
+          <div class="f" data-tipo="NF"><label for="nf">Nº da NF</label><input id="nf" inputmode="numeric" autocomplete="off"></div>
+          <div class="f" data-tipo="NF"><label for="fornecedor">Fornecedor</label><input id="fornecedor" autocomplete="off" list="listaForn"></div>
+          <div class="f" data-tipo="NF"><label for="romaneio">Romaneio (PC-REV)</label><input id="romaneio" placeholder="Ex.: 4166-REV-00" autocomplete="off"></div>
+          <div class="f full" data-tipo="ROM"><label for="romaneioA">Nº do romaneio Anglo</label><input id="romaneioA" placeholder="Ex.: 1039-FLT-2026" autocomplete="off"></div>
+          <div class="f"><label for="data">Data de recebimento</label><input id="data" type="date"></div>
+        </div>
+        <datalist id="listaForn"></datalist>
+        <div class="notice bad dup" id="dupMsg" hidden></div>
+      </div>
+
+      <div class="block" data-tipo="NF" id="dlBlock">
+        <h3><span class="n">✓</span>Diligenciamento</h3>
+        <div class="dl" id="dl">
+          <div class="dl-st">Escaneie ou digite a NF e o fornecedor para buscar os itens na planilha de Diligenciamento.</div>
+        </div>
+        <div class="shot-btns">
+          <button class="btn" type="button" id="btnDl">Buscar no Diligenciamento</button>
+          <label class="btn ghost" for="dlArquivo" id="lblDlArq" hidden>Carregar planilha (teste)</label>
+        </div>
+        <input id="dlArquivo" type="file" accept=".xlsx,.xls" hidden>
+      </div>
+
+      <div class="block">
+        <h3><span class="n">2</span>Itens recebidos</h3>
+        <div class="grid2">
+          <div class="f full"><label for="localPadrao">Local de armazenamento (todos os itens)</label><input id="localPadrao" placeholder="Ex.: ALMOXARIFADO, PLATÔ-13, KM 188"></div>
+        </div>
+        <div id="itens" style="display:grid;gap:10px"></div>
+        <button class="btn" type="button" id="btnItem">+ Adicionar item</button>
+        <p class="lbl" id="romNota" style="margin:0;text-transform:none;letter-spacing:0;font-weight:500">No romaneio, item com quantidade entregue 0 não entra na ficha.</p>
+      </div>
+
+      <div class="block">
+        <h3><span class="n" id="nObs">3</span>Observação</h3>
+        <textarea id="obs" rows="3" placeholder="Avarias, faltas, divergências…"></textarea>
+      </div>
+    </form>
+  </section>
+
+  <!-- ENVIADO -->
+  <section id="v-cert" hidden>
+    <p class="hint" style="margin:0 0 12px;color:var(--muted);font-size:.84rem">Itens recebidos <b>sem certificado</b>. Quando o certificado chegar, fotografe ou anexe aqui: a pendência sai da ficha e do relatório automaticamente.</p>
+    <div id="pcLista"></div>
+  </section>
+
+  <section id="v-ok" hidden>
+    <div class="done rise">
+      <span class="lbl">Ficha Nº</span>
+      <div class="big" id="okNum">—</div>
+      <strong id="okMsg">Recebimento enviado para o escritório</strong>
+      <span class="code" id="okDoc"></span>
+      <button class="btn primary" type="button" id="btnNovoOutro">Lançar outro recebimento</button>
+      <button class="btn ghost" type="button" id="btnInicio">Voltar ao início</button>
+    </div>
+  </section>
+</main>
+
+<div class="bar" id="bar" hidden>
+  <div class="in">
+    <button class="btn" type="button" id="btnChegada" title="A NF está na obra, mas o recebimento ainda não foi feito">Só registrar chegada</button>
+    <button class="btn primary" type="button" id="btnEnviar">Enviar recebimento</button>
+  </div>
+</div>
+<div class="scanner" id="scanner" hidden role="dialog" aria-modal="true" aria-labelledby="scTitle">
+  <div class="sc-top"><b id="scTitle">Escanear</b><button type="button" id="scFechar">Fechar</button></div>
+  <div id="scReader"></div>
+  <div class="sc-hint">
+    <span id="scDica">Aponte a câmera para o código. A leitura é automática.</span>
+    <div class="sc-err" id="scErr" hidden></div>
+    <div style="display:flex;gap:8px"><input id="scManual" inputmode="numeric" placeholder="Ou digite o código" aria-label="Digitar o código"><button class="btn primary" type="button" id="scUsar">Usar</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>window.NEXUM_APP="campo"</script>
+<script src="../assets/vendor/html5-qrcode.min.js"></script>
+<script src="../assets/vendor/xlsx.mini.min.js"></script>
+<script src="../assets/vendor/msal-browser.min.js"></script>
+<script src="../assets/diligenciamento.js"></script>
+<script src="../assets/exemplo-docs.js"></script>
+<script src="../assets/dados.js"></script>
+<script src="../assets/vendor/firebase-app-compat.js"></script>
+<script src="../assets/vendor/firebase-auth-compat.js"></script>
+<script src="../assets/vendor/firebase-firestore-compat.js"></script>
+<script src="../assets/nuvem-config.js"></script>
+<script src="../assets/nuvem.js"></script>
+<script src="../assets/ui.js"></script>
+<script src="../assets/atualizacao.js"></script>
+<script>
+(function(){
+const A=window.AMR, $=id=>document.getElementById(id);
+let dlRes=null, dlSel=new Set(), chaveNF=null, editando=null, fichas=[], tipo="NF", itens=[], fotosDoc=[], fotosCert=[], view="inicio";
+
+function toast(t,bad){const e=$("toast");e.textContent=t;e.className="toast"+(bad?" bad":"");e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200)}
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function show(v){
+  view=v;["inicio","lancar","ok","cert"].forEach(x=>$("v-"+x).hidden=x!==v);
+  if(v==="cert")renderPendCert();
+  $("bar").hidden=v!=="lancar"; $("btnVoltar").hidden=v==="inicio";
+  $("hSub").textContent=v==="lancar"?(editando?"FICHA Nº "+editando.numero+" · CORREÇÃO":"PRÓXIMA FICHA Nº "+A.proximoNumero(fichas,A.cadastros.fichaInicial())):"Recebimento inteligente · AMR · Campo";
+  if(v==="cert"){$("hTitulo").textContent="Certificados pendentes";$("hTitulo").classList.remove("wm");$("hSub").textContent="Anexe quando o certificado chegar"}
+  else if(v==="lancar"){$("hTitulo").textContent=editando?"Corrigir recebimento":"Novo recebimento";$("hTitulo").classList.remove("wm")}else{$("hTitulo").textContent="Nexum";$("hTitulo").classList.add("wm")}
+  $("hIcone").hidden=v==="lancar"||v==="cert";
+  window.scrollTo(0,0);
+}
+$("btnVoltar").onclick=()=>show("inicio");
+$("btnInicio").onclick=()=>show("inicio");
+
+/* lista */
+function motivosTxt(c){return (c.motivos||[]).map(m=>A.MOTIVOS[m]||m).join(" · ")}
+const diaLocal=iso=>{if(!iso)return "";const d=new Date(iso);return isNaN(d)?"":`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+const deHoje=f=>{const h=A.hoje();return diaLocal(f.criadoEm)===h||f.dataRecebimento===h};
+function renderDevolvidas(){
+  $("devolBox").hidden=true;return; /* devoluções ficam com o escritório: nada volta para o inspetor */
+  const d=fichas.filter(f=>A.conf(f).situacao==="devolvida").sort((a,b)=>a.numero-b.numero);
+  $("devolBox").hidden=!d.length;$("devolN").textContent=d.length;
+  $("devolvidas").innerHTML=d.map(f=>NXUI.fichaCard(A,f,{attrs:`data-ed="${f.id}"`,motivo:motivosTxt(A.conf(f))||"Devolvida para correção"})).join("");
+  $("devolvidas").querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>abrirEdicao(fichas.find(f=>f.id===b.dataset.ed)));
+}
+function renderResumo(){
+  const h=new Date(),hoje=A.hoje();
+  const hr=h.getHours();$("helloT").textContent=hr<12?"Bom dia":hr<18?"Boa tarde":"Boa noite";
+  $("helloData").textContent=h.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+  const lh=fichas.filter(deHoje),nHoje=lh.length,nIt=lh.reduce((s,f)=>s+A.itensValidos(f).length,0);
+  const nCert=fichas.filter(f=>f.tipo==="NF"&&f.status!=="finalizado").reduce((s,f)=>s+A.semCertificado(f).length,0);
+  $("resumo").innerHTML=[["a","truck",nHoje,nHoje===1?"Ficha hoje":"Fichas hoje"],["a","box",nIt,nIt===1?"Item hoje":"Itens hoje"],["c","cert",nCert,"Certificados pendentes"]]
+    .map(([c,i,n,t])=>c==="c"?`<button type="button" class="rs c clic" id="rsCert"><span class="ri">${NXUI.icon(i)}</span><b>${n}</b><small>${t} ›</small></button>`:`<div class="rs ${c}"><span class="ri">${NXUI.icon(i)}</span><b>${n}</b><small>${t}</small></div>`).join("");
+  $("rsCert").onclick=()=>show("cert");
+}
+function pendenciasCert(){
+  return fichas.filter(f=>f.tipo==="NF"&&f.status!=="finalizado").flatMap(f=>A.itensValidos(f).map(it=>({f,it,idx:f.itens.indexOf(it)})).filter(x=>A.certSituacao(x.f,x.it)==="pendente"))
+    .sort((a,b)=>(a.f.dataRecebimento||"").localeCompare(b.f.dataRecebimento||""));
+}
+function renderPendCert(){
+  const l=pendenciasCert(),el=$("pcLista");
+  if(!l.length){el.className="";el.innerHTML='<div class="empty"><strong>Nenhum certificado pendente</strong>Todos os materiais críticos recebidos estão com certificado.</div>';return}
+  el.className="lista-g";
+  el.innerHTML=l.map((x,k)=>{const dias=Math.max(0,Math.round((Date.now()-new Date((x.f.dataRecebimento||A.hoje())+"T12:00:00"))/864e5));
+    return `<div class="pc-item" data-k="${k}">
+      <div class="pc-m"><span class="pill cert_pendente">Pendente – Certificado</span><span>Ficha ${x.f.numero}</span><span>NF ${esc(x.f.nf)}</span><span>${dias===0?"recebido hoje":"há "+dias+(dias===1?" dia":" dias")}</span></div>
+      <div class="pc-t">Item ${x.idx+1} · ${esc(x.it.descricao)}</div>
+      <div class="pc-m"><span>${esc(x.f.fornecedor)}</span><span>${esc(x.it.tag||"")}</span><span>${A.fmtQtd(x.it.qtd)} ${esc(x.it.und)}</span></div>
+      <div class="pc-a"><input placeholder="Nº (opcional)" data-num autocomplete="off"><button class="btn primary" type="button" data-foto>Fotografar</button><button class="btn" type="button" data-arq>Anexar</button></div>
+    </div>`}).join("");
+  el.querySelectorAll(".pc-item").forEach(row=>{
+    const x=l[+row.dataset.k];
+    const salvar=files=>{const tmp=[];lerFotos(files,tmp,async()=>{if(tmp.length<files.length)return;
+      const g=A.anexarCertificado(x.f,x.idx,{numero:row.querySelector("[data-num]").value,anexos:tmp},"Campo");
+      try{await A.store.salvar(g);toast(`Certificado anexado ao item ${x.idx+1} da ficha ${x.f.numero} · pendência resolvida`);renderPendCert()}catch(e){toast("Não foi possível salvar.",true)}})};
+    row.querySelector("[data-foto]").onclick=()=>escolherArquivo(true,salvar);
+    row.querySelector("[data-arq]").onclick=()=>escolherArquivo(false,salvar);
+  });
+}
+function renderRecentes(){
+  renderDevolvidas();renderResumo();
+  const rs=fichas.filter(deHoje).sort((a,b)=>(b.atualizadoEm||"").localeCompare(a.atualizadoEm||""));
+  $("recN").textContent=rs.length||"";
+  $("recentes").className=rs.length?"lista-g":"";
+  $("recentes").innerHTML=rs.length?rs.map(f=>NXUI.fichaCard(A,f,{attrs:`data-ver="${f.id}"`})).join(""):`<div class="empty"><strong>Nenhum recebimento hoje</strong>Toque em Nota fiscal ou Romaneio para começar. A lista recomeça todo dia; os lançamentos anteriores ficam guardados no escritório.</div>`;
+  $("recentes").querySelectorAll("[data-ver]").forEach(b=>b.onclick=()=>{const f=fichas.find(x=>x.id===b.dataset.ver);toast(`Ficha ${f.numero}: ${A.STATUS[f.status].rotulo}${A.conf(f).situacao==="aprovada"?" · conferida pelo escritório":" · enviada ao escritório"}`)});
+  const fs=[...new Set(fichas.filter(f=>f.tipo==="NF").map(f=>A.norm(f.fornecedor)).filter(Boolean))].sort();
+  $("listaForn").innerHTML=fs.map(x=>`<option value="${esc(x)}">`).join("");
+}
+
+/* formulário */
+function setTipo(t){
+  tipo=t;
+  document.querySelectorAll("[data-tipo]").forEach(e=>e.hidden=e.dataset.tipo!==t);
+  $("tDoc").textContent=t==="NF"?"Nota fiscal":"Romaneio Anglo";
+  $("scanDocTxt").textContent=t==="NF"?"Escanear código de barras da NF":"Escanear código do romaneio";
+  if(t!=="NF")setChave(null);
+  $("romNota").hidden=t!=="ROM";
+  $("segTipo").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===t));
+  renderItens(); checarDup();
+}
+$("segTipo").innerHTML=`<button type="button" data-t="NF">Nota fiscal (Milplan)</button><button type="button" data-t="ROM">Romaneio Anglo</button>`;
+$("segTipo").querySelectorAll("button").forEach(b=>b.onclick=()=>setTipo(b.dataset.t));
+
+function novoItem(){return{descricao:"",tag:"",und:tipo==="ROM"?"PÇ":"UND",qtd:"",certificado:"",local:$("localPadrao").value.trim().toUpperCase(),conf:"C"}}
+function localLembrado(){try{return localStorage.getItem("amr_local_padrao")||""}catch(e){return""}}
+function lembrarLocal(v){try{if(v)localStorage.setItem("amr_local_padrao",v)}catch(e){}}
+function abrirNovo(t){
+  editando=null;setChave(null);resetDilig();$("segTipo").hidden=false;$("devolMsg").hidden=true;$("btnChegada").hidden=false;$("btnEnviar").textContent="Enviar recebimento";
+  itens=[novoItem()]; fotosDoc=[]; fotosCert=[];
+  ["nf","fornecedor","romaneio","romaneioA","obs","localPadrao"].forEach(id=>$(id).value="");
+  $("data").value=A.hoje();$("localPadrao").value=localLembrado();
+  setTipo(t); itens=[novoItem()]; renderItens(); renderThumbs(); show("lancar");
+}
+function abrirEdicao(f){
+  editando=f;const c=A.conf(f);resetDilig();setChave(f.chaveNFe?A.lerChaveNFe(f.chaveNFe):null);
+  setTipo(f.tipo);$("segTipo").hidden=true;
+  $("nf").value=f.nf||"";$("fornecedor").value=f.fornecedor||"";$("romaneio").value=f.tipo==="NF"?(f.romaneio||""):"";$("romaneioA").value=f.tipo==="ROM"?(f.romaneio||""):"";
+  $("data").value=f.dataRecebimento||A.hoje();$("localPadrao").value="";
+  $("obs").value=(f.observacao||"").replace(A.OBS_ANGLO,"").trim();
+  itens=JSON.parse(JSON.stringify(f.itens||[]));if(!itens.length)itens=[novoItem()];
+  fotosDoc=[...(f.anexos?.doc||[])];fotosCert=[];
+  (f.anexos?.cert||[]).forEach(a=>{if(Number.isInteger(a.item)&&itens[a.item])(itens[a.item].certAnexos=itens[a.item].certAnexos||[]).push(a);else fotosCert.push(a)});
+  $("devolMsg").innerHTML=`<strong>Devolvida pelo escritório: corrija e reenvie</strong><ul>${(c.motivos||[]).map(m=>`<li>${esc(A.MOTIVOS[m]||m)}</li>`).join("")}</ul>${(c.itens||[]).length?`<span>Itens marcados: ${c.itens.map(i=>i+1).join(", ")}</span>`:""}${c.comentario?`<span>“${esc(c.comentario)}”</span>`:""}`;
+  $("devolMsg").hidden=false;$("btnChegada").hidden=true;$("btnEnviar").textContent="Reenviar corrigido";
+  renderItens();renderThumbs();show("lancar");checarDup();
+}
+document.querySelectorAll("[data-novo]").forEach(b=>b.onclick=()=>abrirNovo(b.dataset.novo));
+$("btnNovoOutro").onclick=()=>abrirNovo(tipo);
+
+function certSecao(it,i){
+  const cr=A.materialCritico(it.descricao,it.tag),ex=A.exigeCert({tipo},it),fotos=it.certAnexos||[];
+  const tem=!!(it.certificado||fotos.length), nr=it.certStatus==="nao_recebido";
+  const estado=nr?"nao_recebido":(tem||it.certStatus==="recebido")?"recebido":"";
+  const st=nr?'<span class="cs-st" style="color:var(--warn)">Pendente – Certificado · o fornecedor será cobrado e a pendência sai quando o certificado for anexado</span>'
+    :tem?`<span class="cs-st" style="color:var(--ok)">✓ Certificado ${it.certificado?esc(it.certificado):""}${fotos.length?` · ${fotos.length} ${fotos.length===1?"arquivo":"arquivos"}`:""}</span>`
+    :estado==="recebido"?'<span class="cs-st" style="color:var(--warn)">Informe o nº ou anexe a foto do certificado</span>'
+    :ex?'<span class="cs-st" style="color:var(--warn)">Anexe o certificado ou marque "Sem certificado"</span>':'<span class="cs-st" style="color:var(--muted)">Não exige certificado</span>';
+  return `<div class="certsec ${nr?"nr":tem?"ok":ex?"req":""}">
+      <div class="cs-h">Certificado do item ${i+1}</div>
+      <label class="excert"><input type="checkbox" data-ex ${ex?"checked":""} ${nr?"disabled":""}><span>Exige certificado de qualidade${cr?`<br><span style="color:var(--warn);font-size:.78rem;font-weight:600">Material crítico (CMC): ${esc(cr.rotulo)} · CQ ${esc(cr.cq)}</span><br><span style="color:var(--muted);font-size:.76rem">${esc(cr.evidencia||"")}</span>`:""}${!cr&&it.pedidoPedeCertificado?`<br><span style="color:var(--muted);font-size:.78rem">O pedido de compra pede certificado</span>`:""}</span></label>
+      <label class="semcert"><input type="checkbox" data-semcert ${nr?"checked":""}><span><b>Sem certificado</b><br><small>Material recebido sem o certificado</small></span></label>
+      ${nr?"":`<div class="f"><label>Nº do certificado</label><input data-k="certificado" value="${esc(it.certificado)}" autocomplete="off" placeholder="${ex?"Ex.: 3023651":"Se houver"}"></div>
+      <div class="shot-btns"><button class="btn" type="button" data-certfoto>Fotografar certificado</button><button class="btn" type="button" data-certarq>Galeria / PDF</button></div>
+      ${fotos.length?`<div class="thumbs">${fotos.map((f,k)=>`<figure>${f.pdf?`<div style="width:76px;height:96px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font:600 .75rem var(--f-mono);color:var(--muted)">PDF</div>`:`<img src="${f.img||f.thumb}" alt="Certificado ${k+1} do item ${i+1}">`}<button type="button" aria-label="Remover arquivo" data-rc="${k}">×</button></figure>`).join("")}</div>`:""}`}
+      ${st}
+    </div>`;
+}
+function escolherArquivo(camera,cb){const inp=document.createElement("input");inp.type="file";inp.accept=camera?"image/*":"image/*,application/pdf";if(camera)inp.setAttribute("capture","environment");else inp.multiple=true;inp.onchange=()=>cb(inp.files);inp.click()}
+function renderItens(){
+  const und=A.UNIDADES.map(u=>`<option>${u}</option>`).join("");
+  $("itens").innerHTML=itens.map((it,i)=>{
+    const zero=tipo==="ROM"&&it.qtd!==""&&Number(it.qtd)===0;
+    const flag=editando&&(A.conf(editando).itens||[]).includes(i);
+    return `<div class="item${zero?" zero":""}${flag?" flag":""}" data-i="${i}">
+      ${it.pc?`<div class="item-ref">${it.origem==="diligenciamento"?'<span class="dl">Diligenciamento</span>':""}<span>PC ${esc(it.pc)}/${esc(it.itemPc)}</span>${it.qtdPedido!==undefined&&it.qtdPedido!==""?`<span>pedido ${A.fmtQtd(it.qtdPedido)} ${esc(it.undPedido||"")}</span>`:""}${it.undPedido&&A.norm(it.undPedido)!==A.norm(it.und)?'<span class="div">unidade diferente do pedido</span>':""}</div>`:""}
+      <div class="item-head"><b>Item ${i+1}</b>${flag?'<span class="pill bad">Corrigir</span>':""}${zero?'<span class="zero-note">0 entregue · fora da ficha</span>':""}${itens.length>1?`<button type="button" class="x" data-del="${i}">Remover</button>`:""}</div>
+      ${it.conferirNF?`<div class="confnf"><span>Quantidade e unidade vieram do <b>pedido</b>. Confira com a NF e ajuste se for diferente.</span><button type="button" data-okNF>Confere com a NF</button></div>`:""}
+      <div class="f"><label>Descrição</label><input data-k="descricao" value="${esc(it.descricao)}" autocomplete="off"></div>
+      <div class="grid2">
+        <div class="f"><label>TAG / código</label><div class="tagwrap"><input data-k="tag" value="${esc(it.tag)}" autocomplete="off"><button type="button" data-scantag="${i}" aria-label="Escanear TAG do item ${i+1}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg></button></div></div>
+        <div class="f"><label>${tipo==="ROM"?"Qtd. entregue":"Qtd. recebida"}</label><input data-k="qtd" type="number" min="0" step="any" inputmode="decimal" value="${esc(it.qtd)}"></div>
+        <div class="f"><label>Unidade</label><select data-k="und">${A.UNIDADES.includes(it.und)?"":`<option>${esc(it.und)}</option>`}${und}</select></div>
+        ${tipo==="NF"?"":`<div class="f"><label>Certificado</label><input value="OBS 1 (sem certificado)" disabled></div>`}
+        <div class="f full"><label>Local</label><input data-k="local" value="${esc(it.local)}" autocomplete="off"></div>
+      </div>
+      ${tipo==="NF"?certSecao(it,i):""}
+      <div class="f"><label>Inspeção</label><div class="seg" data-conf>${Object.keys(A.CONF).map(k=>`<button type="button" class="${k}" data-c="${k}" aria-pressed="${it.conf===k}">${k==="NA"?"N/A":k}</button>`).join("")}</div></div>
+    </div>`}).join("");
+  $("itens").querySelectorAll(".item").forEach(el=>{
+    const i=+el.dataset.i;
+    el.querySelector('[data-k="und"]').value=itens[i].und;
+    el.querySelectorAll("[data-k]").forEach(inp=>inp.addEventListener(inp.tagName==="SELECT"?"change":"input",()=>{
+      const k=inp.dataset.k; itens[i][k]=k==="qtd"?inp.value:(k==="descricao"||k==="tag"||k==="local"?inp.value.toUpperCase():inp.value);
+      if((k==="descricao"||k==="tag")&&tipo==="NF"){clearTimeout(renderItens.t);renderItens.t=setTimeout(()=>{const lb=el.querySelector(".excert span");const cr=A.materialCritico(itens[i].descricao,itens[i].tag);if(lb)lb.innerHTML="Exige certificado de qualidade"+(cr?`<br><span style="color:var(--warn);font-size:.78rem;font-weight:600">Material crítico (CMC): ${esc(cr.rotulo)} · CQ ${esc(cr.cq)}</span>`:"");const cb=el.querySelector("[data-ex]");if(cb&&typeof itens[i].exigeCertificado!=="boolean")cb.checked=!!cr},400)}
+      if(k==="qtd"&&tipo==="ROM"){const z=inp.value!==""&&Number(inp.value)===0;if(z!==el.classList.contains("zero")){const pos=inp.selectionStart;renderItens();const n=$("itens").querySelector(`[data-i="${i}"] [data-k="qtd"]`);n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}}}
+    }));
+    el.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{itens[i].conf=b.dataset.c;el.querySelectorAll("[data-c]").forEach(x=>x.setAttribute("aria-pressed",x===b))});
+    const okb=el.querySelector("[data-okNF]");if(okb)okb.onclick=()=>{itens[i].conferirNF=false;renderItens()};
+    el.querySelectorAll('[data-k="qtd"],[data-k="und"]').forEach(x=>x.addEventListener("change",()=>{if(itens[i].conferirNF){itens[i].conferirNF=false;renderItens()}}));
+    const exb=el.querySelector("[data-ex]");if(exb)exb.onchange=()=>{itens[i].exigeCertificado=exb.checked;renderItens()};
+    const sc=el.querySelector("[data-semcert]");if(sc)sc.onchange=()=>{
+      if(sc.checked){if(((itens[i].certAnexos||[]).length||itens[i].certificado)&&!sc.dataset.ok){sc.dataset.ok=1;sc.checked=false;toast("Este item já tem certificado. Marque de novo para apagar o certificado e registrar como sem certificado.",true);return}
+        itens[i].certificado="";itens[i].certAnexos=[];itens[i].certStatus="nao_recebido"}
+      else itens[i].certStatus=undefined;
+      renderItens()};
+    const addCert=files=>{itens[i].certStatus="recebido";lerFotos(files,itens[i].certAnexos=itens[i].certAnexos||[],()=>renderItens())};
+    const cf=el.querySelector("[data-certfoto]");if(cf)cf.onclick=()=>escolherArquivo(true,addCert);
+    const ca=el.querySelector("[data-certarq]");if(ca)ca.onclick=()=>escolherArquivo(false,addCert);
+    el.querySelectorAll("[data-rc]").forEach(b=>b.onclick=()=>{itens[i].certAnexos.splice(+b.dataset.rc,1);renderItens()});
+    const cinp=el.querySelector('[data-k="certificado"]');if(cinp)cinp.addEventListener("change",()=>{if(cinp.value.trim())itens[i].certStatus="recebido";renderItens()});
+    const sb=el.querySelector("[data-scantag]");if(sb)sb.onclick=()=>abrirScanner("TAG do item "+(i+1),"Aponte para a etiqueta, código de barras ou QR code do material.",txt=>{itens[i].tag=A.norm(txt);renderItens();toast("TAG do item "+(i+1)+" preenchida")});
+    const d=el.querySelector("[data-del]"); if(d)d.onclick=()=>{itens.splice(i,1);renderItens()};
+  });
+}
+$("btnItem").onclick=()=>{itens.push(novoItem());renderItens();const l=$("itens").lastElementChild;l.scrollIntoView({behavior:"smooth",block:"center"});l.querySelector("input").focus()};
+$("localPadrao").addEventListener("change",()=>{const v=$("localPadrao").value.trim().toUpperCase();$("localPadrao").value=v;lembrarLocal(v);itens.forEach(it=>it.local=v);renderItens()});
+
+/* fotos (etapa 1: ficam só nesta tela; o armazenamento entra na etapa 3) */
+function lerFotos(files,arr,depois){
+  const fim=depois||renderThumbs;
+  [...files].forEach(file=>{
+    if(file.type==="application/pdf"){if(file.size>2.5e6){toast("PDF muito grande ("+(file.size/1e6).toFixed(1)+" MB). Use até 2,5 MB ou fotografe o certificado.",true);return}const fr=new FileReader();fr.onload=()=>{arr.push({nome:file.name,pdf:true,data:fr.result});fim()};fr.readAsDataURL(file);return}
+    const img=new Image(),url=URL.createObjectURL(file);
+    img.onload=()=>{const s=Math.min(1,1100/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);arr.push({nome:file.name,img:c.toDataURL("image/jpeg",.6)});URL.revokeObjectURL(url);fim()};
+    img.src=url;
+  });
+}
+function thumbs(arr,el){el.innerHTML=arr.map((f,i)=>`<figure>${f.pdf?`<div style="width:76px;height:96px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font:600 .75rem var(--f-mono);color:var(--muted)">PDF</div>`:`<img src="${f.img||f.thumb}" alt="Foto ${i+1}">`}<button type="button" aria-label="Remover foto" data-r="${i}">×</button></figure>`).join("");el.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{arr.splice(+b.dataset.r,1);renderThumbs()})}
+function renderThumbs(){thumbs(fotosDoc,$("thumbsDoc"))}
+[["fotoDoc",()=>fotosDoc],["fotoDocGal",()=>fotosDoc]].forEach(([id,arr])=>$(id).onchange=e=>{lerFotos(e.target.files,arr());e.target.value=""});
+
+/* ---------- scanner de código de barras / QR ---------- */
+let leitor=null,scDestino=null,scLido=false;
+const FMT=window.Html5QrcodeSupportedFormats;
+function abrirScanner(titulo,dica,destino){
+  scDestino=destino;scLido=false;$("scTitle").textContent=titulo;$("scDica").textContent=dica;$("scErr").hidden=true;$("scManual").value="";
+  $("scanner").hidden=false;document.body.style.overflow="hidden";
+  if(!window.Html5Qrcode){erroScan("O leitor não carregou. Verifique a internet e abra o app de novo, ou digite o código abaixo.");return}
+  const formatos=FMT?[FMT.CODE_128,FMT.QR_CODE,FMT.CODE_39,FMT.EAN_13,FMT.ITF,FMT.DATA_MATRIX]:undefined;
+  leitor=new Html5Qrcode("scReader",{formatsToSupport:formatos,verbose:false,experimentalFeatures:{useBarCodeDetectorIfSupported:true}});
+  const largura=Math.min(window.innerWidth-40,520);
+  leitor.start({facingMode:"environment"},{fps:12,qrbox:(w,h)=>({width:Math.min(w-30,520),height:Math.min(Math.round(h*0.32),220)}),aspectRatio:window.innerHeight/window.innerWidth},
+    txt=>{if(scLido)return;scLido=true;if(navigator.vibrate)navigator.vibrate(80);fecharScanner().then(()=>scDestino(txt))},()=>{})
+  .catch(e=>{const m=String(e&&e.message||e);erroScan(/NotAllowed|Permission/i.test(m)?"A câmera foi bloqueada. Libere a câmera para este app nas configurações do navegador, ou digite o código abaixo.":/NotFound|Requested device/i.test(m)?"Nenhuma câmera encontrada neste aparelho. Digite o código abaixo.":"Não foi possível abrir a câmera. Digite o código abaixo.")});
+}
+function erroScan(t){$("scErr").textContent=t;$("scErr").hidden=false;$("scManual").focus()}
+async function fecharScanner(){
+  $("scanner").hidden=true;document.body.style.overflow="";
+  if(leitor){try{if(leitor.isScanning)await leitor.stop();leitor.clear()}catch(e){}leitor=null}
+}
+$("scFechar").onclick=()=>fecharScanner();
+$("scUsar").onclick=()=>{const v=$("scManual").value.trim();if(!v){$("scManual").focus();return}const d=scDestino;fecharScanner().then(()=>d(v))};
+$("scManual").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("scUsar").click()}});
+
+function setChave(info){
+  chaveNF=info;const b=$("chaveBox");
+  if(!info){b.hidden=true;return}
+  b.hidden=false;b.className="chave"+(info.valida?"":" bad");
+  b.innerHTML=info.valida?`<strong>Código lido: NF ${esc(info.nf)} · série ${esc(info.serie)} · ${esc(info.uf)} · emitida em ${info.emissao.slice(5)}/${info.emissao.slice(0,4)}</strong><span>CNPJ do fornecedor: ${esc(info.cnpj)}</span><span class="code">${info.chave.replace(/(\d{4})/g,"$1 ").trim()}</span>`
+    :`<strong>Código inválido: o dígito verificador não confere.</strong><span>Escaneie de novo ou confira o código digitado.</span>`;
+}
+function aplicarLeituraNF(txt){
+  const info=A.lerChaveNFe(txt);
+  if(!info){toast("Esse código não é uma chave de NF (44 dígitos). Tente o código de barras do DANFE, no alto da nota.",true);return}
+  setChave(info);if(!info.valida){toast("Código lido com erro. Escaneie de novo.",true);return}
+  $("nf").value=info.nf;
+  const fo=A.cadastros.fornecedorPorCnpj(info.cnpj);
+  if(fo)$("fornecedor").value=fo.nome;
+  else if(!$("fornecedor").value){$("fornecedor").focus();toast("Fornecedor ainda não cadastrado. Digite o nome dele.")}
+  const d=checarDup();
+  if(!d){toast("NF "+info.nf+(fo?" · "+fo.nome:"")+" preenchida pelo código");buscarDilig(true)}
+}
+function aplicarLeituraRom(txt){
+  const t=A.norm(txt),m=t.match(/\d{1,5}-FLT-\d{4}/);
+  $("romaneioA").value=m?m[0]:t;checarDup();
+  toast(m?"Romaneio "+m[0]+" preenchido pelo código":"Código lido. Confira o nº do romaneio.");
+}
+$("btnScanDoc").onclick=()=>tipo==="NF"
+  ?abrirScanner("Código de barras da NF","Aponte para o código de barras do DANFE (no alto da nota), com o celular deitado se precisar.",aplicarLeituraNF)
+  :abrirScanner("Código do romaneio","Aponte para o código de barras ou QR code do romaneio.",aplicarLeituraRom);
+
+/* ---------- Ponto 2: busca no Diligenciamento ---------- */
+const D=window.DILIG;
+function dlStatus(html,cls,spin){$("dl").innerHTML=`<div class="dl-st ${cls||""}">${spin?'<span class="spin"></span>':""}<span>${html}</span></div>`}
+function fonteTxt(f){if(!f)return"";const quando=f.modificado?new Date(f.modificado).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}):"";return `${f.tipo==="local"?"Cópia local":f.tipo==="pasta"?"Pasta do escritório":"SharePoint"} · ${esc(f.nome)}${quando?" · atualizada em "+quando:""}`}
+function fmtQ(n){return n===""||n==null?"—":Number(n).toLocaleString("pt-BR",{maximumFractionDigits:3})}
+function resetDilig(){dlRes=null;dlSel=new Set();if(!D){$("dlBlock").hidden=true;return}$("lblDlArq").hidden=D.configurado();dlStatus(D.configurado()?"Escaneie ou digite a NF e o fornecedor para buscar os itens na planilha de Diligenciamento.":"A consulta automática ao SharePoint aguarda a liberação da TI. Para testar agora, toque em <b>Carregar planilha (teste)</b> e escolha uma cópia do arquivo.")}
+async function buscarDilig(auto,cod){
+  if(!D)return;
+  const nf=$("nf").value.trim(),forn=$("fornecedor").value.trim();
+  if(!nf){if(!auto){toast("Informe o nº da NF.",true);$("nf").focus()}return}
+  if(!D.configurado()&&!D.fonteAtual()){if(!auto)toast("Carregue a planilha para testar (aguardando liberação da TI).",true);resetDilig();return}
+  dlStatus(D.configurado()?"Consultando a planilha no SharePoint…":"Buscando na planilha…","",true);
+  try{
+    const fo=A.cadastros.fornecedorPorNome(forn)||(chaveNF&&A.cadastros.fornecedorPorCnpj(chaveNF.cnpj));
+    const r=await D.buscar({nf,fornecedor:forn,codFornecedor:cod||fo?.codigoErp||""});
+    dlRes=r;mostrarDilig();
+  }catch(e){
+    if(e.code==="nao_configurado")resetDilig();
+    else dlStatus(`Não foi possível consultar a planilha${e.status===403||e.status===401?": seu usuário não tem acesso ao arquivo no SharePoint":""}. Você pode preencher os itens manualmente.`,"bad");
+  }
+}
+function mostrarDilig(){
+  const r=dlRes,ft=`<br><span style="opacity:.8">${fonteTxt(r.fonte)}</span>${r.fonte.aviso?`<br>${esc(r.fonte.aviso)}`:""}`;
+  if(r.situacao==="varios_fornecedores"||r.situacao==="pendentes_escolher"){
+    $("dl").innerHTML=`<div class="dl-st warn"><span>${r.situacao==="varios_fornecedores"?`A NF ${esc($("nf").value)} aparece para mais de um fornecedor. Qual é o desta nota?`:`A NF ainda não está no Diligenciamento. Escolha o fornecedor para ver os itens pendentes de entrega.`}${ft}</span></div>
+      <div class="dl-opts">${r.opcoes.map(o=>`<button class="btn" type="button" data-cf="${esc(o.codForn)}" data-nm="${esc(o.nomeForn)}">${esc(o.nomeForn)} <span class="code">(${o.qtdItens} ${o.qtdItens===1?"item":"itens"})</span></button>`).join("")}</div>`;
+    $("dl").querySelectorAll("[data-cf]").forEach(b=>b.onclick=async()=>{if(!$("fornecedor").value)$("fornecedor").value=b.dataset.nm;
+      const itens=r.situacao==="varios_fornecedores"?await D.itensNFFornecedor($("nf").value,b.dataset.cf):await D.pendentesDoFornecedor(b.dataset.cf);
+      dlRes={...r,situacao:r.situacao==="varios_fornecedores"?"encontrada":"pendentes_fornecedor",fornecedor:{codForn:b.dataset.cf,nomeForn:b.dataset.nm},itens};lembrarCodigo(b.dataset.cf);mostrarDilig()});
+    return;
+  }
+  if(!r.itens.length){dlStatus(`NF ${esc($("nf").value)} não encontrada no Diligenciamento${$("fornecedor").value?" e sem itens pendentes para "+esc($("fornecedor").value):""}. Preencha os itens manualmente e avise Suprimentos.${ft}`,"bad");return}
+  const enc=r.situacao==="encontrada";
+  if(r.fornecedor)lembrarCodigo(r.fornecedor.codForn);
+  dlSel=new Set(r.itens.map((_,i)=>i).filter(i=>enc||false));
+  $("dl").innerHTML=`<div class="dl-st ${enc?"ok":"warn"}"><span>${enc?`<b>${r.itens.length} ${r.itens.length===1?"item encontrado":"itens encontrados"}</b> para a NF ${esc($("nf").value)} · ${esc(r.fornecedor.nomeForn)}`:`<b>NF ainda não lançada no Diligenciamento</b> (sem pré-nota). Marque os itens que chegaram, entre os ${r.itens.length} pendentes de ${esc(r.fornecedor.nomeForn)}.`}${ft}</span></div>
+    <div class="dl-list">${r.itens.map((it,i)=>`<label class="dl-it"><input type="checkbox" data-dl="${i}" ${dlSel.has(i)?"checked":""}><span class="d">${esc(it.descricao)}${it.descComp?" — "+esc(it.descComp):""}</span>
+      <span class="m"><span><b>${esc(it.codigo)}</b></span><span>PC ${esc(it.pc)}/${esc(it.itemPc)}</span><span>${enc?"Recebido":"Pedido"}: <b>${fmtQ(enc?(it.qtdReceb||it.qtd):it.qtd)} ${esc(it.un)}</b></span>${!enc&&it.qtdPend?`<span>Pendente: <b>${fmtQ(it.qtdPend)} ${esc(it.un)}</b></span>`:""}<span>${esc(it.status)}</span>${it.pedeCertificado?'<span style="color:var(--warn);font-weight:600">Exige certificado</span>':""}</span></label>`).join("")}</div>
+    <button class="btn primary" type="button" id="btnUsarDl">Preencher itens selecionados</button>`;
+  $("dl").querySelectorAll("[data-dl]").forEach(c=>c.onchange=()=>{const i=+c.dataset.dl;c.checked?dlSel.add(i):dlSel.delete(i)});
+  $("btnUsarDl").onclick=usarDilig;
+}
+function lembrarCodigo(cod){
+  const nome=$("fornecedor").value.trim();if(!cod||!nome)return;
+  const fo=A.cadastros.fornecedorPorNome(nome)||(chaveNF&&A.cadastros.fornecedorPorCnpj(chaveNF.cnpj));
+  if(fo&&fo.codigoErp===cod)return;
+  A.cadastros.salvarFornecedor({...(fo||{}),id:fo?.id,nome:fo?.nome||nome,cnpj:fo?.cnpj||chaveNF?.cnpj||"",emails:fo?.emails||[],codigoErp:cod}).catch(()=>{});
+}
+function usarDilig(){
+  const sel=[...dlSel].sort((a,b)=>a-b).map(i=>dlRes.itens[i]);
+  if(!sel.length){toast("Marque pelo menos um item.",true);return}
+  const enc=dlRes.situacao==="encontrada",local=$("localPadrao").value.trim().toUpperCase()||localLembrado();
+  const novos=sel.map(it=>({descricao:A.norm(it.descricao+(it.descComp?" - "+it.descComp:"")),tag:it.codigo,und:A.norm(it.un),qtd:enc?(it.qtdReceb||it.qtd):"",certificado:"",local,conf:"C",
+    pc:it.pc,itemPc:it.itemPc,conferirNF:true,pedidoPedeCertificado:!!it.pedidoPedeCertificado,exigeCertificado:!!it.pedeCertificado,origem:"diligenciamento",qtdPedido:it.qtd,undPedido:A.norm(it.un)}));
+  const vazios=itens.every(x=>!x.descricao&&!x.tag);
+  itens=vazios?novos:[...itens,...novos];
+  if(dlRes.itens[0]&&!$("romaneio").value)$("romaneio").value=String(+dlRes.itens[0].pc)+"-REV-00";
+  if(!$("fornecedor").value&&dlRes.fornecedor)$("fornecedor").value=dlRes.fornecedor.nomeForn;
+  renderItens();checarDup();
+  toast(`${novos.length} ${novos.length===1?"item preenchido":"itens preenchidos"} pelo Diligenciamento${enc?"":". Informe a quantidade recebida."}`);
+  $("itens").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("btnDl").onclick=()=>buscarDilig(false);
+$("dlArquivo").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;dlStatus("Lendo a planilha "+esc(f.name)+"… pode levar alguns segundos.","",true);
+  try{const x=await D.carregarArquivoLocal(f);toast(`Planilha carregada: ${x.registros.length.toLocaleString("pt-BR")} linhas`);if($("nf").value)buscarDilig(true);else dlStatus("Planilha carregada ("+fonteTxt(D.fonteAtual())+"). Agora escaneie ou digite a NF.","ok")}
+  catch(err){dlStatus("Não consegui ler a planilha: "+esc(err.message),"bad")}};
+
+/* duplicidade */
+function montar(){
+  const base=editando?JSON.parse(JSON.stringify(editando)):{origem:"campo",assinaturas:{},criadoPor:"Campo"};
+  const f={...base,tipo,dataRecebimento:$("data").value,observacao:$("obs").value.trim(),itens:itens.map(x=>{const y={...x,qtd:x.qtd===""?"":Number(x.qtd),temCertAnexo:!!(x.certAnexos||[]).length};delete y.certAnexos;return y}),
+    anexos:{doc:fotosDoc,cert:[...itens.flatMap((x,n)=>(x.certAnexos||[]).map((a,k)=>({...a,item:n,nome:`Item ${n+1} · ${x.certificado?"certificado "+x.certificado:"certificado"}${(x.certAnexos||[]).length>1?" ("+(k+1)+")":""}`}))),...fotosCert]}};
+  if(tipo==="NF"){Object.assign(f,{chaveNFe:chaveNF&&chaveNF.valida&&chaveNF.nf===$("nf").value.trim()?chaveNF.chave:"",serie:chaveNF?.serie||f.serie||"",cnpjFornecedor:chaveNF?.cnpj||f.cnpjFornecedor||"",nf:$("nf").value.trim(),fornecedor:A.norm($("fornecedor").value),romaneio:A.norm($("romaneio").value),fornecimento:"MILPLAN ENGENHARIA"})}
+  else{Object.assign(f,{nf:"",romaneio:A.norm($("romaneioA").value),fornecedor:"ANGLO AMERICAN",fornecimento:"ANGLO AMERICAN",observacao:[A.OBS_ANGLO,$("obs").value.trim()].filter(Boolean).join("\n")})}
+  return f;
+}
+function checarDup(){
+  const f=montar(), d=A.duplicada(f,fichas);
+  $("dupMsg").hidden=!d; if(d)$("dupMsg").textContent=A.msgDuplicada(f,d)+" Não é possível emitir outra ficha.";
+  $("btnEnviar").disabled=$("btnChegada").disabled=!!d; return d;
+}
+["nf","fornecedor","romaneioA"].forEach(id=>$(id).addEventListener("input",checarDup));
+
+async function enviar(status){
+  if(checarDup()){toast(tipo==="ROM"?"Romaneio já realizado recebimento":"NF já realizada recebimento",true);$("dupMsg").scrollIntoView({behavior:"smooth",block:"center"});return}
+  const f=montar();
+  if(tipo==="NF"&&(!f.nf||!f.fornecedor)){toast("Informe o nº da NF e o fornecedor.",true);$(f.nf?"fornecedor":"nf").focus();return}
+  if(tipo==="ROM"&&!f.romaneio){toast("Informe o nº do romaneio.",true);$("romaneioA").focus();return}
+  if(status==="em_andamento"&&!A.itensValidos(f).length){toast("Adicione pelo menos um item com descrição.",true);return}
+  if(editando)status=editando.status==="sem_acao"?"em_andamento":(editando.status==="cert_pendente"?"em_andamento":editando.status);
+  if(tipo==="NF"&&status==="em_andamento"){
+    const indef=f.itens.map((it,n)=>({it,n})).filter(({it})=>(it.descricao||it.tag)&&A.exigeCert(f,it)&&!A.temCert(it)&&it.certStatus!=="nao_recebido");
+    if(indef.length){toast(`Item ${indef.map(x=>x.n+1).join(", ")}: anexe o certificado ou marque "Sem certificado".`,true);$("itens").querySelector(`[data-i="${indef[0].n}"] .certsec`)?.scrollIntoView({behavior:"smooth",block:"center"});return}
+  }
+  const naoConf=A.itensValidos(f).filter(i=>i.conferirNF).length;
+  if(naoConf&&!enviar.avisado){enviar.avisado=true;toast(`${naoConf} item(ns) ainda não conferidos com a NF (quantidade e unidade). Confira ou toque em Enviar de novo.`,true);setTimeout(()=>enviar.avisado=false,8000);return}
+  enviar.avisado=false;
+  f.status=status;
+  const semCert=tipo==="NF"&&status==="em_andamento"&&A.pendencias(f).includes("certificado");
+  if(semCert)f.status="cert_pendente";
+  let fc=A.marcarConferencia(f,editando?"reenviada":"enviada",{por:"Campo"});
+  const nd=(f.anexos?.doc||[]).length-((editando?.anexos?.doc)||[]).length,nc=(f.anexos?.cert||[]).length-((editando?.anexos?.cert)||[]).length;
+  const nrec=A.itensValidos(f).map((it,n)=>it.certStatus==="nao_recebido"?n+1:0).filter(Boolean);
+  if(nrec.length)fc=A.registrar(fc,"cert_nao_recebido",{por:"Campo",itensTxt:nrec.join(", ")});
+  if(nd>0||nc>0)fc=A.registrar(fc,"anexos",{por:"Campo",txt:[nd>0?`${nd} foto(s) do documento`:"",nc>0?`${nc} certificado(s)`:""].filter(Boolean).join(" · ")});
+  lembrarLocal($("localPadrao").value.trim().toUpperCase());
+  try{const s=await A.store.salvar(fc);$("okNum").textContent=s.numero;$("okMsg").textContent=editando?"Correção reenviada para conferência do escritório":status==="sem_acao"?"Chegada registrada. Faça o recebimento quando puder.":semCert?"Enviado com certificado pendente. O escritório vai cobrar o fornecedor.":"Recebimento enviado para o escritório";$("okDoc").textContent=(tipo==="ROM"?"Romaneio ":"NF ")+(f.tipo==="ROM"?f.romaneio:f.nf)+" · "+A.itensValidos(f).length+" itens na ficha";editando=null;show("ok")}
+  catch(e){toast(e.code==="duplicada"?e.message:"Não foi possível salvar. Tente de novo.",true)}
+}
+$("btnEnviar").onclick=()=>enviar("em_andamento");
+$("btnChegada").onclick=()=>enviar("sem_acao");
+
+/* instalação (PWA) */
+let promptInstall=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;$("installBox").hidden=false});
+$("btnInstalar").onclick=async()=>{if(!promptInstall)return;promptInstall.prompt();await promptInstall.userChoice;promptInstall=null;$("installBox").hidden=true};
+const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const instalado=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+let iosFechado=false;try{iosFechado=localStorage.getItem("amr_ios_ok")==="1"}catch(e){}
+$("iosBox").hidden=!(ios&&!instalado&&!iosFechado);
+$("btnIosOk").onclick=()=>{$("iosBox").hidden=true;try{localStorage.setItem("amr_ios_ok","1")}catch(e){}};
+if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+
+$("badgeDemo").hidden=A.store.modo!=="exemplo";
+/* tela de entrada */
+let viuSplash=false;try{viuSplash=sessionStorage.getItem("nx_splash")==="1"}catch(e){}
+$("splash").hidden=viuSplash;
+$("btnAcessar").onclick=()=>{$("splash").hidden=true;try{sessionStorage.setItem("nx_splash","1")}catch(e){}};
+let diaAtual=A.hoje();setInterval(()=>{if(A.hoje()!==diaAtual){diaAtual=A.hoje();renderRecentes()}},60000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&A.hoje()!==diaAtual){diaAtual=A.hoje();renderRecentes()}});
+A.store.ouvir(l=>{fichas=l.filter(f=>A.ctrDe(f)==="recleaner"&&!f.lacuna);renderRecentes();if(view==="cert")renderPendCert();if(view==="lancar")checarDup()});
+show("inicio");
+})();
+</script>
+</body>
+</html>

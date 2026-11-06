@@ -1,0 +1,30 @@
+{
+  "name": "Nexum – Recebimento inteligente",
+  "short_name": "Nexum",
+  "description": "Nexum · Recebimento inteligente de materiais (NF e romaneio Anglo) do projeto AMR / Flotação Recleaner",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b2d5b",
+  "theme_color": "#0b2d5b",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
