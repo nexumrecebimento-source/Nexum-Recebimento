@@ -130,6 +130,8 @@ td.ck input{width:18px;height:18px;min-height:0}
 .marca{display:flex;align-items:center;gap:12px;min-width:0}
 .marca .nx-mark{width:40px}
 .dash-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.hello-esc{font:700 1.6rem var(--f-display);letter-spacing:-.02em;color:var(--brand,#0b2d5b);margin:0 0 16px}
+.hello-esc small{display:block;font:500 .85rem var(--f-body);letter-spacing:0;color:var(--muted);margin-top:2px;text-transform:none}
 .dash-t{margin:0;font:700 1.35rem var(--f-display);letter-spacing:-.02em;color:var(--ink)}
 .dash-sub{font-size:.78rem;color:var(--muted)}
 .seg.per button{min-height:36px;padding:6px 14px;border-radius:999px;font-weight:600;font-size:.8rem}
@@ -268,7 +270,7 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
   <div class="notice ro-note" id="roNote" hidden></div>
   <section id="v-painel">
     <div class="dash-top">
-      <div><h2 class="dash-t">Visão geral</h2><span class="dash-sub" id="dashSub"></span></div>
+      <div><div class="hello-esc" id="helloEsc"></div><h2 class="dash-t">Visão geral</h2><span class="dash-sub" id="dashSub"></span></div>
       <div class="seg per" id="per" role="group" aria-label="Período"></div>
     </div>
     <div class="notice demo" id="dashDemo" hidden></div>
@@ -539,7 +541,9 @@ function renderCtr(){
   else if(!CT().ativo)$("roNote").innerHTML=`<b>${esc(CT().nome)} · contrato encerrado.</b> Os registros ficam guardados só para consulta: dá para ver, filtrar, exportar e gerar os relatórios, mas não para lançar ou alterar.`;
   document.title="Nexum · Escritório · "+CT().nome;
 }
-window.addEventListener("nx-perfil",()=>{renderCtr();if(NXNUVEM.consulta()&&!$("v-cadastros").hidden)show("painel")});
+function renderHello(){const d=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});$("helloEsc").innerHTML=`${esc(A.saudacao())}<small>${esc(d.charAt(0).toUpperCase()+d.slice(1))}</small>`}
+renderHello();setInterval(renderHello,60000);
+window.addEventListener("nx-perfil",()=>{renderHello();renderCtr();if(NXNUVEM.consulta()&&!$("v-cadastros").hidden)show("painel")});
 function toast(t,bad){const e=$("toast");e.textContent=t;e.className="toast"+(bad?" bad":"");e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200)}
 
 /* abas */

@@ -176,7 +176,7 @@
   window.NXNUVEM = {
     salvarCad(c) { if (!usuario || APP !== "escritorio" || !(perfil === "admin" || perfil === "escritorio")) return; CONFIG.doc("cadastros").set(limpo(c)).catch(e => toastN("Cadastro não foi para o servidor: " + e.message, true)); },
     sair() { auth.signOut().then(() => location.reload()); },
-    usuario: () => usuario, perfil: () => perfil, consulta: () => perfil === "consulta", regrasFirestore
+    usuario: () => usuario, nome: () => nomeUsuario(), perfil: () => perfil, consulta: () => perfil === "consulta", regrasFirestore
   };
 
   /* ---------- aviso discreto ---------- */

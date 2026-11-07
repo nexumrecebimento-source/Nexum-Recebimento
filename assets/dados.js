@@ -400,6 +400,12 @@
     return [...new Set([...(fo?.emails || []), ...Object.keys(GRUPOS).flatMap(k => c.grupos[k] || [])])];
   }
 
-  window.AMR = { CONTRATOS, ctrDe, textoCert, certSituacao, autoStatus, anexarCertificado, temCert, CMC, LEGENDA_CMC, materialCritico, exigeCert, STATUS_ITEM, statusItem, semCertificado, pendentesDeCobranca, montarEmailCobranca, registrarCobranca, registrar: marcarConferencia, lerChaveNFe, soCnpj, MOTIVOS, CONFER, conf, marcarConferencia, GRUPOS, cadastros, destinatariosCertPendente, emailOk, CONTRATO, OBRA, ESCOPO, DOC_FICHA, DOC_MAPA, FICHA_INICIAL, TIPOS, STATUS, ORDEM_STATUS, CONF, UNIDADES, OBS_ANGLO, COLS_MAPA,
+    /* saudação pelo horário + nome e sobrenome de quem entrou */
+  function saudacao() {
+    const hr = new Date().getHours(), s = hr >= 5 && hr < 12 ? "Bom dia" : hr >= 12 && hr < 18 ? "Boa tarde" : "Boa noite";
+    const n = window.NXNUVEM && window.NXNUVEM.nome ? String(window.NXNUVEM.nome() || "").trim().split(/\s+/) : [];
+    return n.length && n[0] ? `${s}, ${n.length > 1 ? n[0] + " " + n[n.length - 1] : n[0]}` : s;
+  }
+  window.AMR = { saudacao, CONTRATOS, ctrDe, textoCert, certSituacao, autoStatus, anexarCertificado, temCert, CMC, LEGENDA_CMC, materialCritico, exigeCert, STATUS_ITEM, statusItem, semCertificado, pendentesDeCobranca, montarEmailCobranca, registrarCobranca, registrar: marcarConferencia, lerChaveNFe, soCnpj, MOTIVOS, CONFER, conf, marcarConferencia, GRUPOS, cadastros, destinatariosCertPendente, emailOk, CONTRATO, OBRA, ESCOPO, DOC_FICHA, DOC_MAPA, FICHA_INICIAL, TIPOS, STATUS, ORDEM_STATUS, CONF, UNIDADES, OBS_ANGLO, COLS_MAPA,
     norm, normForn, hoje, fmtData, fmtQtd, chaveDoc, duplicada, msgDuplicada, proximoNumero, itensValidos, pendencias, linhasMapa, csvMapa, store };
 })();
