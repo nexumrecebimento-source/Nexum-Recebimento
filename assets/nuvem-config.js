@@ -16,6 +16,8 @@ window.NEXUM_NUVEM = {
      campo    = celular, lança recebimentos e anexa certificados */
   USUARIOS: {
     "thaynara.santos@milplan.com.br": { nome: "Thaynara Santos", perfil: "admin" },
+    "samuel.souza@gmail.com": { nome: "Samuel Souza", perfil: "admin" },
+    "samuel.souza@gmail.com.br": { nome: "Samuel Souza", perfil: "admin" },
     "marcos.silva@milplan.com.br": { nome: "Marcos Silva", perfil: "campo" },
     "wilson.pagani@milplan.com.br": { nome: "Wilson Pagani", perfil: "consulta" },
     "fredie.cota@milplan.com.br": { nome: "Fredie Cota", perfil: "consulta" },
