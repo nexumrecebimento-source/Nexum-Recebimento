@@ -46,8 +46,8 @@
   }
   window.addEventListener("resize", () => itens.forEach(it => desenhar(it, performance.now() / 1000)));
   function iniciar() {
-    document.querySelectorAll("header.top").forEach(h => aplicar(h, "topo", false));
-    document.querySelectorAll(".nx-hero").forEach(h => aplicar(h, "hero", true));
+    /* topo sem linhas: não pode competir com o texto das abas */
+    document.querySelectorAll(".nx-hero:not(.hero-esc)").forEach(h => aplicar(h, "hero", true));
     requestAnimationFrame(loop);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar); else iniciar();
