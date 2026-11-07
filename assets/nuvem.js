@@ -13,8 +13,11 @@
   const auth = firebase.auth(), db = firebase.firestore();
   db.settings({ ignoreUndefinedProperties: true, merge: true });
   if (C.EMULADOR) { auth.useEmulator(C.EMULADOR.auth); db.useEmulator(C.EMULADOR.host, C.EMULADOR.port); }
-  db.enablePersistence({ synchronizeTabs: true }).catch(() => { });
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => { });
+  /* alguns navegadores não conseguem abrir o IndexedDB (perfil corrompido, disco cheio, política da empresa).
+     Nesse caso o Nexum segue sem cache local: o login vale até fechar o navegador. */
+  const idbOk = new Promise(r => { try { const q = indexedDB.open("nx-teste"); q.onsuccess = () => { try { q.result.close(); } catch (e) { } r(true); }; q.onerror = () => r(false); q.onblocked = () => r(true); setTimeout(() => r(false), 4000); } catch (e) { r(false); } });
+  const sessaoSimples = () => auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.NONE)).catch(() => { });
+  idbOk.then(ok => { if (ok) db.enablePersistence({ synchronizeTabs: true }).catch(() => { }); else sessaoSimples(); });
   const FICHAS = db.collection("fichas"), ANEXOS = db.collection("anexos"), CONFIG = db.collection("config");
 
   let usuario = null, perfil = "";
@@ -283,7 +286,13 @@
       if (!email || !senha) return msg("Preencha e-mail e senha.");
       if (!USUARIOS[email]) return msg("Este e-mail não está liberado no Nexum. Fale com a Qualidade.");
       const b = el.querySelector("#nxEntrar"); b.disabled = true; b.textContent = "Entrando…";
-      try { await auth.signInWithEmailAndPassword(email, senha); try { localStorage.setItem("nx_ultimo_email", email); } catch (e) { } }
+      const entrar = () => auth.signInWithEmailAndPassword(email, senha);
+      try {
+        if (!(await idbOk)) await sessaoSimples();
+        try { await entrar(); }
+        catch (e1) { if (/indexeddb|backing store|storage/i.test(e1.message || "")) { await sessaoSimples(); await entrar(); } else throw e1; }
+        try { localStorage.setItem("nx_ultimo_email", email); } catch (e) { }
+      }
       catch (e) { msg({ "auth/invalid-credential": "E-mail ou senha incorretos.", "auth/wrong-password": "E-mail ou senha incorretos.", "auth/user-not-found": "E-mail ou senha incorretos.", "auth/too-many-requests": "Muitas tentativas. Espere alguns minutos e tente de novo.", "auth/network-request-failed": "Sem internet. Verifique o sinal e tente de novo." }[e.code] || "Não foi possível entrar: " + e.message); b.disabled = false; b.textContent = "Entrar"; }
     };
     el.querySelector("#nxEsq").onclick = async () => {
