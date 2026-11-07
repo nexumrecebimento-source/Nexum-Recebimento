@@ -176,6 +176,7 @@
   window.NXNUVEM = {
     salvarCad(c) { if (!usuario || APP !== "escritorio" || !(perfil === "admin" || perfil === "escritorio")) return; CONFIG.doc("cadastros").set(limpo(c)).catch(e => toastN("Cadastro não foi para o servidor: " + e.message, true)); },
     sair() { auth.signOut().then(() => location.reload()); },
+    trocarSenha() { if (!usuario) return; auth.sendPasswordResetEmail(usuario.email).then(() => toastN("Enviamos um link para " + usuario.email + " criar uma nova senha (veja também o lixo eletrônico).")).catch(e => toastN("Não consegui enviar: " + e.message, true)); },
     usuario: () => usuario, nome: () => nomeUsuario(), perfil: () => perfil, consulta: () => perfil === "consulta", regrasFirestore
   };
 
@@ -232,13 +233,8 @@
     };
   }
   function esconderLogin() { const el = document.getElementById("nxLogin"); if (el) el.hidden = true; }
-  function mostrarUsuario() {
-    const b = document.getElementById("badgeDemo"); if (!b) return;
-    b.hidden = false; b.textContent = "☁ " + nomeUsuario().split(" ")[0];
-    b.title = `Conectado como ${nomeUsuario()} (${usuario.email}) · clique para sair`;
-    b.style.cursor = "pointer"; b.classList.add("nuvem");
-    b.onclick = () => { if (confirm(`Sair do Nexum?\n\nConectado como ${nomeUsuario()}.`)) window.NXNUVEM.sair(); };
-  }
+  function mostrarUsuario() { const b = document.getElementById("badgeDemo"); if (b) b.hidden = true; }
+
 
   /* ---------- regras do Firestore (para colar no console) ---------- */
   function regrasFirestore() {

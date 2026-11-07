@@ -157,6 +157,11 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
 body.consulta .go,body.consulta [data-novo],body.consulta .pc-acoes,body.consulta [data-foto],body.consulta [data-arq],body.consulta .pc-a{display:none!important}
 .nx-consulta{display:none;margin:10px 0 0;padding:10px 12px;border-radius:10px;background:#eef3fa;border:1px solid #c9d8ee;color:#1c3b66;font-size:.84rem}
 body.consulta .nx-consulta{display:block}
+.hero-campo{margin:-16px calc(-1*max(16px,env(safe-area-inset-left,0px))) 0;padding:20px max(16px,env(safe-area-inset-left,0px)) 62px;border-radius:0 0 28px 28px}
+.hero-campo+.nx-acts{margin-top:-44px}
+#v-inicio .nx-consulta{margin-top:12px}
+#v-inicio .sec-h{margin-top:22px}
+header.top{border-bottom:0!important;box-shadow:none!important}
 </style>
 </head>
 <body>
@@ -188,22 +193,18 @@ body.consulta .nx-consulta{display:block}
 <main class="wrap">
   <!-- INÍCIO -->
   <section id="v-inicio">
-    <div class="hello">
-      <div><span class="hello-d" id="helloData"></span><h2 class="hello-t" id="helloT">Bom dia</h2></div>
+    <div class="nx-hero hero-campo">
+      <span class="h-data" id="helloData"></span>
+      <h2 id="helloT">Bom dia!</h2>
+      <p id="helloFrase"></p>
+      <div class="h-stats" id="resumo"></div>
     </div>
-    <div class="resumo" id="resumo"></div>
-    <div class="sec-h" style="margin-top:18px"><h2>Novo recebimento</h2></div>
+    <div class="nx-acts" id="acoes">
+      <button class="nx-act" type="button" data-novo="NF"><span class="a-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span><span class="a-tx"><b>Nota fiscal</b><small>Receber material Milplan</small></span><span class="a-bt">Iniciar</span></button>
+      <button class="nx-act" type="button" data-novo="ROM"><span class="a-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></span><span class="a-tx"><b>Romaneio Anglo</b><small>Receber material Anglo American</small></span><span class="a-bt">Iniciar</span></button>
+      <button class="nx-act" type="button" id="rsCert"><span class="a-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M14 3v5h5v3"/><circle cx="17" cy="16" r="3"/><path d="M15.5 18.5 15 22l2-1 2 1-.5-3.5"/></svg></span><span class="a-tx"><b>Certificados <span class="a-n" id="rsCertN">0</span></b><small id="rsCertTx">Pendentes de anexar</small></span><span class="a-bt">Ver</span></button>
+    </div>
     <div class="nx-consulta"><b>Acesso de consulta.</b> Você vê os recebimentos e pendências, mas não pode lançar nem alterar.</div>
-    <div class="start">
-      <button class="go" type="button" data-novo="NF">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 9h8M8 12h8M8 15h5"/></svg>
-        <b>Nota fiscal</b><span>Material Milplan</span>
-      </button>
-      <button class="go rom" type="button" data-novo="ROM">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 9h3M13 9h3M8 12h3M13 12h3M8 15h3M13 15h3"/></svg>
-        <b>Romaneio</b><span>Material Anglo</span>
-      </button>
-    </div>
     <div class="install" id="iosBox" hidden>
       <div class="grow"><strong style="color:var(--ink)">Instalar no iPhone:</strong> abra este link no <b>Safari</b>, toque em <b>Compartilhar</b> (quadrado com seta ↑) e depois em <b>Adicionar à Tela de Início</b>.</div>
       <button class="btn ghost small" id="btnIosOk" type="button" aria-label="Fechar aviso">OK</button>
@@ -324,9 +325,10 @@ body.consulta .nx-consulta{display:block}
 <script src="../assets/vendor/firebase-app-compat.js"></script>
 <script src="../assets/vendor/firebase-auth-compat.js"></script>
 <script src="../assets/vendor/firebase-firestore-compat.js"></script>
-<script src="../assets/nuvem-config.js?v=20261107d"></script>
+<script src="../assets/nuvem-config.js?v=20261107e"></script>
 <script src="../assets/nuvem.js"></script>
 <script src="../assets/ui.js"></script>
+<script src="../assets/topo.js"></script>
 <script src="../assets/atualizacao.js"></script>
 <script>
 (function(){
@@ -361,14 +363,16 @@ function renderDevolvidas(){
   $("devolvidas").querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>abrirEdicao(fichas.find(f=>f.id===b.dataset.ed)));
 }
 function renderResumo(){
-  const h=new Date(),hoje=A.hoje();
   $("helloT").textContent=A.saudacao();
-  $("helloData").textContent=h.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+  $("helloData").textContent=A.dataLonga();
+  $("helloFrase").textContent=A.fraseDoDia();
   const lh=fichas.filter(deHoje),nHoje=lh.length,nIt=lh.reduce((s,f)=>s+A.itensValidos(f).length,0);
-  const nCert=fichas.filter(f=>f.tipo==="NF"&&f.status!=="finalizado").reduce((s,f)=>s+A.semCertificado(f).length,0);
-  $("resumo").innerHTML=[["a","truck",nHoje,nHoje===1?"Ficha hoje":"Fichas hoje"],["a","box",nIt,nIt===1?"Item hoje":"Itens hoje"],["c","cert",nCert,"Certificados pendentes"]]
-    .map(([c,i,n,t])=>c==="c"?`<button type="button" class="rs c clic" id="rsCert"><span class="ri">${NXUI.icon(i)}</span><b>${n}</b><small>${t} ›</small></button>`:`<div class="rs ${c}"><span class="ri">${NXUI.icon(i)}</span><b>${n}</b><small>${t}</small></div>`).join("");
+  const nCert=pendenciasCert().length;
+  $("resumo").innerHTML=`<span class="h-st"><b>${nHoje}</b><span>${nHoje===1?"ficha hoje":"fichas hoje"}</span></span><span class="h-st"><b>${nIt}</b><span>${nIt===1?"item hoje":"itens hoje"}</span></span>`;
+  $("rsCertN").textContent=nCert;$("rsCert").classList.toggle("alerta",nCert>0);
+  $("rsCertTx").textContent=nCert?(nCert===1?"1 item aguardando o certificado":nCert+" itens aguardando o certificado"):"Nenhum pendente. Tudo em dia ✓";
   $("rsCert").onclick=()=>show("cert");
+  if(window.NXTOPO)NXTOPO.notificacoes([{icone:"cert",texto:"Certificados pendentes",n:nCert,tom:"w",acao:()=>show("cert")}]);
 }
 function pendenciasCert(){
   return fichas.filter(f=>f.tipo==="NF"&&f.status!=="finalizado").flatMap(f=>A.itensValidos(f).map(it=>({f,it,idx:f.itens.indexOf(it)})).filter(x=>A.certSituacao(x.f,x.it)==="pendente"))
@@ -705,7 +709,7 @@ $("badgeDemo").hidden=A.store.modo!=="exemplo";
 let viuSplash=false;try{viuSplash=sessionStorage.getItem("nx_splash")==="1"}catch(e){}
 $("splash").hidden=viuSplash;
 $("btnAcessar").onclick=()=>{$("splash").hidden=true;try{sessionStorage.setItem("nx_splash","1")}catch(e){}};
-window.addEventListener("nx-perfil",()=>renderResumo());setInterval(()=>{$("helloT").textContent=A.saudacao()},60000);
+window.addEventListener("nx-perfil",()=>renderResumo());setInterval(()=>{$("helloT").textContent=A.saudacao();$("helloFrase").textContent=A.fraseDoDia();$("helloData").textContent=A.dataLonga()},60000);
 let diaAtual=A.hoje();setInterval(()=>{if(A.hoje()!==diaAtual){diaAtual=A.hoje();renderRecentes()}},60000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&A.hoje()!==diaAtual){diaAtual=A.hoje();renderRecentes()}});
 A.store.ouvir(l=>{fichas=l.filter(f=>A.ctrDe(f)==="recleaner"&&!f.lacuna);renderRecentes();if(view==="cert")renderPendCert();if(view==="lancar")checarDup()});

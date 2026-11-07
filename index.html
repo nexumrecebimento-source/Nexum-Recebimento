@@ -130,6 +130,10 @@ td.ck input{width:18px;height:18px;min-height:0}
 .marca{display:flex;align-items:center;gap:12px;min-width:0}
 .marca .nx-mark{width:40px}
 .dash-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.hero-esc{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:26px;align-items:center;border-radius:22px;padding:26px 28px;margin:4px 0 20px;box-shadow:0 18px 40px rgba(11,45,91,.22)}
+.hero-esc h2{font-size:2rem}
+.he-acts .nx-act{padding:11px 11px 11px 14px}
+@media (max-width:900px){.hero-esc{grid-template-columns:1fr;padding:22px 18px}}
 .hello-esc{font:700 1.6rem var(--f-display);letter-spacing:-.02em;color:var(--brand,#0b2d5b);margin:0 0 16px}
 .hello-esc small{display:block;font:500 .85rem var(--f-body);letter-spacing:0;color:var(--muted);margin-top:2px;text-transform:none}
 .dash-t{margin:0;font:700 1.35rem var(--f-display);letter-spacing:-.02em;color:var(--ink)}
@@ -269,8 +273,12 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
 <main class="wrap">
   <div class="notice ro-note" id="roNote" hidden></div>
   <section id="v-painel">
+    <div class="nx-hero hero-esc">
+      <div class="he-l"><span class="h-data" id="heData"></span><h2 id="heT">Bom dia!</h2><p id="heF"></p><div class="h-stats" id="heStats"></div></div>
+      <div class="nx-acts he-acts" id="heActs"></div>
+    </div>
     <div class="dash-top">
-      <div><div class="hello-esc" id="helloEsc"></div><h2 class="dash-t">Visão geral</h2><span class="dash-sub" id="dashSub"></span></div>
+      <div><h2 class="dash-t">Visão geral</h2><span class="dash-sub" id="dashSub"></span></div>
       <div class="seg per" id="per" role="group" aria-label="Período"></div>
     </div>
     <div class="notice demo" id="dashDemo" hidden></div>
@@ -512,9 +520,10 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
 <script src="assets/vendor/firebase-app-compat.js"></script>
 <script src="assets/vendor/firebase-auth-compat.js"></script>
 <script src="assets/vendor/firebase-firestore-compat.js"></script>
-<script src="assets/nuvem-config.js?v=20261107d"></script>
+<script src="assets/nuvem-config.js?v=20261107e"></script>
 <script src="assets/nuvem.js"></script>
 <script src="assets/ui.js"></script>
+<script src="assets/topo.js"></script>
 <script src="assets/dashboard.js"></script>
 <script src="assets/atualizacao.js"></script>
 <script src="assets/diligenciamento.js"></script>
@@ -541,7 +550,24 @@ function renderCtr(){
   else if(!CT().ativo)$("roNote").innerHTML=`<b>${esc(CT().nome)} · contrato encerrado.</b> Os registros ficam guardados só para consulta: dá para ver, filtrar, exportar e gerar os relatórios, mas não para lançar ou alterar.`;
   document.title="Nexum · Escritório · "+CT().nome;
 }
-function renderHello(){const d=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});$("helloEsc").innerHTML=`${esc(A.saudacao())}<small>${esc(d.charAt(0).toUpperCase()+d.slice(1))}</small>`}
+function renderHello(){
+  $("heT").textContent=A.saudacao();$("heData").textContent=A.dataLonga();$("heF").textContent=A.fraseDoDia();
+  const ativos=fichas.filter(f=>f.status!=="finalizado"&&f.status!=="sem_acao");
+  const aConf=ativos.filter(f=>A.conf(f).situacao==="pendente").length;
+  const nCert=fichas.reduce((s,f)=>s+A.itensValidos(f).filter(i=>A.certSituacao(f,i)==="pendente").length,0);
+  const nFalta=(typeof itensPend==="function"?itensPend():[]).filter(x=>x.p.tipo==="falta").length;
+  const hojeN=fichas.filter(f=>(f.dataRecebimento||"")===A.hoje()).length;
+  $("heStats").innerHTML=`<span class="h-st"><b>${hojeN}</b><span>recebidos hoje</span></span><span class="h-st"><b>${ativos.length}</b><span>fichas em aberto</span></span>`;
+  const I=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const cards=[
+    {k:"conf",ic:I('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),t:"Fichas a conferir",n:aConf,s:aConf?"Lançadas pelo campo, aguardando conferência":"Nada aguardando conferência ✓",bt:"Ver",go:()=>{fStatus="todas";show("fichas")}},
+    {k:"cert",ic:I('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M14 3v5h5v3"/><circle cx="17" cy="16" r="3"/><path d="M15.5 18.5 15 22l2-1 2 1-.5-3.5"/>'),t:"Certificados",n:nCert,s:nCert?"Itens aguardando o certificado":"Todos os certificados em dia ✓",bt:"Ver",go:()=>show("certs")},
+    {k:"falta",ic:I('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'),t:"Informações faltando",n:nFalta,s:nFalta?"Dados para completar nas fichas":"Nenhuma informação faltando ✓",bt:"Ver",go:()=>show("pend")}];
+  $("heActs").innerHTML=cards.map((c,i)=>`<button class="nx-act${c.n&&c.k!=="conf"?" alerta":""}" type="button" data-i="${i}"><span class="a-ic">${c.ic}</span><span class="a-tx"><b>${c.t} <span class="a-n">${c.n.toLocaleString("pt-BR")}</span></b><small>${c.s}</small></span><span class="a-bt">${c.bt}</span></button>`).join("");
+  $("heActs").querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>cards[+b.dataset.i].go());
+  if(window.NXTOPO)NXTOPO.notificacoes([{icone:"eye",texto:"Fichas a conferir",n:aConf,acao:cards[0].go},{icone:"cert",texto:"Certificados pendentes",n:nCert,tom:"w",acao:cards[1].go},{icone:"alert",texto:"Informações faltando",n:nFalta,tom:"w",acao:cards[2].go},{icone:"doc",texto:"Números sem ficha no mapa",n:lacs.length,tom:"b",acao:()=>{fPend="falta:lacuna";show("pend")}}]);
+}
+if(window.NXTOPO)NXTOPO.configurar(()=>{if(window.NXNUVEM&&NXNUVEM.consulta&&NXNUVEM.consulta()){toast("Configurações são só do administrador.",true);return}show("cadastros")});
 renderHello();setInterval(renderHello,60000);
 window.addEventListener("nx-perfil",()=>{renderHello();renderCtr();if(NXNUVEM.consulta()&&!$("v-cadastros").hidden)show("painel")});
 function toast(t,bad){const e=$("toast");e.textContent=t;e.className="toast"+(bad?" bad":"");e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200)}
@@ -1114,7 +1140,7 @@ async function importar(lista){
   }catch(e){console.error(e);toast("Não consegui importar: "+(e.message||e),true)}
 }
 
-function renderTudo(){renderPainel();renderLista();renderCerts();renderPend();if(!$("v-rel").hidden)renderRel();renderMapa();renderCad();if(ed)avisos()}
+function renderTudo(){renderHello();renderPainel();renderLista();renderCerts();renderPend();if(!$("v-rel").hidden)renderRel();renderMapa();renderCad();if(ed)avisos()}
 $("badgeDemo").hidden=A.store.modo!=="exemplo";
 A.cadastros.ouvir(c=>{cad=c;renderCad();if(ed)avisos()});
 renderCtr();

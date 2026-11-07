@@ -400,12 +400,17 @@
     return [...new Set([...(fo?.emails || []), ...Object.keys(GRUPOS).flatMap(k => c.grupos[k] || [])])];
   }
 
-    /* saudação pelo horário + nome e sobrenome de quem entrou */
+    /* saudação pelo horário + primeiro nome (05h–11h59 bom dia · 12h–17h59 boa tarde · 18h–04h59 boa noite) */
+  function periodo() { const hr = new Date().getHours(); return hr >= 5 && hr < 12 ? "manha" : hr >= 12 && hr < 18 ? "tarde" : "noite"; }
   function saudacao() {
-    const hr = new Date().getHours(), s = hr >= 5 && hr < 12 ? "Bom dia" : hr >= 12 && hr < 18 ? "Boa tarde" : "Boa noite";
-    const n = window.NXNUVEM && window.NXNUVEM.nome ? String(window.NXNUVEM.nome() || "").trim().split(/\s+/) : [];
-    return n.length && n[0] ? `${s}, ${n.length > 1 ? n[0] + " " + n[n.length - 1] : n[0]}` : s;
+    const p = periodo(), s = { manha: "Bom dia", tarde: "Boa tarde", noite: "Boa noite" }[p], e = { manha: "☀️", tarde: "🌤️", noite: "🌙" }[p];
+    const n = window.NXNUVEM && window.NXNUVEM.nome ? String(window.NXNUVEM.nome() || "").trim().split(/\s+/)[0] : "";
+    return `${s}${n ? ", " + n : ""}! ${e}`;
   }
-  window.AMR = { saudacao, CONTRATOS, ctrDe, textoCert, certSituacao, autoStatus, anexarCertificado, temCert, CMC, LEGENDA_CMC, materialCritico, exigeCert, STATUS_ITEM, statusItem, semCertificado, pendentesDeCobranca, montarEmailCobranca, registrarCobranca, registrar: marcarConferencia, lerChaveNFe, soCnpj, MOTIVOS, CONFER, conf, marcarConferencia, GRUPOS, cadastros, destinatariosCertPendente, emailOk, CONTRATO, OBRA, ESCOPO, DOC_FICHA, DOC_MAPA, FICHA_INICIAL, TIPOS, STATUS, ORDEM_STATUS, CONF, UNIDADES, OBS_ANGLO, COLS_MAPA,
+  function fraseDoDia() {
+    return { manha: "Que bom ter você por aqui. Vamos manter tudo em ordem hoje?", tarde: "Seguimos firmes. Vamos fechar o dia com tudo em ordem?", noite: "Ainda por aqui? Vamos deixar tudo pronto para amanhã." }[periodo()];
+  }
+  function dataLonga() { const d = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }); return d.charAt(0).toUpperCase() + d.slice(1); }
+  window.AMR = { saudacao, fraseDoDia, dataLonga, CONTRATOS, ctrDe, textoCert, certSituacao, autoStatus, anexarCertificado, temCert, CMC, LEGENDA_CMC, materialCritico, exigeCert, STATUS_ITEM, statusItem, semCertificado, pendentesDeCobranca, montarEmailCobranca, registrarCobranca, registrar: marcarConferencia, lerChaveNFe, soCnpj, MOTIVOS, CONFER, conf, marcarConferencia, GRUPOS, cadastros, destinatariosCertPendente, emailOk, CONTRATO, OBRA, ESCOPO, DOC_FICHA, DOC_MAPA, FICHA_INICIAL, TIPOS, STATUS, ORDEM_STATUS, CONF, UNIDADES, OBS_ANGLO, COLS_MAPA,
     norm, normForn, hoje, fmtData, fmtQtd, chaveDoc, duplicada, msgDuplicada, proximoNumero, itensValidos, pendencias, linhasMapa, csvMapa, store };
 })();
