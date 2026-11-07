@@ -150,22 +150,23 @@ input,select,textarea{border-radius:8px}
 .nx-hero .h-st b{font:700 1.05rem var(--f-display);color:#fff;font-variant-numeric:tabular-nums}
 .nx-hero .h-st span{font-size:.74rem;color:#a9c7ee}
 
-/* cartões de ação em degradê, sobrepostos ao herói */
+/* cartões de ação: brancos, com ícone em degradê (o azul é detalhe, não fundo) */
 .nx-acts{position:relative;display:grid;gap:10px}
-.nx-act{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:18px;padding:13px 13px 13px 15px;text-align:left;cursor:pointer;font:inherit;color:#06223f;
-  background:linear-gradient(100deg,#7fe3ff 0%,#4fb6ff 48%,#2d8cff 100%);
-  box-shadow:0 12px 26px rgba(45,140,255,.32),inset 0 1px 0 rgba(255,255,255,.55);transition:transform .15s,box-shadow .15s}
-.nx-act:hover{transform:translateY(-1px);box-shadow:0 16px 32px rgba(45,140,255,.42),inset 0 1px 0 rgba(255,255,255,.6)}
+.nx-act{position:relative;display:flex;align-items:center;gap:12px;width:100%;border:1px solid var(--line);border-radius:16px;padding:12px 12px 12px 14px;text-align:left;cursor:pointer;font:inherit;color:var(--ink);
+  background:var(--surface);box-shadow:0 6px 18px rgba(11,45,91,.08);transition:transform .15s,box-shadow .15s,border-color .15s;overflow:hidden}
+.nx-act::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(180deg,#5fe0ff,#2d8cff)}
+.nx-act:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(11,45,91,.12);border-color:rgba(45,140,255,.35)}
 .nx-act:active{transform:translateY(1px)}
-.nx-act .a-ic{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.35);color:#0b2d5b;flex:0 0 auto;border:1px solid rgba(255,255,255,.5)}
-.nx-act .a-ic svg,.nx-act .a-ic .ico{width:22px;height:22px}
+.nx-act .a-ic{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;color:#fff;flex:0 0 auto;background:linear-gradient(135deg,#5fd0ff,#2d8cff 60%,#1f6fe0);box-shadow:0 6px 14px rgba(45,140,255,.28)}
+.nx-act .a-ic svg,.nx-act .a-ic .ico{width:21px;height:21px}
 .nx-act .a-tx{flex:1;min-width:0}
-.nx-act .a-tx b{display:block;font:700 1.02rem var(--f-display);letter-spacing:-.01em;color:#06223f}
-.nx-act .a-tx small{display:block;font-size:.78rem;color:#103d6e;opacity:.9;margin-top:1px}
-.nx-act .a-bt{flex:0 0 auto;min-width:84px;text-align:center;border-radius:11px;background:#0b2d5b;color:#7fe3ff;font:700 .86rem var(--f-body);padding:10px 14px;box-shadow:0 0 0 1px rgba(127,227,255,.25),0 6px 14px rgba(11,45,91,.35)}
-.nx-act.alerta{background:linear-gradient(100deg,#ffe3a6 0%,#ffc56b 50%,#ffa94d 100%);box-shadow:0 12px 26px rgba(255,169,77,.3),inset 0 1px 0 rgba(255,255,255,.55)}
-.nx-act.alerta .a-bt{color:#ffd27a}
-.nx-act .a-n{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:6px;border-radius:999px;background:#0b2d5b;color:#fff;font:700 .72rem var(--f-body);vertical-align:2px}
+.nx-act .a-tx b{display:block;font:700 1rem var(--f-display);letter-spacing:-.01em;color:var(--ink)}
+.nx-act .a-tx small{display:block;font-size:.78rem;color:var(--muted);margin-top:1px}
+.nx-act .a-bt{flex:0 0 auto;min-width:76px;text-align:center;border-radius:10px;background:#0b2d5b;color:#fff;font:600 .84rem var(--f-body);padding:9px 12px}
+.nx-act.alerta::before{background:linear-gradient(180deg,#ffd27a,#f59e0b)}
+.nx-act.alerta .a-ic{background:linear-gradient(135deg,#ffd27a,#f59e0b);box-shadow:0 6px 14px rgba(245,158,11,.28)}
+.nx-act .a-n{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:6px;border-radius:999px;background:#e6eef7;color:#0b2d5b;font:700 .72rem var(--f-body);vertical-align:2px}
+.nx-act.alerta .a-n{background:#fdf0d9;color:#8a5a00}
 @media (prefers-reduced-motion:no-preference){.nx-act{animation:nxIn .45s ease-out both}.nx-act:nth-child(2){animation-delay:.06s}.nx-act:nth-child(3){animation-delay:.12s}@keyframes nxIn{from{opacity:0;transform:translateY(10px)}}}
 
 /* ===== Nexum · linhas luminosas dentro do app ===== */

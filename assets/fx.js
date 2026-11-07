@@ -4,8 +4,8 @@
   const PRESETS = {
     topo: [{ n: 26, y0: 1.25, y1: -.15, arco: .05, amp: .35, f: 4.2, v: .12, fase: 2.4, ond: .10, alfa: .55, lw: .8 },
            { n: 16, y0: 1.1, y1: .1, arco: -.1, amp: .25, f: 3.1, v: -.09, fase: 3.2, ond: .12, alfa: .35, lw: .7 }],
-    hero: [{ n: 48, y0: 1.12, y1: .05, arco: .08, amp: .2, f: 5.0, v: .18, fase: 2.6, ond: .05, alfa: .8, lw: .9 },
-           { n: 30, y0: 1.0, y1: .35, arco: -.06, amp: .14, f: 3.4, v: -.13, fase: 3.6, ond: .06, alfa: .55, lw: .8 }]
+    hero: [{ n: 36, y0: 1.3, y1: .55, arco: .02, amp: .18, f: 5.0, v: .16, fase: 2.6, ond: .05, alfa: .38, lw: .8 },
+           { n: 22, y0: 1.2, y1: .75, arco: -.06, amp: .12, f: 3.4, v: -.12, fase: 3.6, ond: .06, alfa: .26, lw: .7 }]
   };
   const itens = [];
   function faixa(ctx, w, h, t, o) {

@@ -130,10 +130,13 @@ td.ck input{width:18px;height:18px;min-height:0}
 .marca{display:flex;align-items:center;gap:12px;min-width:0}
 .marca .nx-mark{width:50px;height:50px}
 .dash-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-.hero-esc{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:26px;align-items:center;border-radius:22px;padding:26px 28px;margin:4px 0 20px;box-shadow:0 18px 40px rgba(11,45,91,.22)}
-.hero-esc h2{font-size:2rem}
-.he-acts .nx-act{padding:11px 11px 11px 14px}
-@media (max-width:900px){.hero-esc{grid-template-columns:1fr;padding:22px 18px}}
+.hero-esc{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;border-radius:18px;padding:16px 22px;margin:4px 0 12px;box-shadow:0 10px 26px rgba(11,45,91,.16)}
+.hero-esc h2{font-size:1.45rem;margin:0 0 2px}
+.hero-esc p{font-size:.88rem}
+.hero-esc .he-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.hero-esc .h-stats{margin-top:0}
+.he-acts{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:20px}
+@media (max-width:900px){.he-acts{grid-template-columns:1fr}}
 .hello-esc{font:700 1.6rem var(--f-display);letter-spacing:-.02em;color:var(--brand,#0b2d5b);margin:0 0 16px}
 .hello-esc small{display:block;font:500 .85rem var(--f-body);letter-spacing:0;color:var(--muted);margin-top:2px;text-transform:none}
 .dash-t{margin:0;font:700 1.35rem var(--f-display);letter-spacing:-.02em;color:var(--ink)}
@@ -274,9 +277,10 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
   <div class="notice ro-note" id="roNote" hidden></div>
   <section id="v-painel">
     <div class="nx-hero hero-esc">
-      <div class="he-l"><span class="h-data" id="heData"></span><h2 id="heT">Bom dia!</h2><p id="heF"></p><div class="h-stats" id="heStats"></div></div>
-      <div class="nx-acts he-acts" id="heActs"></div>
+      <div class="he-l"><h2 id="heT">Bom dia!</h2><p id="heF"></p></div>
+      <div class="he-r"><span class="h-data" id="heData"></span><div class="h-stats" id="heStats"></div></div>
     </div>
+    <div class="nx-acts he-acts" id="heActs"></div>
     <div class="dash-top">
       <div><h2 class="dash-t">Visão geral</h2><span class="dash-sub" id="dashSub"></span></div>
       <div class="seg per" id="per" role="group" aria-label="Período"></div>
