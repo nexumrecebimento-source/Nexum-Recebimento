@@ -13,6 +13,7 @@ window.NEXUM_NUVEM = {
   /* quem pode entrar e em qual app (e-mail em minúsculas) */
   USUARIOS: {
     "thaynara.santos@milplan.com.br": { nome: "Thaynara Santos", perfil: "escritorio" },
-    "marcos.silva@milplan.com.br": { nome: "Marcos Silva", perfil: "campo" }
+    "marcos.silva@milplan.com.br": { nome: "Marcos Silva", perfil: "campo" },
+    "wilson.pagani@milplan.com.br": { nome: "Wilson Pagani", perfil: "escritorio" }
   }
 };
