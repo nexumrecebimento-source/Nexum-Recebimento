@@ -199,7 +199,7 @@ table.ct tbody tr{cursor:default}
 .ctrsel button small{font-weight:500;opacity:.75;margin-left:4px}
 @media (max-width:900px){.ctrsel button small{display:none}}
 .ro-note{margin:14px 0 12px;background:#eef3fa;border:1px solid #c9d8ee;color:#1c3b66;border-radius:10px;padding:10px 14px;font-size:.86rem}
-body.ro #btnSalvar,body.ro #btnExcluir,body.ro #btnAprovar,body.ro #btnDevolver,body.ro #cobBox,body.ro #btnAddIt,body.ro [data-anexar],body.ro [data-reg],body.ro [data-validar],body.ro #btnAutoFill,body.ro [data-conf-auto],body.ro [data-cancelar],body.ro #pendBulk{display:none!important}
+body.consulta #btnImpEscolher,body.consulta #impBox,body.ro #btnSalvar,body.ro #btnExcluir,body.ro #btnAprovar,body.ro #btnDevolver,body.ro #cobBox,body.ro #btnAddIt,body.ro [data-anexar],body.ro [data-reg],body.ro [data-validar],body.ro #btnAutoFill,body.ro [data-conf-auto],body.ro [data-cancelar],body.ro #pendBulk{display:none!important}
 .mais{display:flex;justify-content:center;gap:10px;align-items:center;padding:12px 0;color:var(--muted);font-size:.82rem}
 .mais:empty{display:none}
 .pcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:4px 0 14px}
@@ -510,7 +510,7 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
 <script src="assets/vendor/firebase-app-compat.js"></script>
 <script src="assets/vendor/firebase-auth-compat.js"></script>
 <script src="assets/vendor/firebase-firestore-compat.js"></script>
-<script src="assets/nuvem-config.js?v=20261107c"></script>
+<script src="assets/nuvem-config.js?v=20261107d"></script>
 <script src="assets/nuvem.js"></script>
 <script src="assets/ui.js"></script>
 <script src="assets/dashboard.js"></script>
@@ -531,11 +531,15 @@ function maisBtn(el,total,k,fn){$(el).innerHTML=total>lim[k]?`Mostrando ${lim[k]
 function renderCtr(){
   $("ctrSel").innerHTML=Object.values(A.CONTRATOS).map(c=>`<button type="button" data-c="${c.id}" aria-pressed="${c.id===ctr}">${c.nome}${c.ativo?"":"<small>· encerrado</small>"}</button>`).join("");
   $("ctrSel").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{if(b.dataset.c===ctr)return;ctr=b.dataset.c;try{localStorage.setItem("nx_ctr",ctr)}catch(e){}Object.keys(lim).forEach(k=>lim[k]=300);fStatus="todas";filtrar();renderCtr();renderTudo()});
-  $("hdCtr").textContent=CT().nome;document.body.classList.toggle("ro",!CT().ativo);
-  $("roNote").hidden=CT().ativo;
-  if(!CT().ativo)$("roNote").innerHTML=`<b>${esc(CT().nome)} · contrato encerrado.</b> Os registros ficam guardados só para consulta: dá para ver, filtrar, exportar e gerar os relatórios, mas não para lançar ou alterar.`;
+  const consulta=!!(window.NXNUVEM&&NXNUVEM.consulta&&NXNUVEM.consulta());
+  $("hdCtr").textContent=CT().nome;document.body.classList.toggle("ro",!CT().ativo||consulta);
+  $("roNote").hidden=CT().ativo&&!consulta;
+  document.querySelector('.tab[data-v="cadastros"]').hidden=consulta;
+  if(consulta)$("roNote").innerHTML=`<b>Acesso de consulta.</b> Você vê todas as fichas, pendências e o painel, e pode gerar os relatórios e exportar, mas não pode lançar nem alterar nada.`;
+  else if(!CT().ativo)$("roNote").innerHTML=`<b>${esc(CT().nome)} · contrato encerrado.</b> Os registros ficam guardados só para consulta: dá para ver, filtrar, exportar e gerar os relatórios, mas não para lançar ou alterar.`;
   document.title="Nexum · Escritório · "+CT().nome;
 }
+window.addEventListener("nx-perfil",()=>{renderCtr();if(NXNUVEM.consulta()&&!$("v-cadastros").hidden)show("painel")});
 function toast(t,bad){const e=$("toast");e.textContent=t;e.className="toast"+(bad?" bad":"");e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200)}
 
 /* abas */

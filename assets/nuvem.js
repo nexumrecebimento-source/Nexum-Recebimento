@@ -17,7 +17,9 @@
   auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => { });
   const FICHAS = db.collection("fichas"), ANEXOS = db.collection("anexos"), CONFIG = db.collection("config");
 
-  let usuario = null;
+  let usuario = null, perfil = "";
+  const PODE_EDITAR = () => perfil === "admin" || perfil === "escritorio" || perfil === "campo";
+  const soLeitura = () => { const e = new Error("Seu acesso é só de consulta: não é possível alterar."); e.code = "consulta"; return e; };
   const nomeUsuario = () => usuario ? (USUARIOS[usuario.email.toLowerCase()] || {}).nome || usuario.email : "";
   const diaLocal = iso => { if (!iso) return ""; const d = new Date(iso); return isNaN(d) ? "" : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   const limpo = o => JSON.parse(JSON.stringify(o));
@@ -117,7 +119,7 @@
     modo: "nuvem", carregado, carregarAnexo, carregarAnexos,
     ouvir(fn) { ouvintes.add(fn); if (pronto) fn(lista.slice()); return () => ouvintes.delete(fn); },
     async salvar(f) {
-      await carregado;
+      await carregado; if (!PODE_EDITAR()) throw soLeitura();
       f = A.autoStatus(limpo(f)); f.contrato = A.ctrDe(f);
       const dup = A.duplicada(f, await mesmaChave(f));
       if (dup) { const e = new Error(A.msgDuplicada(f, dup)); e.code = "duplicada"; e.outra = dup; throw e; }
@@ -139,7 +141,7 @@
       return g;
     },
     async salvarVarias(l) {
-      await carregado; const agora = new Date().toISOString();
+      await carregado; if (!PODE_EDITAR() || perfil === "campo") return; const agora = new Date().toISOString();
       for (let i = 0; i < l.length; i += 400) {
         const b = db.batch();
         l.slice(i, i + 400).forEach(f => { const g = A.autoStatus(limpo(f)); g.atualizadoEm = agora; g.chave = A.chaveDoc(g) || null; b.set(FICHAS.doc(g.id), guardarAnexos(g)); });
@@ -147,7 +149,7 @@
       }
     },
     async importar(ctr, l) {
-      await carregado;
+      await carregado; if (!(perfil === "admin" || perfil === "escritorio")) throw soLeitura();
       const velhos = await FICHAS.where("contrato", "==", ctr).where("importado", "==", true).get();
       for (let i = 0; i < velhos.docs.length; i += 450) { const b = db.batch(); velhos.docs.slice(i, i + 450).forEach(d => b.delete(d.ref)); await b.commit(); }
       const agora = new Date().toISOString();
@@ -161,6 +163,7 @@
       return l.length;
     },
     async excluir(id) {
+      if (!(perfil === "admin" || perfil === "escritorio")) throw soLeitura();
       const f = lista.find(o => o.id === id);
       await FICHAS.doc(id).delete();
       if (f && f.anexos) ["doc", "cert"].forEach(k => (f.anexos[k] || []).forEach(a => { if (a.ref) ANEXOS.where("fichaId", "==", id).get().then(s => s.docs.forEach(d => d.ref.delete())).catch(() => { }); }));
@@ -171,15 +174,15 @@
 
   /* cadastros (fornecedores, e-mails, numeração inicial…) também vão para o banco */
   window.NXNUVEM = {
-    salvarCad(c) { if (!usuario || APP !== "escritorio") return; CONFIG.doc("cadastros").set(limpo(c)).catch(e => toastN("Cadastro não foi para o servidor: " + e.message, true)); },
+    salvarCad(c) { if (!usuario || APP !== "escritorio" || !(perfil === "admin" || perfil === "escritorio")) return; CONFIG.doc("cadastros").set(limpo(c)).catch(e => toastN("Cadastro não foi para o servidor: " + e.message, true)); },
     sair() { auth.signOut().then(() => location.reload()); },
-    usuario: () => usuario, regrasFirestore
+    usuario: () => usuario, perfil: () => perfil, consulta: () => perfil === "consulta", regrasFirestore
   };
 
   /* ---------- aviso discreto ---------- */
   function toastN(msg, ruim) {
     const t = document.getElementById("toast");
-    if (t) { t.textContent = msg; t.className = "toast show" + (ruim ? " bad" : ""); clearTimeout(toastN.t); toastN.t = setTimeout(() => t.className = "toast", 4200); }
+    if (t) { t.textContent = msg; t.hidden = false; t.className = "toast show" + (ruim ? " bad" : ""); clearTimeout(toastN.t); toastN.t = setTimeout(() => { t.className = "toast"; if (APP === "escritorio") t.hidden = true; }, 4200); }
     else console.log(msg);
   }
 
@@ -239,25 +242,28 @@
 
   /* ---------- regras do Firestore (para colar no console) ---------- */
   function regrasFirestore() {
-    const por = p => Object.entries(USUARIOS).filter(([, v]) => v.perfil === p).map(([k]) => `'${k}'`).join(", ");
+    const por = (...ps) => Object.entries(USUARIOS).filter(([, v]) => ps.includes(v.perfil)).map(([k]) => `'${k}'`).join(", ");
     return `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function email() { return request.auth.token.email.lower(); }
-    function escritorio() { return request.auth != null && email() in [${por("escritorio")}]; }
+    function admin() { return request.auth != null && email() in [${por("admin", "escritorio")}]; }
+    function consulta() { return request.auth != null && email() in [${por("consulta")}]; }
     function campo() { return request.auth != null && email() in [${por("campo")}]; }
-    function liberado() { return escritorio() || campo(); }
+    function leitor() { return admin() || consulta() || campo(); }
     match /fichas/{id} {
-      allow read, create, update: if liberado();
-      allow delete: if escritorio();
+      allow read: if leitor();
+      allow create, update: if admin() || campo();
+      allow delete: if admin();
     }
     match /anexos/{id} {
-      allow read, create: if liberado();
-      allow update, delete: if escritorio();
+      allow read: if leitor();
+      allow create: if admin() || campo();
+      allow update, delete: if admin();
     }
     match /config/{id} {
-      allow read: if liberado();
-      allow write: if escritorio() || (campo() && id.matches('numeracao_.*'));
+      allow read: if leitor();
+      allow write: if admin() || (campo() && id.matches('numeracao_.*'));
     }
   }
 }`;
@@ -267,9 +273,12 @@ service cloud.firestore {
   let avisoSaida = "";
   auth.onAuthStateChanged(u => {
     if (!u) { usuario = null; telaLogin("login", avisoSaida); avisoSaida = ""; return; }
-    const perfil = (USUARIOS[(u.email || "").toLowerCase()] || {}).perfil;
-    if (!perfil) { avisoSaida = "Este e-mail não está liberado no Nexum."; auth.signOut(); return; }
-    if (APP === "escritorio" && perfil !== "escritorio") { avisoSaida = "Seu acesso é do app de campo (celular). O escritório é só para a Qualidade."; auth.signOut(); return; }
-    usuario = u; esconderLogin(); mostrarUsuario(); assinar();
+    const pf = (USUARIOS[(u.email || "").toLowerCase()] || {}).perfil;
+    if (!pf) { avisoSaida = "Este e-mail não está liberado no Nexum."; auth.signOut(); return; }
+    if (APP === "escritorio" && pf === "campo") { avisoSaida = "Seu acesso é do app de campo (celular). O escritório é só para a Qualidade."; auth.signOut(); return; }
+    usuario = u; perfil = pf; esconderLogin(); mostrarUsuario();
+    document.body.classList.toggle("consulta", perfil === "consulta");
+    window.dispatchEvent(new CustomEvent("nx-perfil", { detail: perfil }));
+    assinar();
   });
 })();

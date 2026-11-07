@@ -10,13 +10,16 @@ window.NEXUM_NUVEM = {
     messagingSenderId: "406907215685",
     appId: "1:406907215685:web:0efa99b9cf3c8aa734682c"
   },
-  /* quem pode entrar e em qual app (e-mail em minúsculas) */
+  /* quem pode entrar (e-mail em minúsculas) e o perfil:
+     admin    = escritório, edita tudo (lança, corrige, aprova, importa, cadastros)
+     consulta = escritório e celular, só visualiza e gera relatórios
+     campo    = celular, lança recebimentos e anexa certificados */
   USUARIOS: {
-    "thaynara.santos@milplan.com.br": { nome: "Thaynara Santos", perfil: "escritorio" },
+    "thaynara.santos@milplan.com.br": { nome: "Thaynara Santos", perfil: "admin" },
     "marcos.silva@milplan.com.br": { nome: "Marcos Silva", perfil: "campo" },
-    "wilson.pagani@milplan.com.br": { nome: "Wilson Pagani", perfil: "escritorio" },
-    "fredie.cota@milplan.com.br": { nome: "Fredie Cota", perfil: "escritorio" },
-    "eliene.vieira@milplan.com.br": { nome: "Eliene Vieira", perfil: "escritorio" },
-    "edigar.barreto@milplan.com.br": { nome: "Edigar Barreto", perfil: "escritorio" }
+    "wilson.pagani@milplan.com.br": { nome: "Wilson Pagani", perfil: "consulta" },
+    "fredie.cota@milplan.com.br": { nome: "Fredie Cota", perfil: "consulta" },
+    "eliene.vieira@milplan.com.br": { nome: "Eliene Vieira", perfil: "consulta" },
+    "edigar.barreto@milplan.com.br": { nome: "Edigar Barreto", perfil: "consulta" }
   }
 };
