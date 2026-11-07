@@ -1,1 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80"><defs><linearGradient id="a" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0B2D5B"/><stop offset="1" stop-color="#1A4F94"/></linearGradient><linearGradient id="b" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1F7AE8"/><stop offset="1" stop-color="#2D8CFF"/></linearGradient></defs><path fill="url(#a)" d="M3 76 30 6h17L20 76z"/><path fill="url(#a)" opacity=".82" d="M30 6h17l19 49-9 21z"/><path fill="url(#b)" d="M42 54 57 76h7L99 3 88 7 61 63 52 47z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="nxRingL" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9fe4ff"/><stop offset=".5" stop-color="#2d8cff"/><stop offset="1" stop-color="#7fd0ff"/></linearGradient>
+    <linearGradient id="nxSilverL" x1="0" y1="1" x2=".6" y2="0"><stop offset="0" stop-color="#0b2d5b"/><stop offset=".6" stop-color="#16437f"/><stop offset="1" stop-color="#1f5296"/></linearGradient>
+    <linearGradient id="nxDiagL" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f5296"/><stop offset=".55" stop-color="#3a78c8"/><stop offset="1" stop-color="#2d8cff"/></linearGradient>
+    <linearGradient id="nxBlueL" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1f5fe0"/><stop offset=".6" stop-color="#2d8cff"/><stop offset="1" stop-color="#36d0ff"/></linearGradient>
+    <linearGradient id="nxSwooshL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1a4fd0" stop-opacity="0"/><stop offset=".35" stop-color="#2d8cff"/><stop offset="1" stop-color="#5fe0ff"/></linearGradient>
+    <filter id="nxGlowL" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <g fill="none" stroke="url(#nxRingL)" stroke-linecap="round" filter="url(#nxGlowL)">
+    <path d="M17 78 A47 47 0 0 1 84 18" stroke-width="3"/>
+    <path d="M100 38 A47 47 0 0 1 44 105" stroke-width="3"/>
+  </g>
+<path fill="url(#nxSwooshL)" filter="url(#nxGlowL)" d="M18 95 C48 110 84 102 104 62 C86 88 56 97 26 95 Z"/>
+  <path fill="url(#nxSilverL)" d="M27 90 L49 31 Q51 27 55 27 L64 27 L41 89 Q40 92 36 92 L30 92 Q26 92 27 90 Z"/>
+  <path fill="url(#nxDiagL)" d="M55 27 L64 27 L84 80 L77 92 Z"/>
+  <path fill="url(#nxBlueL)" filter="url(#nxGlowL)" d="M77 92 L99 30 L110 28 L87 89 Z"/>
+</svg>

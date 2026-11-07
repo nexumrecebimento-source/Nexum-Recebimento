@@ -75,7 +75,7 @@ textarea{min-height:70px}
 @media (prefers-reduced-motion:no-preference){.rise{animation:rise .18s ease-out}@keyframes rise{from{transform:translateY(16px);opacity:.6}}}
 
 /* marca Nexum */
-.nx-mark{width:34px;height:auto;flex:0 0 auto;display:block}
+.nx-mark{width:44px;height:44px;flex:0 0 auto;display:block;filter:drop-shadow(0 0 10px rgba(45,140,255,.35))}
 .wm{font-family:var(--f-display);font-weight:700;letter-spacing:-.02em;text-transform:none}
 .wm-tag{color:var(--hl)}
 .btn.primary{box-shadow:0 4px 14px rgba(31,122,232,.28)}

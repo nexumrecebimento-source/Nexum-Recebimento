@@ -131,7 +131,7 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
 .splash .sp-bg::after{content:"";position:absolute;inset:auto 0 0 0;height:30%;background:linear-gradient(135deg,#1f6fd6 0%,#2d8cff 100%);clip-path:polygon(100% 0,100% 100%,0 100%,0 78%);opacity:.5}
 .splash .sp-bg::before{content:"";position:absolute;inset:auto 0 0 0;height:20%;background:#0b2d5b;clip-path:polygon(100% 45%,100% 100%,0 100%,0 92%);opacity:.9}
 .splash .sp-in{position:relative;width:100%;max-width:420px;display:grid;justify-items:center;text-align:center;gap:10px;padding:calc(30px + env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px))}
-.splash .sp-mark{width:104px;height:auto;filter:drop-shadow(0 8px 20px rgba(0,0,0,.25))}
+.splash .sp-mark{width:150px;height:150px;filter:drop-shadow(0 0 24px rgba(45,140,255,.45))}
 .splash .sp-nome{font-family:var(--f-display);font-weight:700;font-size:3rem;letter-spacing:-.03em;line-height:1}
 .splash .sp-tag{font-weight:500;font-size:1.05rem}
 .splash .sp-tag b{color:#7db8ff;font-weight:700}
@@ -168,7 +168,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
 <section class="splash" id="splash" hidden>
   <div class="sp-bg"></div>
   <div class="sp-in">
-    <div class="sp-logo"><svg class="sp-mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80"><defs><linearGradient id="spa" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d6e6fa"/></linearGradient><linearGradient id="spb" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#2D8CFF"/><stop offset="1" stop-color="#8CC2FF"/></linearGradient></defs><path fill="url(#spa)" d="M3 76 30 6h17L20 76z"/><path fill="url(#spa)" opacity=".82" d="M30 6h17l19 49-9 21z"/><path fill="url(#spb)" d="M42 54 57 76h7L99 3 88 7 61 63 52 47z"/></svg>
+    <div class="sp-logo"><img class="sp-mark" src="../assets/marca/nexum-n-claro.svg" alt="" aria-hidden="true">
 </div>
     <div class="sp-nome">Nexum</div>
     <div class="sp-tag">Recebimento <b>inteligente.</b></div>
@@ -182,7 +182,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
   <div class="wrap">
     <div class="hbar">
       <button class="back" id="btnVoltar" type="button" hidden aria-label="Voltar">← Voltar</button>
-      <span id="hIcone" style="display:flex"><svg class="nx-mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80"><defs><linearGradient id="hda" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d6e6fa"/></linearGradient><linearGradient id="hdb" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#2D8CFF"/><stop offset="1" stop-color="#8CC2FF"/></linearGradient></defs><path fill="url(#hda)" d="M3 76 30 6h17L20 76z"/><path fill="url(#hda)" opacity=".82" d="M30 6h17l19 49-9 21z"/><path fill="url(#hdb)" d="M42 54 57 76h7L99 3 88 7 61 63 52 47z"/></svg>
+      <span id="hIcone" style="display:flex"><img class="nx-mark" src="../assets/marca/nexum-n-claro.svg" alt="" aria-hidden="true">
 </span>
       <div class="grow"><h1 id="hTitulo" class="wm">Nexum</h1><small id="hSub">Recebimento inteligente · AMR · Campo</small></div>
       <span class="badge-demo" id="badgeDemo" title="Dados de exemplo, ainda sem servidor">Modo exemplo</span>
