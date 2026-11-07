@@ -188,32 +188,97 @@
   }
 
   /* ---------- tela de login ---------- */
-  const css = `#nxLogin{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,#0b2d5b 0%,#123d75 55%,#1c5cab 100%);font-family:Montserrat,system-ui,sans-serif}
-  #nxLogin .card{border:0!important;margin:0;width:min(380px,100%);background:#fff;border-radius:18px;padding:28px 24px 22px;box-shadow:0 20px 60px rgba(4,20,45,.45);display:grid;gap:12px}
-  #nxLogin .lg{display:flex;align-items:center;gap:12px;margin-bottom:4px}#nxLogin .lg img{width:44px;height:44px}
-  #nxLogin .lg b{display:block;font:700 1.45rem Montserrat,system-ui,sans-serif;color:#0b2d5b;letter-spacing:-.01em}#nxLogin .lg small{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#4b5563}
-  #nxLogin label{font-size:.78rem;font-weight:600;color:#4b5563;display:grid;gap:5px}
-  #nxLogin input{font:inherit;font-size:1rem;padding:12px 13px;border:1px solid #cfd9e6;border-radius:10px;outline:none;color:#0f1d33}
-  #nxLogin input:focus{border-color:#2d8cff;box-shadow:0 0 0 3px rgba(45,140,255,.18)}
-  #nxLogin button{font:600 1rem Montserrat,system-ui,sans-serif;border:0;border-radius:10px;padding:13px;cursor:pointer}
-  #nxLogin .ent{background:#2d8cff;color:#fff}#nxLogin .ent:disabled{opacity:.6}
-  #nxLogin .esq{background:none;color:#1c5cab;font-size:.85rem;padding:4px}
+  const css = `#nxLogin{position:fixed;inset:0;z-index:9999;overflow:auto;font-family:Montserrat,system-ui,sans-serif;color:#eaf3ff;
+    background:radial-gradient(1200px 700px at 78% 30%,#0e3263 0%,rgba(8,30,62,0) 60%),radial-gradient(900px 600px at 10% 100%,#0a2a55 0%,rgba(6,20,44,0) 65%),linear-gradient(160deg,#061a36 0%,#04142b 55%,#030d1e 100%)}
+  #nxLogin[hidden]{display:none}
+  #nxLogin .fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+  #nxLogin .vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(2,8,20,.55) 100%)}
+  #nxLogin .cx{position:relative;min-height:100vh;min-height:100dvh;display:grid}
+  #nxLogin .lw{position:relative;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,420px);align-items:center;gap:56px;max-width:1120px;margin:0 auto;padding:40px 32px}
+  #nxLogin .br{display:grid;gap:14px;align-content:center}
+  #nxLogin .br img{width:150px;height:150px;filter:drop-shadow(0 0 28px rgba(45,140,255,.35))}
+  #nxLogin .br h1{margin:6px 0 0;font:700 3.2rem/1 Montserrat,system-ui,sans-serif;letter-spacing:-.03em;color:#fff}
+  #nxLogin .br .tg{font-size:1.15rem;color:#cfe2fb;font-weight:500}#nxLogin .br .tg b{color:#6fc3ff;font-weight:700}
+  #nxLogin .br .ln{width:56px;height:2px;border-radius:2px;background:linear-gradient(90deg,#2d8cff,#5fe0ff);margin:4px 0}
+  #nxLogin .br .ds{max-width:38ch;color:#9fb9da;font-size:.95rem;line-height:1.5}
+  #nxLogin .br .ft{margin-top:10px;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:#7090b8}
+  #nxLogin .card{position:relative;width:100%;background:rgba(255,255,255,.97);color:#0f1d33;border-radius:22px;padding:30px 28px 24px;display:grid;gap:14px;border:1px solid rgba(255,255,255,.6);
+    box-shadow:0 30px 70px rgba(1,8,22,.55),0 0 0 1px rgba(45,140,255,.10),0 0 60px rgba(45,140,255,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  #nxLogin .card::before{content:"";position:absolute;left:24px;right:24px;top:0;height:3px;border-radius:0 0 4px 4px;background:linear-gradient(90deg,#2d8cff,#5fe0ff)}
+  #nxLogin .ch{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  #nxLogin .ch h2{margin:0;font:700 1.45rem Montserrat,system-ui,sans-serif;color:#0b2d5b;letter-spacing:-.01em}
+  #nxLogin .ch .ap{font:700 .66rem Montserrat,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#1c5cab;background:#e8f1fd;border-radius:999px;padding:5px 10px}
+  #nxLogin .sb{margin:-6px 0 4px;color:#5b6b82;font-size:.88rem}
+  #nxLogin label{font-size:.78rem;font-weight:600;color:#4b5563;display:grid;gap:6px}
+  #nxLogin input{font:inherit;font-size:1rem;padding:13px 14px;border:1px solid #d3dde9;border-radius:12px;outline:none;color:#0f1d33;background:#f8fbff;transition:border-color .15s,box-shadow .15s,background .15s}
+  #nxLogin input:focus{border-color:#2d8cff;background:#fff;box-shadow:0 0 0 4px rgba(45,140,255,.15)}
+  #nxLogin button{font:600 1rem Montserrat,system-ui,sans-serif;border:0;border-radius:12px;padding:14px;cursor:pointer}
+  #nxLogin .ent{background:linear-gradient(100deg,#1f6fe0,#2d8cff 60%,#3aa6ff);color:#fff;box-shadow:0 10px 24px rgba(45,140,255,.32);margin-top:4px;transition:transform .12s,box-shadow .12s}
+  #nxLogin .ent:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(45,140,255,.4)}#nxLogin .ent:disabled{opacity:.6;transform:none}
+  #nxLogin .esq{background:none;color:#1c5cab;font-size:.86rem;padding:4px}
   #nxLogin .msg{font-size:.84rem;min-height:1.2em;color:#b42318}#nxLogin .msg.ok{color:#0b6b0b}
-  #nxLogin .rod{font-size:.72rem;color:#6b7280;text-align:center;margin-top:2px}
-  #nxLogin .esp{display:grid;place-items:center;gap:10px;color:#fff;font-size:.9rem}`;
+  #nxLogin .rod{font-size:.72rem;color:#7a8698;text-align:center;border-top:1px solid #edf1f6;padding-top:12px;margin-top:2px}
+  #nxLogin .esp{position:relative;min-height:100%;display:grid;place-items:center;align-content:center;gap:16px;color:#cfe2fb;font-size:.95rem}
+  #nxLogin .esp img{width:96px;height:96px;filter:drop-shadow(0 0 24px rgba(45,140,255,.4))}
+  @media (prefers-reduced-motion:no-preference){#nxLogin .esp img{animation:nxPulse 1.6s ease-in-out infinite}@keyframes nxPulse{50%{opacity:.6;transform:scale(.96)}}#nxLogin .card,#nxLogin .br{animation:nxUp .6s ease-out both}#nxLogin .card{animation-delay:.08s}@keyframes nxUp{from{opacity:0;transform:translateY(14px)}}}
+  @media (max-width:860px){#nxLogin .lw{grid-template-columns:1fr;gap:22px;padding:28px 18px;max-width:460px;align-content:center}
+    #nxLogin .br{justify-items:center;text-align:center;gap:8px}#nxLogin .br img{width:96px;height:96px}#nxLogin .br h1{font-size:2.3rem}#nxLogin .br .ds,#nxLogin .br .ft{display:none}#nxLogin .card{padding:24px 20px 20px}}`;
+  /* faixas de linhas luminosas (desenhadas no canvas, discretas) */
+  let fxRaf = 0;
+  function efeito(cv) {
+    const ctx = cv.getContext("2d"), parado = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let w = 0, h = 0, dpr = 1;
+    const tam = () => { dpr = Math.min(2, window.devicePixelRatio || 1); w = cv.clientWidth; h = cv.clientHeight; cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    const faixa = (t, o) => {
+      const N = o.n;
+      for (let i = 0; i < N; i++) {
+        const k = i / (N - 1), sp = Math.sin(k * Math.PI);
+        ctx.beginPath();
+        for (let s = 0; s <= 1.0001; s += 0.02) {
+          const x = -0.1 * w + s * 1.2 * w;
+          const base = h * (o.y0 + (o.y1 - o.y0) * s) - h * o.arco * Math.sin(Math.PI * s);
+          const amp = h * o.amp * Math.sin(Math.PI * s) * (k - .5) * 2;
+          const onda = Math.sin(s * o.f + t * o.v + k * o.fase) * h * o.ond * sp;
+          const y = base + amp * Math.cos(s * 3.2 + t * o.v * .7) + onda;
+          s === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        const g = ctx.createLinearGradient(0, h, w, 0);
+        const a = (0.08 + 0.42 * sp * sp) * o.alfa;
+        g.addColorStop(0, `rgba(45,140,255,0)`); g.addColorStop(.35, `rgba(70,160,255,${a})`); g.addColorStop(.7, `rgba(120,225,255,${a * 1.15})`); g.addColorStop(1, `rgba(95,224,255,0)`);
+        ctx.strokeStyle = g; ctx.lineWidth = o.lw || 0.9; ctx.stroke();
+      }
+    };
+    const quadro = ms => {
+      const t = ms / 1000;
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalCompositeOperation = "lighter";
+      faixa(t, { n: 64, y0: 1.12, y1: .34, arco: .02, amp: .17, f: 5.2, v: .22, fase: 2.6, ond: .04, alfa: 1, lw: 1 });
+      faixa(t, { n: 40, y0: 1.02, y1: .46, arco: -.08, amp: .11, f: 3.4, v: -.15, fase: 3.6, ond: .06, alfa: .75, lw: .8 });
+      ctx.globalCompositeOperation = "source-over";
+      if (!parado && document.getElementById("nxLogin") && !document.getElementById("nxLogin").hidden) fxRaf = requestAnimationFrame(quadro);
+    };
+    tam(); cancelAnimationFrame(fxRaf); fxRaf = requestAnimationFrame(quadro);
+    window.addEventListener("resize", () => { tam(); if (parado) quadro(0); });
+  }
   function telaLogin(estado, aviso) {
     let el = document.getElementById("nxLogin");
-    if (!el) { const s = document.createElement("style"); s.textContent = css; document.head.appendChild(s); el = document.createElement("div"); el.id = "nxLogin"; document.body.appendChild(el); }
-    el.hidden = false;
-    if (estado === "esperando") { el.innerHTML = `<div class="esp"><img src="${url("marca/nexum-n-claro.svg")}" width="56" height="56" alt=""><span>Conectando ao Nexum…</span></div>`; return; }
-    el.innerHTML = `<form class="card" novalidate>
-      <div class="lg"><img src="${url("marca/nexum-n-escuro.svg")}" alt=""><div><b>Nexum</b><small>Recebimento inteligente · ${APP === "campo" ? "Campo" : "Escritório"}</small></div></div>
-      <label>E-mail<input type="email" id="nxEmail" autocomplete="username" inputmode="email" required placeholder="nome@milplan.com.br"></label>
-      <label>Senha<input type="password" id="nxSenha" autocomplete="current-password" required></label>
-      <div class="msg" id="nxMsg" role="status">${aviso || ""}</div>
-      <button class="ent" type="submit" id="nxEntrar">Entrar</button>
-      <button class="esq" type="button" id="nxEsq">Esqueci minha senha</button>
-      <div class="rod">Acesso só para usuários cadastrados pela Qualidade.</div></form>`;
+    if (!el) { const s = document.createElement("style"); s.textContent = css; document.head.appendChild(s); el = document.createElement("div"); el.id = "nxLogin"; el.innerHTML = `<canvas class="fx" aria-hidden="true"></canvas><div class="vig"></div><div class="cx"></div>`; document.body.appendChild(el); efeito(el.querySelector(".fx")); }
+    if (el.hidden) { el.hidden = false; efeito(el.querySelector(".fx")); }
+    const cx = el.querySelector(".cx");
+    if (estado === "esperando") { cx.innerHTML = `<div class="esp"><img src="${url("marca/nexum-n-claro.svg")}" alt=""><span>Conectando ao Nexum…</span></div>`; return; }
+    cx.innerHTML = `<div class="lw">
+      <div class="br"><img src="${url("marca/nexum-n-claro.svg")}" alt=""><h1>Nexum</h1><div class="tg">Recebimento <b>inteligente.</b></div><div class="ln"></div>
+        <p class="ds">Recebimento de materiais, certificados e pendências da obra num só lugar, do campo ao escritório.</p>
+        <div class="ft">AMR · Flotação Recleaner · Milplan Engenharia</div></div>
+      <form class="card" novalidate>
+        <div class="ch"><h2>Entrar</h2><span class="ap">${APP === "campo" ? "Campo" : "Escritório"}</span></div>
+        <p class="sb">Use seu e-mail e a senha do Nexum.</p>
+        <label>E-mail<input type="email" id="nxEmail" autocomplete="username" inputmode="email" required placeholder="nome@milplan.com.br"></label>
+        <label>Senha<input type="password" id="nxSenha" autocomplete="current-password" required></label>
+        <div class="msg" id="nxMsg" role="status">${aviso || ""}</div>
+        <button class="ent" type="submit" id="nxEntrar">Entrar</button>
+        <button class="esq" type="button" id="nxEsq">Esqueci minha senha</button>
+        <div class="rod">Acesso só para usuários cadastrados pela Qualidade.</div></form></div>`;
     const msg = (t, ok) => { const m = el.querySelector("#nxMsg"); m.textContent = t; m.className = "msg" + (ok ? " ok" : ""); };
     try { const e = localStorage.getItem("nx_ultimo_email"); if (e) el.querySelector("#nxEmail").value = e; } catch (e) { }
     el.querySelector("form").onsubmit = async ev => {
@@ -232,7 +297,7 @@
       catch (e) { msg("Não consegui enviar o e-mail: " + (e.code === "auth/user-not-found" ? "e-mail não cadastrado." : e.message)); }
     };
   }
-  function esconderLogin() { const el = document.getElementById("nxLogin"); if (el) el.hidden = true; }
+  function esconderLogin() { const el = document.getElementById("nxLogin"); if (el) el.hidden = true; cancelAnimationFrame(fxRaf); }
   function mostrarUsuario() { const b = document.getElementById("badgeDemo"); if (b) b.hidden = true; }
 
 
