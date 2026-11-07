@@ -14,6 +14,8 @@ window.NEXUM_NUVEM = {
   USUARIOS: {
     "thaynara.santos@milplan.com.br": { nome: "Thaynara Santos", perfil: "escritorio" },
     "marcos.silva@milplan.com.br": { nome: "Marcos Silva", perfil: "campo" },
-    "wilson.pagani@milplan.com.br": { nome: "Wilson Pagani", perfil: "escritorio" }
+    "wilson.pagani@milplan.com.br": { nome: "Wilson Pagani", perfil: "escritorio" },
+    "fredie.cota@milplan.com.br": { nome: "Fredie Cota", perfil: "escritorio" },
+    "eliene.vieira@milplan.com.br": { nome: "Eliene Vieira", perfil: "escritorio" }
   }
 };
