@@ -267,18 +267,14 @@
     const cx = el.querySelector(".cx");
     if (estado === "esperando") { cx.innerHTML = `<div class="esp"><img src="${url("marca/nexum-n-claro.svg")}" alt=""><span>Conectando ao Nexum…</span></div>`; return; }
     cx.innerHTML = `<div class="lw">
-      <div class="br"><img src="${url("marca/nexum-n-claro.svg")}" alt=""><h1>Nexum</h1><div class="tg">Recebimento <b>inteligente.</b></div><div class="ln"></div>
-        <p class="ds">Recebimento de materiais, certificados e pendências da obra num só lugar, do campo ao escritório.</p>
-        <div class="ft">AMR · Flotação Recleaner · Milplan Engenharia</div></div>
+      <div class="br"><img src="${url("marca/nexum-n-claro.svg")}" alt=""><h1>Nexum</h1><div class="tg">Recebimento <b>inteligente.</b></div><div class="ln"></div></div>
       <form class="card" novalidate>
         <div class="ch"><h2>Entrar</h2><span class="ap">${APP === "campo" ? "Campo" : "Escritório"}</span></div>
-        <p class="sb">Use seu e-mail e a senha do Nexum.</p>
         <label>E-mail<input type="email" id="nxEmail" autocomplete="username" inputmode="email" required placeholder="nome@milplan.com.br"></label>
         <label>Senha<input type="password" id="nxSenha" autocomplete="current-password" required></label>
         <div class="msg" id="nxMsg" role="status">${aviso || ""}</div>
         <button class="ent" type="submit" id="nxEntrar">Entrar</button>
-        <button class="esq" type="button" id="nxEsq">Esqueci minha senha</button>
-        <div class="rod">Acesso só para usuários cadastrados pela Qualidade.</div></form></div>`;
+        <button class="esq" type="button" id="nxEsq">Esqueci minha senha</button></form></div>`;
     const msg = (t, ok) => { const m = el.querySelector("#nxMsg"); m.textContent = t; m.className = "msg" + (ok ? " ok" : ""); };
     try { const e = localStorage.getItem("nx_ultimo_email"); if (e) el.querySelector("#nxEmail").value = e; } catch (e) { }
     el.querySelector("form").onsubmit = async ev => {
