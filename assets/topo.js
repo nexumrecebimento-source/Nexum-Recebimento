@@ -35,27 +35,47 @@
       : `<div class="tp-vazio">Tudo em ordem por aqui. ✓</div>`);
     p.querySelectorAll("[data-i]").forEach(b => b.onclick = () => { el._fechar(); const x = notifs[+b.dataset.i]; if (x && x.acao) x.acao(); });
   }
+  function foto() { return window.NXNUVEM && window.NXNUVEM.foto ? window.NXNUVEM.foto() : ""; }
+  function avHTML(cls) { const f = foto(); return f ? `<span class="tp-av ${cls || ""} com-foto" style="background-image:url('${f}')"></span>` : `<span class="tp-av ${cls || ""}">${esc(iniciais(nome()))}</span>`; }
+  /* foto: recorta quadrado no centro e reduz para 256 px (fica leve) */
+  function escolherFoto() {
+    const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*";
+    inp.onchange = () => { const f = inp.files[0]; if (!f) return; const img = new Image(), u = URL.createObjectURL(f);
+      img.onload = () => { const lado = Math.min(img.width, img.height), c = document.createElement("canvas"); c.width = c.height = 256;
+        c.getContext("2d").drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, 256, 256); URL.revokeObjectURL(u);
+        window.NXNUVEM.salvarFoto(c.toDataURL("image/jpeg", .82)).catch(e => alert("Não consegui salvar a foto: " + e.message)); };
+      img.src = u; };
+    inp.click();
+  }
   function renderU() {
     const p = el.querySelector("#tpPopU"), pf = perfil();
-    p.innerHTML = `<div class="tp-user"><span class="tp-av big">${esc(iniciais(nome()))}</span><div><b>${esc(nome() || "Usuário")}</b><small>${esc(email())}</small><span class="tp-pf">${esc(PERFIL[pf] || pf || "Modo local")}</span></div></div>
+    p.innerHTML = `<div class="tp-user"><button type="button" class="tp-fotobt" id="tpFotoAv" title="Alterar foto">${avHTML("big")}<span class="tp-cam"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button><div><b>${esc(nome() || "Usuário")}</b><small>${esc(email())}</small><span class="tp-pf">${esc(PERFIL[pf] || pf || "Modo local")}</span></div></div>
+      ${email() ? `<button type="button" class="tp-it" id="tpFoto"><span class="tp-ic">${ic("user")}</span><span class="tp-tx">${foto() ? "Trocar foto do perfil" : "Adicionar foto do perfil"}</span></button>` : ""}
+      ${email() && foto() ? `<button type="button" class="tp-it" id="tpFotoRm"><span class="tp-ic">${ic("x")}</span><span class="tp-tx">Remover foto</span></button>` : ""}
       ${abrirConfig ? `<button type="button" class="tp-it" id="tpCfg"><span class="tp-ic">${ic("doc")}</span><span class="tp-tx">Configurações</span></button>` : ""}
       ${email() ? `<button type="button" class="tp-it" id="tpSenha"><span class="tp-ic">${ic("shield")}</span><span class="tp-tx">Trocar minha senha</span></button>` : ""}
       <button type="button" class="tp-it" id="tpAtual"><span class="tp-ic">${ic("undo")}</span><span class="tp-tx">Atualizar o app</span></button>
       ${email() ? `<button type="button" class="tp-it sair" id="tpSair"><span class="tp-ic">${ic("x")}</span><span class="tp-tx">Sair</span></button>` : ""}`;
     const on = (id, fn) => { const b = p.querySelector(id); if (b) b.onclick = () => { el._fechar(); fn(); }; };
     on("#tpCfg", () => abrirConfig && abrirConfig());
+    on("#tpFoto", escolherFoto); on("#tpFotoAv", escolherFoto);
+    on("#tpFotoRm", () => window.NXNUVEM.salvarFoto(""));
     on("#tpSenha", () => window.NXNUVEM.trocarSenha && window.NXNUVEM.trocarSenha());
     on("#tpAtual", () => location.reload());
     on("#tpSair", () => { if (confirm("Sair do Nexum?")) window.NXNUVEM.sair(); });
   }
   function atualizar() {
     if (!montar()) return;
-    el.querySelector("#tpIni").textContent = nome() ? iniciais(nome()) : "N";
+    const av = el.querySelector("#tpAv"), f = foto();
+    av.classList.toggle("com-foto", !!f); av.style.backgroundImage = f ? `url('${f}')` : "";
+    el.querySelector("#tpIni").textContent = f ? "" : (nome() ? iniciais(nome()) : "N");
+    if (!el.querySelector("#tpPopU").hidden) renderU();
     const total = notifs.reduce((s, x) => s + (x.n || 0), 0), b = el.querySelector("#tpN");
     b.hidden = !total; b.textContent = total > 99 ? "99+" : total;
     if (!el.querySelector("#tpPopN").hidden) renderN();
   }
   window.addEventListener("nx-perfil", atualizar);
+  window.addEventListener("nx-foto", atualizar);
   window.NXTOPO = {
     notificacoes(l) { notifs = l || []; atualizar(); },
     configurar(fn) { abrirConfig = fn; },

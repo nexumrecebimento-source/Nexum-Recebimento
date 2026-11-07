@@ -20,7 +20,8 @@
   idbOk.then(ok => { if (ok) db.enablePersistence({ synchronizeTabs: true }).catch(() => { }); else sessaoSimples(); });
   const FICHAS = db.collection("fichas"), ANEXOS = db.collection("anexos"), CONFIG = db.collection("config");
 
-  let usuario = null, perfil = "";
+  let usuario = null, perfil = "", fotoPerfil = "";
+  const USERS = db.collection("usuarios");
   const PODE_EDITAR = () => perfil === "admin" || perfil === "escritorio" || perfil === "campo";
   const soLeitura = () => { const e = new Error("Seu acesso é só de consulta: não é possível alterar."); e.code = "consulta"; return e; };
   const nomeUsuario = () => usuario ? (USUARIOS[usuario.email.toLowerCase()] || {}).nome || usuario.email : "";
@@ -180,6 +181,13 @@
     salvarCad(c) { if (!usuario || APP !== "escritorio" || !(perfil === "admin" || perfil === "escritorio")) return; CONFIG.doc("cadastros").set(limpo(c)).catch(e => toastN("Cadastro não foi para o servidor: " + e.message, true)); },
     sair() { auth.signOut().then(() => location.reload()); },
     trocarSenha() { if (!usuario) return; auth.sendPasswordResetEmail(usuario.email).then(() => toastN("Enviamos um link para " + usuario.email + " criar uma nova senha (veja também o lixo eletrônico).")).catch(e => toastN("Não consegui enviar: " + e.message, true)); },
+    foto: () => fotoPerfil,
+    async salvarFoto(dataUrl) {
+      if (!usuario) return;
+      fotoPerfil = dataUrl || ""; window.dispatchEvent(new CustomEvent("nx-foto"));
+      try { localStorage.setItem("nx_foto_" + usuario.email.toLowerCase(), fotoPerfil); } catch (e) { }
+      await USERS.doc(usuario.email.toLowerCase()).set({ nome: nomeUsuario(), foto: fotoPerfil, em: new Date().toISOString() }, { merge: true });
+    },
     usuario: () => usuario, nome: () => nomeUsuario(), perfil: () => perfil, consulta: () => perfil === "consulta", regrasFirestore
   };
 
@@ -331,6 +339,10 @@ service cloud.firestore {
       allow read: if leitor();
       allow write: if admin() || (campo() && id.matches('numeracao_.*'));
     }
+    match /usuarios/{em} {
+      allow read: if leitor();
+      allow write: if leitor() && email() == em;
+    }
   }
 }`;
   }
@@ -344,7 +356,9 @@ service cloud.firestore {
     if (APP === "escritorio" && pf === "campo") { avisoSaida = "Seu acesso é do app de campo (celular). O escritório é só para a Qualidade."; auth.signOut(); return; }
     usuario = u; perfil = pf; esconderLogin(); mostrarUsuario();
     document.body.classList.toggle("consulta", perfil === "consulta");
+    try { fotoPerfil = localStorage.getItem("nx_foto_" + u.email.toLowerCase()) || ""; } catch (e) { }
     window.dispatchEvent(new CustomEvent("nx-perfil", { detail: perfil }));
+    USERS.doc(u.email.toLowerCase()).onSnapshot(d => { const f = d.exists ? d.data().foto || "" : ""; if (f !== fotoPerfil) { fotoPerfil = f; try { localStorage.setItem("nx_foto_" + u.email.toLowerCase(), f); } catch (e) { } window.dispatchEvent(new CustomEvent("nx-foto")); } }, () => { });
     assinar();
   });
 })();
