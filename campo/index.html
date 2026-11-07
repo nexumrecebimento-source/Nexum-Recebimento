@@ -178,7 +178,6 @@ header.top{border-bottom:0!important;box-shadow:none!important}
     <svg class="sp-ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="10" y="9" width="28" height="34" rx="4"/><path d="M18 9V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><path d="M17 27l5 5 9-10"/></svg>
     <p class="sp-txt">Controle o recebimento de materiais de forma <b>simples</b> e <b>eficiente</b>.</p>
     <button class="sp-btn" type="button" id="btnAcessar">Acessar <span aria-hidden="true">›</span></button>
-    <span class="sp-rod">AMR · Flotação Recleaner · Milplan Engenharia</span>
   </div>
 </section>
 <header class="top">
@@ -187,7 +186,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
       <button class="back" id="btnVoltar" type="button" hidden aria-label="Voltar">← Voltar</button>
       <span id="hIcone" style="display:flex"><img class="nx-mark" src="../assets/marca/nexum-n-claro.svg" alt="" aria-hidden="true">
 </span>
-      <div class="grow"><h1 id="hTitulo" class="wm">Nexum</h1><small id="hSub">Recebimento inteligente · AMR · Campo</small></div>
+      <div class="grow"><h1 id="hTitulo" class="wm">Nexum</h1><small id="hSub">Recebimento inteligente · Campo</small></div>
       <span class="badge-demo" id="badgeDemo" title="Dados de exemplo, ainda sem servidor">Modo exemplo</span>
     </div>
   </div>
@@ -346,7 +345,7 @@ function show(v){
   view=v;["inicio","lancar","ok","cert"].forEach(x=>$("v-"+x).hidden=x!==v);
   if(v==="cert")renderPendCert();
   $("bar").hidden=v!=="lancar"; $("btnVoltar").hidden=v==="inicio";
-  $("hSub").textContent=v==="lancar"?(editando?"FICHA Nº "+editando.numero+" · CORREÇÃO":"PRÓXIMA FICHA Nº "+A.proximoNumero(fichas,A.cadastros.fichaInicial())):"Recebimento inteligente · AMR · Campo";
+  $("hSub").textContent=v==="lancar"?(editando?"FICHA Nº "+editando.numero+" · CORREÇÃO":"PRÓXIMA FICHA Nº "+A.proximoNumero(fichas,A.cadastros.fichaInicial())):"Recebimento inteligente · Campo";
   if(v==="cert"){$("hTitulo").textContent="Certificados pendentes";$("hTitulo").classList.remove("wm");$("hSub").textContent="Anexe quando o certificado chegar"}
   else if(v==="lancar"){$("hTitulo").textContent=editando?"Corrigir recebimento":"Novo recebimento";$("hTitulo").classList.remove("wm")}else{$("hTitulo").textContent="Nexum";$("hTitulo").classList.add("wm")}
   $("hIcone").hidden=v==="lancar"||v==="cert";
