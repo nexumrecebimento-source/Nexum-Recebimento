@@ -205,7 +205,7 @@
   }
 
   /* ---------- o que ainda falta (pendências de dados) ---------- */
-  const ROT = { ficha: "Nº da ficha (linha)", dataRecebimento: "Data de recebimento", fornecedor: "Fornecedor", nf: "Nº da NF", romaneio: "Nº do romaneio", status: "Status", itens: "Itens", descricao: "Descrição do item", und: "Unidade", qtd: "Quantidade", local: "Localização", conf: "Inspeção (C/NC)", certificado: "Certificado", lacuna: "Número sem ficha" };
+  const ROT = { pc: "Pedido de compra (PC)", tag: "TAG / código", ficha: "Nº da ficha (linha)", dataRecebimento: "Data de recebimento", fornecedor: "Fornecedor", nf: "Nº da NF", romaneio: "Nº do romaneio", status: "Status", itens: "Itens", descricao: "Descrição do item", und: "Unidade", qtd: "Quantidade", local: "Localização", conf: "Inspeção (C/NC)", certificado: "Certificado", lacuna: "Número sem ficha" };
   function faltantes(f) {
     const out = [];
     if (f.lacuna) return [{ campo: "lacuna", tipo: "falta" }];

@@ -834,7 +834,7 @@ $("lbClose").onclick=()=>$("lb").hidden=true;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("lb").hidden){$("lb").hidden=true;e.stopImmediatePropagation()}},true);
 
 /* conferência */
-const ACOES={enviada:"Enviada pelo campo",reenviada:"Reenviada corrigida pelo campo",aprovada:"Conferência aprovada",devolvida:"Devolvida ao campo como inconforme",anexos:"Documentos anexados",cert_vinculado:"Certificado vinculado",cert_validado:"Certificado validado",cert_nao_recebido:"Sem certificado (informado pelo campo)",cert_recebido:"Certificado recebido (anexado depois)",email:"Cobrança de certificado enviada"};
+const ACOES={enviada:"Enviada pelo campo",reenviada:"Reenviada corrigida pelo campo",aprovada:"Conferência aprovada",devolvida:"Devolvida ao campo como inconforme",anexos:"Documentos anexados",cert_vinculado:"Certificado vinculado",cert_validado:"Certificado validado",cert_nao_recebido:"Sem certificado (informado pelo campo)",cert_recebido:"Certificado recebido (anexado depois)",dilig_completado:"Completada com o Diligenciamento",email:"Cobrança de certificado enviada"};
 function renderConf(){
   const c=A.conf(ed);
   $("dConf").className="pill "+(c.situacao==="aprovada"?"finalizado":c.situacao==="devolvida"?"bad":"em_andamento");
@@ -1039,6 +1039,62 @@ async function confirmarAutos(lista){
   await A.store.salvarVarias(muda);toast(`${lista.length.toLocaleString("pt-BR")} preenchimento(s) confirmado(s)`);
 }
 $("qPend").addEventListener("input",()=>{lim.pend=300;renderPend()});
+/* ---------- Completar com o Diligenciamento ao chegar no escritório ----------
+   O campo lança NF, fotos e itens; o escritório (com a planilha conectada) cruza sozinho e completa
+   pedido, item do pedido, código, unidade e quantidade pedida. Cada preenchimento fica marcado para revisão. */
+let diligRodando=false;
+const diligChave=()=>{const f=DL.fonteAtual();return f?f.nome+"|"+f.modificado:""};
+function precisaDilig(f){
+  if(f.tipo!=="NF"||!f.nf||f.status==="finalizado"||f.lacuna||f.exemplo||f.importado)return false;
+  const d=f.diligCompletado;if(d&&d.resultado==="ok")return false;
+  return !d||d.planilha!==diligChave();
+}
+function casarItens(itsF,itsD){
+  const usados=new Set(),par=new Map();
+  itsF.forEach((it,i)=>{if(it.pc)return;let melhor=-1,nota=0;
+    itsD.forEach((d,j)=>{if(usados.has(j))return;const txt=d.descricao+" "+(d.descComp||"");
+      let p=DL.parecido(it.descricao||"",txt);if(it.tag&&d.codigo&&A.norm(it.tag)===A.norm(d.codigo))p=1;
+      if(p>nota){nota=p;melhor=j}});
+    if(melhor>=0&&nota>=.34){usados.add(melhor);par.set(i,itsD[melhor])}});
+  return {par,sobra:itsD.filter((_,j)=>!usados.has(j))};
+}
+async function completarDilig(){
+  if(diligRodando||!CT().ativo||!DL.fonteAtual())return;
+  if(window.NXNUVEM&&NXNUVEM.perfil&&!["admin","escritorio"].includes(NXNUVEM.perfil()))return;
+  const alvo=fichas.filter(precisaDilig);if(!alvo.length)return;
+  diligRodando=true;const planilha=diligChave(),hoje=new Date().toISOString(),muda=[];let nItens=0;
+  try{for(const f0 of alvo){
+    const f=JSON.parse(JSON.stringify(f0)),fo=A.cadastros.fornecedorPorNome(f.fornecedor||"");
+    let r=await DL.buscar({nf:f.nf,fornecedor:f.fornecedor||"",codFornecedor:fo?.codigoErp||""}).catch(()=>null);
+    if(r&&r.situacao==="varios_fornecedores"&&f.fornecedor){const o=r.opcoes.map(o=>({o,p:DL.parecido(o.nomeForn,f.fornecedor)})).sort((a,b)=>b.p-a.p)[0];
+      if(o&&o.p>=.34)r={...r,situacao:"encontrada",fornecedor:{codForn:o.o.codForn,nomeForn:o.o.nomeForn},itens:await DL.itensNFFornecedor(f.nf,o.o.codForn)}}
+    if(!r||r.situacao!=="encontrada"||!r.itens.length){f.diligCompletado={resultado:r&&r.situacao==="varios_fornecedores"?"varios_fornecedores":"aguardando",planilha,em:hoje};muda.push(f);continue}
+    const auto=f.auto||[],add=(campo,valor,item)=>auto.push(item===undefined?{campo,valor,regra:"Diligenciamento ("+r.fonte.nome+")"}:{campo,item,valor,regra:"Diligenciamento ("+r.fonte.nome+")"});
+    if(!f.fornecedor){f.fornecedor=r.fornecedor.nomeForn;add("fornecedor",f.fornecedor)}
+    const its=f.itens||[],validos=its.filter(i=>i.descricao||i.tag);
+    const cmc=d=>!!(A.materialCritico&&A.materialCritico(d.descricao+" - "+(d.descComp||""),d.codigo));
+    if(!validos.length){
+      f.itens=r.itens.map(d=>({descricao:A.norm(d.descricao+(d.descComp?" - "+d.descComp:"")),tag:d.codigo,und:A.norm(d.un),qtd:d.qtdReceb||d.qtd,local:"",conf:"",certificado:"",
+        pc:d.pc,itemPc:d.itemPc,qtdPedido:d.qtd,undPedido:A.norm(d.un),conferirNF:true,origem:"diligenciamento",exigeCertificado:cmc(d)||undefined,pedidoPedeCertificado:!!d.pedidoPedeCertificado}));
+      f.itens.forEach((_,n)=>add("itens","PC "+f.itens[n].pc+"/"+f.itens[n].itemPc,n));nItens+=f.itens.length;
+    }else{
+      const {par}=casarItens(its,r.itens);
+      par.forEach((d,i)=>{const it=its[i];
+        it.pc=d.pc;it.itemPc=d.itemPc;it.qtdPedido=d.qtd;it.undPedido=A.norm(d.un);add("pc","PC "+d.pc+"/"+d.itemPc,i);
+        if(!it.tag&&d.codigo){it.tag=d.codigo;add("tag",d.codigo,i)}
+        if(!it.und&&d.un){it.und=A.norm(d.un);add("und",it.und,i)}
+        if(it.exigeCertificado===undefined&&cmc(d))it.exigeCertificado=true;
+        if(d.pedidoPedeCertificado)it.pedidoPedeCertificado=true;nItens++});
+    }
+    f.auto=auto;f.diligCompletado={resultado:"ok",planilha,em:hoje,pc:[...new Set(r.itens.map(d=>d.pc))].join(", ")};
+    f.conferencia=f.conferencia||{historico:[]};(f.conferencia.historico=f.conferencia.historico||[]).push({acao:"dilig_completado",em:hoje,por:"Nexum",itensTxt:r.fonte.nome});
+    muda.push(f);
+  }
+  if(muda.length){await A.store.salvarVarias(muda);const ok=muda.filter(f=>f.diligCompletado.resultado==="ok").length;if(ok)toast(`Diligenciamento: ${ok} ficha(s) completada(s) automaticamente (${nItens} item(ns))`)}
+  }catch(e){console.warn(e)}finally{diligRodando=false}
+}
+DL.pasta.ouvir(ev=>{if(ev.tipo==="atualizada")setTimeout(completarDilig,500)});
+window.NXCompletarDilig=completarDilig;
 let autoRodando=false;
 async function autoPreencher(manual){
   if(autoRodando||!CT().ativo)return 0;autoRodando=true;
@@ -1151,7 +1207,7 @@ $("badgeDemo").hidden=A.store.modo!=="exemplo";
 A.cadastros.ouvir(c=>{cad=c;renderCad();if(ed)avisos()});
 renderCtr();
 let autoT;
-A.store.ouvir(l=>{todas=l;filtrar();if(A.store.modo==="exemplo"){const ex=l.some(f=>f.exemplo);$("badgeDemo").textContent=ex?"Modo exemplo":"Dados só neste computador";$("badgeDemo").title=ex?"Fichas de exemplo para teste":"Os dados ficam salvos neste navegador até o Firebase ser ligado"}renderTudo();clearTimeout(autoT);autoT=setTimeout(()=>autoPreencher(false),1500)});
+A.store.ouvir(l=>{todas=l;filtrar();if(A.store.modo==="exemplo"){const ex=l.some(f=>f.exemplo);$("badgeDemo").textContent=ex?"Modo exemplo":"Dados só neste computador";$("badgeDemo").title=ex?"Fichas de exemplo para teste":"Os dados ficam salvos neste navegador até o Firebase ser ligado"}renderTudo();clearTimeout(autoT);autoT=setTimeout(()=>{autoPreencher(false).then(()=>completarDilig())},1500)});
 })();
 </script>
 </body>

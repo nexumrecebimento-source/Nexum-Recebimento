@@ -258,7 +258,7 @@
   async function itensNFFornecedor(nf, codForn) { const f = await obterFonte(); return ordenar(f.registros.filter(r => r.nf === nfNum(nf) && r.codForn === codForn)); }
   const ordenar = l => l.slice().sort((a, b) => (a.pc + a.itemPc).localeCompare(b.pc + b.itemPc));
 
-  window.DILIG = { pasta: pastaApi, CFG, configurado, buscar, carregarArquivoLocal, pendentesDoFornecedor, itensNFFornecedor, familia, indexar,
+  window.DILIG = { parecido, pasta: pastaApi, CFG, configurado, buscar, carregarArquivoLocal, pendentesDoFornecedor, itensNFFornecedor, familia, indexar,
     fonteAtual: () => fonte ? { tipo: fonte.tipo, nome: fonte.nome, modificado: fonte.modificado, total: fonte.registros.length } : null,
     contaAtual: () => conta ? (conta.name || conta.username) : "", iniciarMsal: () => configurado() ? iniciarMsal() : Promise.resolve(null) };
 })();
