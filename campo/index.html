@@ -332,6 +332,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
 <script src="../assets/ui.js"></script>
 <script src="../assets/topo.js"></script>
 <script src="../assets/fx.js"></script>
+<script src="../assets/assistente.js"></script>
 <script src="../assets/atualizacao.js"></script>
 <script>
 (function(){
@@ -368,13 +369,13 @@ function renderDevolvidas(){
 function renderResumo(){
   $("helloT").textContent=A.saudacao();
   $("helloData").textContent=A.dataLonga();
-  $("helloFrase").textContent=A.fraseDoDia();
   const lh=fichas.filter(deHoje),nHoje=lh.length,nIt=lh.reduce((s,f)=>s+A.itensValidos(f).length,0);
   const nCert=pendenciasCert().length;
   $("resumo").innerHTML=`<span class="h-st"><b>${nHoje}</b><span>${nHoje===1?"ficha hoje":"fichas hoje"}</span></span><span class="h-st"><b>${nIt}</b><span>${nIt===1?"item hoje":"itens hoje"}</span></span>`;
   $("rsCertN").textContent=nCert;$("rsCert").classList.toggle("alerta",nCert>0);
   $("rsCertTx").textContent=nCert?(nCert===1?"1 item aguardando o certificado":nCert+" itens aguardando o certificado"):"Nenhum pendente. Tudo em dia ✓";
   $("rsCert").onclick=()=>show("cert");
+  NXASSIST.mostrar($("helloFrase"),NXASSIST.campo({fichas,deHoje,pendCert:pendenciasCert(),ir:{cert:()=>show("cert")}}));
   if(window.NXTOPO)NXTOPO.notificacoes([{icone:"cert",texto:"Certificados pendentes",n:nCert,tom:"w",acao:()=>show("cert")}]);
 }
 function pendenciasCert(){
@@ -712,7 +713,7 @@ $("badgeDemo").hidden=A.store.modo!=="exemplo";
 let viuSplash=false;try{viuSplash=sessionStorage.getItem("nx_splash")==="1"}catch(e){}
 $("splash").hidden=viuSplash;
 $("btnAcessar").onclick=()=>{$("splash").hidden=true;try{sessionStorage.setItem("nx_splash","1")}catch(e){}};
-window.addEventListener("nx-perfil",()=>renderResumo());setInterval(()=>{$("helloT").textContent=A.saudacao();$("helloFrase").textContent=A.fraseDoDia();$("helloData").textContent=A.dataLonga()},60000);
+window.addEventListener("nx-perfil",()=>renderResumo());setInterval(()=>{$("helloT").textContent=A.saudacao();$("helloData").textContent=A.dataLonga();renderResumo()},60000);
 let diaAtual=A.hoje();setInterval(()=>{if(A.hoje()!==diaAtual){diaAtual=A.hoje();renderRecentes()}},60000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&A.hoje()!==diaAtual){diaAtual=A.hoje();renderRecentes()}});
 A.store.ouvir(l=>{fichas=l.filter(f=>A.ctrDe(f)==="recleaner"&&!f.lacuna);renderRecentes();if(view==="cert")renderPendCert();if(view==="lancar")checarDup()});

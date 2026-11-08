@@ -530,6 +530,7 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
 <script src="assets/ui.js"></script>
 <script src="assets/topo.js"></script>
 <script src="assets/fx.js"></script>
+<script src="assets/assistente.js"></script>
 <script src="assets/dashboard.js"></script>
 <script src="assets/atualizacao.js"></script>
 <script src="assets/diligenciamento.js"></script>
@@ -557,7 +558,7 @@ function renderCtr(){
   document.title="Nexum · Escritório · "+CT().nome;
 }
 function renderHello(){
-  $("heT").textContent=A.saudacao();$("heData").textContent=A.dataLonga();$("heF").textContent=A.fraseDoDia();
+  $("heT").textContent=A.saudacao();$("heData").textContent=A.dataLonga();
   const ativos=fichas.filter(f=>f.status!=="finalizado"&&f.status!=="sem_acao");
   const aConf=ativos.filter(f=>A.conf(f).situacao==="pendente").length;
   const nCert=fichas.reduce((s,f)=>s+A.itensValidos(f).filter(i=>A.certSituacao(f,i)==="pendente").length,0);
@@ -571,6 +572,12 @@ function renderHello(){
     {k:"falta",ic:I('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'),t:"Informações faltando",n:nFalta,s:nFalta?"Dados para completar nas fichas":"Nenhuma informação faltando ✓",bt:"Ver",go:()=>show("pend")}];
   $("heActs").innerHTML=cards.map((c,i)=>`<button class="nx-act${c.n&&c.k!=="conf"?" alerta":""}" type="button" data-i="${i}"><span class="a-ic">${c.ic}</span><span class="a-tx"><b>${c.t} <span class="a-n">${c.n.toLocaleString("pt-BR")}</span></b><small>${c.s}</small></span><span class="a-bt">${c.bt}</span></button>`).join("");
   $("heActs").querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>cards[+b.dataset.i].go());
+  const pendAll=typeof itensPend==="function"?itensPend():[];
+  const ehAdmin=!(window.NXNUVEM&&NXNUVEM.perfil)||["admin","escritorio"].includes(NXNUVEM.perfil());
+  const fdl=window.DILIG?window.DILIG.fonteAtual():null;
+  NXASSIST.mostrar($("heF"),NXASSIST.escritorio({fichas,ativo:CT().ativo,admin:ehAdmin&&CT().ativo,faltando:nFalta,autoRevisar:pendAll.filter(x=>x.p.tipo==="auto").length,lacunas:lacs.length,
+    dilig:{conectado:!!fdl,modificado:fdl&&fdl.modificado},
+    ir:{certs:cards[1].go,certsValidar:()=>{fCert="recebido";show("certs")},conferir:cards[0].go,fichas:()=>show("fichas"),pend:cards[2].go,pendAuto:()=>{fPend="auto";show("pend")},lacunas:()=>{fPend="falta:lacuna";show("pend")},cadastros:()=>show("cadastros")}}));
   if(window.NXTOPO)NXTOPO.notificacoes([{icone:"eye",texto:"Fichas a conferir",n:aConf,acao:cards[0].go},{icone:"cert",texto:"Certificados pendentes",n:nCert,tom:"w",acao:cards[1].go},{icone:"alert",texto:"Informações faltando",n:nFalta,tom:"w",acao:cards[2].go},{icone:"doc",texto:"Números sem ficha no mapa",n:lacs.length,tom:"b",acao:()=>{fPend="falta:lacuna";show("pend")}}]);
 }
 if(window.NXTOPO)NXTOPO.configurar(()=>{if(window.NXNUVEM&&NXNUVEM.consulta&&NXNUVEM.consulta()){toast("Configurações são só do administrador.",true);return}show("cadastros")});
