@@ -182,7 +182,7 @@
     });
     return [...g.values()].map(x => {
       const itens = x.fichas.reduce((s, y) => s + y.lista.length, 0), novos = x.fichas.reduce((s, y) => s + y.lista.filter(i => !i.cobradoEm).length, 0);
-      const maisAntigo = Math.max(...x.fichas.map(y => y.f.dataRecebimento ? Math.floor((agora - new Date(y.f.dataRecebimento + "T12:00:00")) / 864e5) : 0));
+      const maisAntigo = Math.max(0, ...x.fichas.map(y => y.f.dataRecebimento ? Math.floor((agora - new Date(y.f.dataRecebimento + "T12:00:00")) / 864e5) : 0));
       const fo = cadastros.fornecedorPorNome(x.fornecedor);
       return { ...x, itens, novos, reforco: itens - novos, maisAntigo, semEmail: !(fo && (fo.emails || []).length) };
     }).sort((a, b) => b.maisAntigo - a.maisAntigo);

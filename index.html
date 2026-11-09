@@ -847,7 +847,7 @@ function renderViewer(){
   $("vTabs").innerHTML=`<div class="seg" style="width:100%">${tabs.map(([k,l,a])=>`<button type="button" data-vt="${k}" aria-pressed="${k===vTab}">${l} (${a.length})</button>`).join("")}</div>`;
   $("vTabs").querySelectorAll("[data-vt]").forEach(b=>b.onclick=()=>{vTab=b.dataset.vt;vIdx=0;renderViewer()});
   const arr=vTab==="cert"?certs:docs,cur=arr[vIdx];
-  $("vStage").innerHTML=cur?(cur.img?`<img src="${cur.img}" alt="${esc(cur.nome||"Documento")}">`:`<div class="none">Arquivo PDF: ${esc(cur.nome||"")}<br>${cur.data?'<button class="btn small" type="button" id="vPdfAbrir">Abrir PDF</button>':"Arquivo registrado só pelo nome."}</div>`):`<div class="none">${vTab==="cert"?"Nenhum certificado anexado.":"Nenhuma foto do documento."}<br>Se faltar, devolva ao campo pedindo a foto.</div>`;
+  $("vStage").innerHTML=cur?(cur.img?`<img src="${cur.img}" alt="${esc(cur.nome||"Documento")}">`:`<div class="none">Arquivo PDF: ${esc(cur.nome||"")}<br>${cur.data?'<button class="btn small" type="button" id="vPdfAbrir">Abrir PDF</button>':"Arquivo registrado só pelo nome."}</div>`):`<div class="none">${vTab==="cert"?"Nenhum certificado anexado.":"Nenhuma foto do documento."}<br>Se faltar, peça a foto ao campo.</div>`;
   const vpa=$("vPdfAbrir");if(vpa)vpa.onclick=e=>{e.stopPropagation();abrirArquivo(cur)};
   $("vStage").onclick=()=>{if(cur&&cur.img){$("lbImg").src=cur.img;$("lb").classList.remove("zoom");$("lb").hidden=false}};
   $("vThumbs").innerHTML=arr.length>1?arr.map((a,i)=>`<button type="button" data-vi="${i}" aria-pressed="${i===vIdx}" aria-label="Página ${i+1}">${a.img?`<img src="${a.img}" alt="">`:'<span class="code" style="display:grid;place-items:center;width:58px;height:58px">PDF</span>'}</button>`).join(""):"";
