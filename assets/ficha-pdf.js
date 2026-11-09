@@ -7,9 +7,9 @@
   const CW = W - 2 * M;                        /* largura útil */
   /* Colunas na mesma proporção da planilha (B..Q, com C:E e O:P mescladas) */
   const COLS = [
-    ["ITEM", 5.1, "c"], ["DESCRIÇÃO", 94, "l"], ["TAG", 16.6, "c"], ["NOTA FISCAL", 13.3, "c"], ["ROMANEIO", 11.7, "c"],
-    ["CERTIFICADO", 13.6, "c"], ["UND", 9.4, "c"], ["QTD.\nRECEBIDA", 11.7, "c"], ["DATA\nRECEBIMENTO", 14.3, "c"],
-    ["FORNECIMENTO", 16.7, "c"], ["FORNECEDOR", 18.6, "c"], ["LOCALIZAÇÃO/\nARMAZENAMENTO", 31.8, "c"], ["STATUS", 13.9, "c"]
+    ["ITEM", 6.6, "c"], ["DESCRIÇÃO", 84, "l"], ["TAG", 16.6, "c"], ["NOTA FISCAL", 13.3, "c"], ["ROMANEIO", 13.6, "c"],
+    ["CERTIFICADO", 15.6, "c"], ["UND", 8.4, "c"], ["QTD.\nRECEBIDA", 12.4, "c"], ["DATA\nRECEBIMENTO", 15.6, "c"],
+    ["FORNECIMENTO", 18.4, "c"], ["FORNECEDOR", 18.6, "c"], ["LOCALIZAÇÃO/\nARMAZENAMENTO", 28.6, "c"], ["STATUS", 12.6, "c"]
   ];
   const soma = COLS.reduce((s, c) => s + c[1], 0);
   const LARG = COLS.map(c => c[1] * CW / soma);
@@ -19,37 +19,45 @@
   const xDe = c => M + LET.slice(0, LET.indexOf(c)).reduce((s, k) => s + XL[k], 0) * CW / XLS;
   const span = (a, b) => [xDe(a), LET.slice(LET.indexOf(a), LET.indexOf(b) + 1).reduce((s, k) => s + XL[k], 0) * CW / XLS];
 
-  function caber(doc, txt, w, hMax, fs, fsMin, negrito) {
-    doc.setFont("helvetica", negrito ? "bold" : "normal");
-    const palavras = String(txt ?? "").split(/\s+/).filter(Boolean);
-    for (let f = fs; f >= fsMin; f -= 0.25) {
-      doc.setFontSize(f);
-      if (f - 0.25 >= fsMin && palavras.some(p => doc.getTextWidth(p) > w)) continue;
-      const linhas = doc.splitTextToSize(String(txt ?? ""), w);
-      const alt = linhas.length * f * 0.3528 * 1.15;
-      if (alt <= hMax || f - 0.25 < fsMin) return { linhas: alt <= hMax ? linhas : linhas.slice(0, Math.max(1, Math.floor(hMax / (f * 0.3528 * 1.15)))), f };
-    }
+  /* Tipografia padronizada: Helvetica, tamanhos fixos por tipo de campo (sem encolher célula a célula),
+     altura de linha única e alinhamento vertical pela altura das maiúsculas. */
+  const PT = 0.3528, LH = 1.2, CAP = 0.72;
+  const FS = { titulo: 15, campo: 7, codigo: 8.5, th: 6.2, obs: 7, legenda: 7.5, ass: 7.5 };
+  function quebrar(doc, txt, w, fs, b) {
+    doc.setFont("helvetica", b ? "bold" : "normal"); doc.setFontSize(fs);
+    /* palavra mais larga que a coluna (ex.: 4166-REV-00) quebra no hífen, nunca no meio */
+    return String(txt ?? "").split("\n").flatMap(p => {
+      const pp = p.split(" ").map(t => doc.getTextWidth(t) > w && t.includes("-") ? t.replace(/-/g, "-\u0001 ") : t).join(" ");
+      return doc.splitTextToSize(pp, w).map(l => l.replace(/\u0001 ?/g, "").trim());
+    });
   }
+  function cabe(doc, txt, w, h, fs, b, pad) { const l = quebrar(doc, txt, w - 2 * pad - 0.6, fs, b); return l.length * fs * PT * LH <= h - 0.9; }
   function texto(doc, txt, x, y, w, h, opt) {
     opt = opt || {};
-    const pad = opt.pad ?? 1.2;
-    const r = caber(doc, txt, w - 2 * pad, h - 2 * pad * 0.6, opt.fs || 7, opt.fsMin || 4.5, opt.b);
-    if (!r) return;
-    const lh = r.f * 0.3528 * 1.15;
-    const total = r.linhas.length * lh;
-    let ty = opt.top ? y + pad + r.f * 0.3528 : y + (h - total) / 2 + r.f * 0.3528 * 0.85;
-    r.linhas.forEach((l, i) => {
-      const al = opt.al || "l";
-      const tx = al === "c" ? x + w / 2 : al === "r" ? x + w - pad : x + pad;
-      doc.text(l, tx, ty + i * lh, { align: al === "c" ? "center" : al === "r" ? "right" : "left" });
-    });
+    const pad = opt.pad ?? 1.2, fs = opt.fs || 7, b = !!opt.b;
+    let linhas = quebrar(doc, txt, w - 2 * pad - 0.6, fs, b);
+    const lh = fs * PT * LH, max = Math.max(1, Math.floor((h - (opt.top ? 1.2 : 0.9)) / lh));
+    if (linhas.length > max) { linhas = linhas.slice(0, max); let u = linhas[max - 1]; while (u && doc.getTextWidth(u + "…") > w - 2 * pad) u = u.slice(0, -1); linhas[max - 1] = u.trimEnd() + "…"; }
+    const bloco = (linhas.length - 1) * lh + fs * PT * CAP;
+    const y0 = opt.top ? y + 1.2 + fs * PT * CAP : y + (h - bloco) / 2 + fs * PT * CAP;
+    const al = opt.al || "l", tx = al === "c" ? x + w / 2 : al === "r" ? x + w - pad : x + pad;
+    linhas.forEach((l, i) => doc.text(l, tx, y0 + i * lh, { align: al === "c" ? "center" : al === "r" ? "right" : "left" }));
+    return doc.getTextWidth(linhas[linhas.length - 1] || "");
+  }
+  /* Campo sem informação: traço diagonal no espaço correspondente (padrão em todos os formulários) */
+  function anular(doc, x, y, w, h) { doc.setLineWidth(0.2); doc.line(x + 0.6, y + h - 0.6, x + w - 0.6, y + 0.6); doc.setLineWidth(0.25); }
+  /* Rótulo + valor; se o valor estiver vazio, anula o espaço depois do rótulo */
+  function campo(doc, rotulo, valor, x, y, w, h, fs) {
+    const v = String(valor ?? "").trim();
+    const lw = texto(doc, rotulo + (v ? " " + v : ""), x, y, w, h, { fs: fs || FS.campo, b: true });
+    if (!v) { const x0 = x + 1.2 + lw + 1.5; if (x + w - x0 > 4) anular(doc, x0, y, x + w - x0, h); }
   }
   const caixa = (doc, x, y, w, h, fill) => { if (fill) { doc.setFillColor(fill); doc.rect(x, y, w, h, "FD"); } else doc.rect(x, y, w, h); };
 
   function linhasDaFicha(A, f) {
     const its = A.itensValidos(f);
     return its.map((i, n) => {
-      const cert = A.textoCert(f, i);
+      const cert = /^PENDENTE/i.test(A.textoCert(f, i)) ? "PENDENTE" : A.textoCert(f, i);
       return [String(n + 1), i.descricao, i.tag || "", f.tipo === "ROM" ? "N/A" : (f.nf || ""), f.romaneio || "", cert, i.und || "",
         A.fmtQtd(i.qtd), A.fmtData(f.dataRecebimento), f.fornecimento || "", f.fornecedor || "", i.local || "", i.conf === "NA" ? "N/A" : (i.conf || "")];
     });
@@ -76,59 +84,72 @@
     caixa(doc, xL, y, wL, hCab); caixa(doc, xT, y, wT, hCab); caixa(doc, xR, y, wR, hCab);
     if (L.anglo) { const lw = Math.min(wL - 10, 46), lh = lw * 76 / 192; doc.addImage(L.anglo, "PNG", xL + (wL - lw) / 2, y + (hCab - lh) / 2, lw, lh); }
     if (L.milplan) { const lh = hCab - 5, lw = lh * 221 / 172; doc.addImage(L.milplan, "PNG", xR + (wR - lw) / 2, y + 2.5, lw, lh); }
-    texto(doc, "FICHA DE INSPEÇÃO E RECEBIMENTO DE MATERIAIS", xT, y, wT, hCab, { al: "c", fs: 16, b: true });
+    texto(doc, "FICHA DE INSPEÇÃO E RECEBIMENTO DE MATERIAIS", xT, y, wT, hCab, { al: "c", fs: FS.titulo, b: true });
     y += hCab;
     /* Linhas 5-7: B:D | E:M | N:Q  e  Escopo B:L | Projeto M:O | Folha P:Q */
-    const r1 = 6, r2 = 7, r3 = 6.5;
+    const r1 = 6, r2 = 8, r3 = 6.5;
     const [xA, wA] = span("B", "D"), [xB, wB] = span("E", "M"), [xC, wC] = span("N", "Q");
     caixa(doc, xA, y, wA, r1); caixa(doc, xB, y, wB, r1); caixa(doc, xC, y, wC, r1);
-    texto(doc, "CONTRATO Nº: " + (cfg.ctr ? cfg.ctr.numero || "" : A.CONTRATO), xA, y, wA, r1, { fs: 8, b: true });
-    texto(doc, "CÓDIGO DO DOCUMENTO", xB, y, wB, r1, { fs: 8, b: true, al: "c" });
-    texto(doc, "FICHA Nº: " + f.numero, xC, y, wC, r1, { fs: 8.5, b: true });
+    campo(doc, "CONTRATO Nº:", cfg.ctr ? cfg.ctr.numero || "" : A.CONTRATO, xA, y, wA, r1);
+    texto(doc, "CÓDIGO DO DOCUMENTO", xB, y, wB, r1, { fs: FS.campo, b: true, al: "c" });
+    campo(doc, "FICHA Nº:", f.numero, xC, y, wC, r1);
     y += r1;
     caixa(doc, xA, y, wA, r2); caixa(doc, xB, y, wB, r2); caixa(doc, xC, y, wC, r2);
-    texto(doc, "OBRA: " + (cfg.ctr ? cfg.ctr.obra : A.OBRA), xA, y, wA, r2, { fs: 7, b: true });
-    texto(doc, A.DOC_FICHA, xB, y, wB, r2, { fs: 8.5, b: true, al: "c" });
-    texto(doc, "RESPONSÁVEL POR ESTE DOCUMENTO: " + (cfg.responsavel || ""), xC, y, wC, r2, { fs: 7, b: true });
+    campo(doc, "OBRA:", cfg.ctr ? cfg.ctr.obra : A.OBRA, xA, y, wA, r2);
+    texto(doc, A.DOC_FICHA, xB, y, wB, r2, { fs: FS.codigo, b: true, al: "c" });
+    campo(doc, "RESPONSÁVEL POR ESTE DOCUMENTO:", cfg.responsavel, xC, y, wC, r2, 7);
     y += r2;
     const [xE, wE] = span("B", "L"), [xP, wP] = span("M", "O"), [xF, wF] = span("P", "Q");
     caixa(doc, xE, y, wE, r3); caixa(doc, xP, y, wP, r3); caixa(doc, xF, y, wF, r3);
-    texto(doc, "Escopo: " + (cfg.ctr ? cfg.ctr.escopo : A.ESCOPO), xE, y, wE, r3, { fs: 7, b: true });
-    texto(doc, "Projeto N° Cliente: " + (cfg.projetoCliente || ""), xP, y, wP, r3, { fs: 7, b: true });
-    texto(doc, `FOLHA: ${nFolha}/${totFolhas}`, xF, y, wF, r3, { fs: 7.5, b: true });
+    campo(doc, "Escopo:", cfg.ctr ? cfg.ctr.escopo : A.ESCOPO, xE, y, wE, r3);
+    campo(doc, "Projeto N° Cliente:", cfg.projetoCliente, xP, y, wP, r3);
+    texto(doc, `FOLHA: ${nFolha}/${totFolhas}`, xF, y, wF, r3, { fs: FS.campo, b: true });
     y += r3;
     /* Tabela */
     const hTit = 8, hLin = 7.0;
     let x = M;
-    COLS.forEach((c, i) => { caixa(doc, x, y, LARG[i], hTit, "#d9d9d9"); texto(doc, c[0], x, y, LARG[i], hTit, { fs: 6.3, fsMin: 4, b: true, al: "c", pad: 0.5 }); x += LARG[i]; });
+    /* cabeçalho da tabela: o mesmo tamanho em todas as colunas, sem quebrar palavras no meio */
+    const fsTh = [6.2, 5.9, 5.6, 5.3, 5.0].find(fs => { doc.setFont("helvetica", "bold"); doc.setFontSize(fs); return COLS.every((c, i) => c[0].split(/\s+/).every(p => doc.getTextWidth(p) <= LARG[i] - 1.8)); }) || 5.0;
+    COLS.forEach((c, i) => { caixa(doc, x, y, LARG[i], hTit, "#d9d9d9"); texto(doc, c[0], x, y, LARG[i], hTit, { fs: fsTh, b: true, al: "c", pad: 0.5 }); x += LARG[i]; });
     y += hTit;
+    /* um único tamanho de fonte para todo o corpo da tabela (o maior que faz todas as células caberem) */
+    const fsTab = cfg._fsTab || 6.5;
+    const pads = COLS.map((c, i) => i === 1 ? 1.2 : 0.7);
+    const yVazio = y + linhas.length * hLin;
     for (let r = 0; r < ITENS_POR_FOLHA; r++) {
       const lin = linhas[r];
       x = M;
       COLS.forEach((c, i) => {
         caixa(doc, x, y, LARG[i], hLin);
-        if (i === 0) texto(doc, String((nFolha - 1) * ITENS_POR_FOLHA + r + 1), x, y, LARG[i], hLin, { fs: 7, al: "c", pad: 0.4 });
+        if (i === 0) texto(doc, String((nFolha - 1) * ITENS_POR_FOLHA + r + 1), x, y, LARG[i], hLin, { fs: fsTab, al: "c", pad: 0.4 });
         else if (lin) {
-          const v = lin[i];
-          const destaque = (i === 5 && /^PENDENTE/.test(v)) || (i === 12 && v === "NC");
-          if (destaque) doc.setTextColor(178, 58, 46);
-          texto(doc, v, x, y, LARG[i], hLin, { fs: i === 1 ? 6.8 : 6.3, fsMin: 4.2, al: c[2], pad: i === 1 ? 1.2 : 0.6, b: i === 0 || destaque });
-          if (destaque) doc.setTextColor(0);
+          const v = String(lin[i] ?? "").trim();
+          if (!v) anular(doc, x, y, LARG[i], hLin);
+          else {
+            const destaque = (i === 5 && /^PENDENTE/.test(v)) || (i === 12 && v === "NC");
+            if (destaque) doc.setTextColor(178, 58, 46);
+            texto(doc, v, x, y, LARG[i], hLin, { fs: fsTab, al: c[2], pad: pads[i] });
+            if (destaque) doc.setTextColor(0);
+          }
         }
         x += LARG[i];
       });
       y += hLin;
     }
+    /* linhas sem item: um traço diagonal único anulando todo o espaço em branco da tabela */
+    if (linhas.length < ITENS_POR_FOLHA) anular(doc, M + LARG[0], yVazio, CW - LARG[0], y - yVazio);
     /* Observação */
-    const hObs = 15;
+    const hObs = 14;
     caixa(doc, M, y, CW, hObs);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.text("Observação:", M + 1.2, y + 3.4);
-    if (nFolha === 1 || totFolhas > 1) texto(doc, observacao(A, f), M, y + 3.2, CW, hObs - 3.2, { fs: 6.8, fsMin: 4.5, top: true });
+    texto(doc, "Observação:", M, y, CW, 5, { fs: FS.campo, b: true, top: true });
+    const obs = observacao(A, f);
+    if (obs) texto(doc, obs, M, y + 4, CW, hObs - 4, { fs: FS.obs, top: true });
+    else anular(doc, M + 20, y, CW - 20, hObs);
     y += hObs;
     /* Legenda */
     const hLeg = 5.5;
     caixa(doc, M, y, CW, hLeg);
-    texto(doc, "LEGENDA:  C = CONFORME          NC = NÃO CONFORME          N/A = NÃO SE APLICA", M, y, CW, hLeg, { fs: 7.5, b: true });
+    texto(doc, "LEGENDA:  C = CONFORME          NC = NÃO CONFORME          N/A = NÃO SE APLICA", M, y, CW, hLeg, { fs: FS.legenda, b: true });
     y += hLeg;
     /* Assinaturas */
     const hAssT = 5, hAss = H - M - y - hAssT;
@@ -136,15 +157,12 @@
     const nomes = [["producao", "PRODUÇÃO MILPLAN"], ["qualidade", "QUALIDADE MILPLAN"], ["fiscalizacao", "FISCALIZAÇÃO ANGLO"]];
     x = M;
     nomes.forEach(([k, t], i) => {
-      caixa(doc, x, y, wS[i], hAssT); texto(doc, t, x, y, wS[i], hAssT, { fs: 7.5, b: true, al: "c" });
+      caixa(doc, x, y, wS[i], hAssT); texto(doc, t, x, y, wS[i], hAssT, { fs: FS.ass, b: true, al: "c" });
       caixa(doc, x, y + hAssT, wS[i], hAss);
       const d = f.assinaturas && f.assinaturas[k] && f.assinaturas[k].em ? A.fmtData(f.assinaturas[k].em) : "";
-      doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.text("Data: " + d, x + 1.5, y + hAssT + hAss - 2);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(FS.ass); doc.text("Data: " + d, x + 1.2, y + hAssT + hAss - 2);
       x += wS[i];
     });
-    /* Rodapé discreto: rastreabilidade */
-    doc.setFont("helvetica", "normal"); doc.setFontSize(5.5); doc.setTextColor(120);
-    if (f.chaveNFe) doc.text("Chave NF-e " + f.chaveNFe, M, H - 2.5);
     doc.setTextColor(0);
   }
 
@@ -154,9 +172,12 @@
     if (docExistente) doc.addPage("a4", "landscape");
     const linhas = linhasDaFicha(A, f);
     const tot = Math.max(1, Math.ceil(linhas.length / ITENS_POR_FOLHA));
+    cfg = { ...(cfg || {}) };
+    const tmp = docExistente || doc;
+    cfg._fsTab = [6.5, 6.2, 5.9, 5.6].find(fs => linhas.every(l => l.every((v, i) => i === 0 || !String(v ?? "").trim() || cabe(tmp, String(v).trim(), LARG[i], 7.0, fs, false, i === 1 ? 1.2 : 0.7)))) || 5.6;
     for (let p = 0; p < tot; p++) {
       if (p) doc.addPage("a4", "landscape");
-      folha(doc, A, f, linhas.slice(p * ITENS_POR_FOLHA, (p + 1) * ITENS_POR_FOLHA), p + 1, tot, cfg || {});
+      folha(doc, A, f, linhas.slice(p * ITENS_POR_FOLHA, (p + 1) * ITENS_POR_FOLHA), p + 1, tot, cfg);
     }
     if (!docExistente) doc.setProperties({ title: `Ficha ${f.numero} - ${A.DOC_FICHA}`, subject: "Ficha de Inspeção e Recebimento de Materiais", creator: "Nexum" });
     return doc;

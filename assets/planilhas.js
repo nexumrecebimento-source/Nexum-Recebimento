@@ -45,7 +45,7 @@
     const ws = wb.addWorksheet(aba.nome.slice(0, 31), {
       views: [{ showGridLines: false }],
       pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: .3, right: .3, top: .4, bottom: .5, header: .2, footer: .25 } },
-      headerFooter: { oddFooter: `&L&8Nexum · Recebimento inteligente&C&8${aba.titulo.replace(/&/g, "&&")}&R&8Página &P de &N` },
+      headerFooter: { oddFooter: `&L&8${aba.titulo.replace(/&/g, "&&")}&R&8Página &P de &N` },
       properties: { defaultRowHeight: 17 }
     });
     ws.columns = aba.cols.map(c => ({ width: c.w || 14 }));
@@ -100,6 +100,8 @@
         x.font = { name: FONTE, size: 10, color: { argb: "FF1F2937" }, bold: !!c.forte };
         x.alignment = { vertical: "middle", horizontal: c.al || (["num", "dec", "int", "data"].includes(c.tipo) ? "center" : "left"), wrapText: !!c.quebra };
         x.border = borda(LINHA);
+        /* campo sem informação: traço diagonal na célula (padrão dos formulários) */
+        if (x.value === null && !aba.semDiagonal) x.border = { ...borda(LINHA), diagonal: { up: true, down: false, style: "thin", color: { argb: "FF8A94A6" } } };
         if (fmt[c.tipo]) x.numFmt = fmt[c.tipo]; else if (v instanceof Date) x.numFmt = fmt.data;
         const cc = c.tipo === "cor" ? corDe(v) : null;
         if (cc) { x.fill = { type: "pattern", pattern: "solid", fgColor: { argb: cc[0] } }; x.font = { name: FONTE, size: 10, bold: true, color: { argb: cc[1] } }; x.alignment = { vertical: "middle", horizontal: "center" }; }
