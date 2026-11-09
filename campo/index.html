@@ -109,6 +109,12 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
 .scanner #scReader video{width:100%!important;height:100%!important;object-fit:cover}
 .scanner .sc-hint{padding:12px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:10px;font-size:.88rem;opacity:.95}
 .scanner .sc-hint input{background:#1c1c1c;color:#fff;border-color:#444}
+.scanner .sc-acts{display:flex;gap:8px;flex-wrap:wrap}
+.scanner .sc-bt{background:#1c2a40;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:10px 14px;font:600 .9rem var(--f-body)}
+.scanner .sc-bt[aria-pressed="true"]{background:#2d8cff;border-color:#2d8cff}
+.scanner .sc-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scanner .sc-mira{position:absolute;left:6%;right:6%;top:50%;height:22%;transform:translateY(-50%);border:2px solid rgba(127,216,255,.9);border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);pointer-events:none}
+.scanner .sc-mira::after{content:"";position:absolute;left:4%;right:4%;top:50%;height:2px;background:#ff5d5d;box-shadow:0 0 8px #ff5d5d}
 .scanner .sc-err{background:#5a1e18;color:#ffd9d4;border-radius:6px;padding:10px;font-size:.85rem}
 .dl{display:grid;gap:10px}
 .dl-st{display:flex;gap:8px;align-items:flex-start;font-size:.84rem;border-radius:6px;padding:9px 11px;background:var(--surface-2);color:var(--muted)}
@@ -312,6 +318,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
   <div class="sc-hint">
     <span id="scDica">Aponte a câmera para o código. A leitura é automática.</span>
     <div class="sc-err" id="scErr" hidden></div>
+    <div class="sc-acts"><button type="button" class="sc-bt" id="scFoto">📷 Ler por foto</button><button type="button" class="sc-bt" id="scTorch" hidden>🔦 Lanterna</button><input type="file" id="scArq" accept="image/*" capture="environment" hidden></div>
     <div style="display:flex;gap:8px"><input id="scManual" inputmode="numeric" placeholder="Ou digite o código" aria-label="Digitar o código"><button class="btn primary" type="button" id="scUsar">Usar</button></div>
   </div>
 </div>
@@ -538,22 +545,73 @@ function renderThumbs(){thumbs(fotosDoc,$("thumbsDoc"))}
 /* ---------- scanner de código de barras / QR ---------- */
 let leitor=null,scDestino=null,scLido=false;
 const FMT=window.Html5QrcodeSupportedFormats;
-function abrirScanner(titulo,dica,destino){
-  scDestino=destino;scLido=false;$("scTitle").textContent=titulo;$("scDica").textContent=dica;$("scErr").hidden=true;$("scManual").value="";
+/* Leitor de código: usa o leitor nativo do aparelho (Android/Chrome) em alta resolução; senão, o html5-qrcode.
+   Leitura por foto como alternativa. Para NF, só aceita chave de 44 dígitos com dígito verificador certo. */
+let scStream=null,scTimer=null,scDet=null,scAceitar=null,scOpt={};
+const FMT_TODOS=["code_128","qr_code","code_39","ean_13","itf","data_matrix"];
+async function abrirScanner(titulo,dica,destino,opt){
+  scOpt=opt||{};scDestino=destino;scLido=false;$("scTitle").textContent=titulo;$("scDica").textContent=dica;$("scErr").hidden=true;$("scManual").value="";
+  $("scTorch").hidden=true;$("scTorch").setAttribute("aria-pressed","false");
   $("scanner").hidden=false;document.body.style.overflow="hidden";
-  if(!window.Html5Qrcode){erroScan("O leitor não carregou. Verifique a internet e abra o app de novo, ou digite o código abaixo.");return}
-  const formatos=FMT?[FMT.CODE_128,FMT.QR_CODE,FMT.CODE_39,FMT.EAN_13,FMT.ITF,FMT.DATA_MATRIX]:undefined;
-  leitor=new Html5Qrcode("scReader",{formatsToSupport:formatos,verbose:false,experimentalFeatures:{useBarCodeDetectorIfSupported:true}});
-  const largura=Math.min(window.innerWidth-40,520);
-  leitor.start({facingMode:"environment"},{fps:12,qrbox:(w,h)=>({width:Math.min(w-30,520),height:Math.min(Math.round(h*0.32),220)}),aspectRatio:window.innerHeight/window.innerWidth},
-    txt=>{if(scLido)return;scLido=true;if(navigator.vibrate)navigator.vibrate(80);fecharScanner().then(()=>scDestino(txt))},()=>{})
-  .catch(e=>{const m=String(e&&e.message||e);erroScan(/NotAllowed|Permission/i.test(m)?"A câmera foi bloqueada. Libere a câmera para este app nas configurações do navegador, ou digite o código abaixo.":/NotFound|Requested device/i.test(m)?"Nenhuma câmera encontrada neste aparelho. Digite o código abaixo.":"Não foi possível abrir a câmera. Digite o código abaixo.")});
+  scAceitar=txt=>{if(scLido)return false;const t=String(txt||"").replace(/\s+/g,"").trim()||String(txt||"").trim();if(!t)return false;
+    if(scOpt.validar&&!scOpt.validar(t))return false;
+    scLido=true;if(navigator.vibrate)navigator.vibrate(80);const d=scDestino;fecharScanner().then(()=>d(t));return true};
+  const fmts=scOpt.formatos||FMT_TODOS;
+  if("BarcodeDetector" in window){
+    try{const sup=await BarcodeDetector.getSupportedFormats();const f=fmts.filter(x=>sup.includes(x));
+      if(f.length){scDet=new BarcodeDetector({formats:f});await iniciarNativo();return}}catch(e){if(/NotAllowed|Permission|NotFound|NotReadable/i.test(String(e&&e.name||e)))return erroCamera(e)}
+  }
+  iniciarHtml5(fmts);
 }
-function erroScan(t){$("scErr").textContent=t;$("scErr").hidden=false;$("scManual").focus()}
+async function iniciarNativo(){
+  const r=$("scReader");r.innerHTML="";
+  const v=document.createElement("video");v.className="sc-video";v.muted=true;v.playsInline=true;v.setAttribute("playsinline","");
+  const mira=document.createElement("div");mira.className="sc-mira";r.append(v,mira);
+  scStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}}});
+  v.srcObject=scStream;await v.play().catch(()=>{});
+  const track=scStream.getVideoTracks()[0];
+  try{const c=track.getCapabilities?track.getCapabilities():{};const adv=[];
+    if(c.focusMode&&c.focusMode.includes("continuous"))adv.push({focusMode:"continuous"});
+    if(adv.length)await track.applyConstraints({advanced:adv});
+    if(c.torch)$("scTorch").hidden=false}catch(e){}
+  const loop=async()=>{if(!scStream||scLido)return;
+    try{if(v.readyState>=2){const res=await scDet.detect(v);for(const b of res){if(scAceitar(b.rawValue))return}}}catch(e){}
+    scTimer=setTimeout(loop,110)};
+  loop();
+}
+function iniciarHtml5(fmts){
+  if(!window.Html5Qrcode){erroScan("O leitor não carregou. Verifique a internet e abra o app de novo, ou use “Ler por foto” ou digite o código.");return}
+  const mapa={code_128:"CODE_128",qr_code:"QR_CODE",code_39:"CODE_39",ean_13:"EAN_13",itf:"ITF",data_matrix:"DATA_MATRIX"};
+  const formatos=FMT?fmts.map(x=>FMT[mapa[x]]).filter(x=>x!==undefined):undefined;
+  leitor=new Html5Qrcode("scReader",{formatsToSupport:formatos,verbose:false,experimentalFeatures:{useBarCodeDetectorIfSupported:true}});
+  leitor.start({facingMode:"environment"},{fps:15,qrbox:(w,h)=>({width:Math.round(w*.9),height:Math.min(Math.round(h*.3),260)}),aspectRatio:window.innerHeight/window.innerWidth,
+      videoConstraints:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}}},
+    txt=>{scAceitar(txt)},()=>{})
+  .catch(erroCamera);
+}
+function erroCamera(e){const m=String(e&&(e.name||e.message)||e);erroScan(/NotAllowed|Permission/i.test(m)?"A câmera foi bloqueada. Libere a câmera para este app nas configurações do navegador, ou use “Ler por foto”, ou digite o código.":/NotFound|Requested device/i.test(m)?"Nenhuma câmera encontrada. Use “Ler por foto” ou digite o código.":"Não consegui abrir a câmera. Use “Ler por foto” ou digite o código.")}
+function erroScan(t){$("scErr").textContent=t;$("scErr").hidden=false}
 async function fecharScanner(){
   $("scanner").hidden=true;document.body.style.overflow="";
+  clearTimeout(scTimer);scTimer=null;
+  if(scStream){scStream.getTracks().forEach(t=>t.stop());scStream=null}
   if(leitor){try{if(leitor.isScanning)await leitor.stop();leitor.clear()}catch(e){}leitor=null}
+  $("scReader").innerHTML="";
 }
+$("scTorch").onclick=async()=>{if(!scStream)return;const on=$("scTorch").getAttribute("aria-pressed")!=="true";
+  try{await scStream.getVideoTracks()[0].applyConstraints({advanced:[{torch:on}]});$("scTorch").setAttribute("aria-pressed",String(on))}catch(e){toast("Esta câmera não liberou a lanterna.",true)}};
+$("scFoto").onclick=()=>$("scArq").click();
+$("scArq").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  $("scErr").hidden=true;$("scDica").textContent="Lendo a foto…";
+  try{let lidos=[];
+    if("BarcodeDetector" in window){const sup=await BarcodeDetector.getSupportedFormats();const det=new BarcodeDetector({formats:(scOpt.formatos||FMT_TODOS).filter(x=>sup.includes(x))});
+      const bmp=await createImageBitmap(f);lidos=(await det.detect(bmp)).map(b=>b.rawValue)}
+    if(!lidos.length&&window.Html5Qrcode){let tmp=document.getElementById("scTmp");if(!tmp){tmp=document.createElement("div");tmp.id="scTmp";tmp.hidden=true;document.body.appendChild(tmp)}
+      const h=new Html5Qrcode("scTmp",{verbose:false});try{const r=await h.scanFileV2(f,false);lidos=[r.decodedText]}catch(_){}try{h.clear()}catch(_){}}
+    for(const t of lidos)if(scAceitar(t))return;
+    erroScan(lidos.length&&scOpt.validar?"Li um código, mas não é a chave da NF (44 dígitos). Fotografe o código de barras do alto da DANFE.":"Não encontrei o código na foto. Fotografe de perto, com o código reto, nítido e com boa luz.");
+  }catch(err){erroScan("Não consegui ler a foto. Tente de novo ou digite o código.")}
+  finally{$("scDica").textContent=scOpt.dica||$("scDica").textContent}};
 $("scFechar").onclick=()=>fecharScanner();
 $("scUsar").onclick=()=>{const v=$("scManual").value.trim();if(!v){$("scManual").focus();return}const d=scDestino;fecharScanner().then(()=>d(v))};
 $("scManual").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("scUsar").click()}});
@@ -582,7 +640,7 @@ function aplicarLeituraRom(txt){
   toast(m?"Romaneio "+m[0]+" preenchido pelo código":"Código lido. Confira o nº do romaneio.");
 }
 $("btnScanDoc").onclick=()=>tipo==="NF"
-  ?abrirScanner("Código de barras da NF","Aponte para o código de barras do DANFE (no alto da nota), com o celular deitado se precisar.",aplicarLeituraNF)
+  ?abrirScanner("Código de barras da NF","Encaixe o código de barras do alto da DANFE dentro da faixa. Deitar o celular ajuda.",aplicarLeituraNF,{formatos:["code_128"],validar:t=>{const i=A.lerChaveNFe(t);return !!(i&&i.valida)}})
   :abrirScanner("Código do romaneio","Aponte para o código de barras ou QR code do romaneio.",aplicarLeituraRom);
 
 /* ---------- Ponto 2: busca no Diligenciamento ---------- */
