@@ -59,6 +59,23 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
 .item-ref .div{color:var(--warn);font-weight:600;font-family:var(--f-body)}
 .confnf{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:8px 10px;font-size:.82rem;font-weight:500}
 .confnf button{margin-left:auto;border:1px solid currentColor;background:transparent;color:inherit;border-radius:5px;padding:5px 9px;font:600 .78rem var(--f-body);cursor:pointer}
+.cg{display:grid;gap:10px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px;background:var(--surface);margin-bottom:12px}
+.cg-h{display:grid;gap:3px}.cg-h b{font-size:.98rem}.cg-h span{font-size:.8rem;color:var(--muted)}
+.cg-st{font-size:.84rem;font-weight:600;padding:8px 10px;border-radius:8px;background:var(--bg);display:flex;gap:8px;align-items:center}
+.cg-st.ok{color:var(--ok)}.cg-st.warn{color:var(--warn);background:var(--warn-bg)}
+.cg-st .spin{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:cgspin .8s linear infinite;flex:0 0 auto}
+@keyframes cgspin{to{transform:rotate(360deg)}}
+.cg-list{display:grid;gap:10px}
+.cg-c{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:8px;background:var(--bg)}
+.cg-c.ia{border-color:var(--ok)}
+.cg-ch{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted)}.cg-ch .tag{font-weight:700;color:var(--ok)}.cg-ch .x{margin-left:auto}
+.cg-c .meta{font-size:.78rem;color:var(--muted)}
+.cg-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cg-chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 11px;font:600 .78rem var(--f-body,inherit);cursor:pointer;max-width:100%;text-align:left;color:var(--ink)}
+.cg-chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.cg-acoes{display:flex;gap:14px;flex-wrap:wrap}
+.lnk{background:none;border:0;padding:4px 0;color:var(--accent);font-weight:600;cursor:pointer;font-size:.86rem}
+.cs-geral{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .certsec{display:grid;gap:10px;border:1px dashed var(--line);border-radius:8px;padding:10px;background:var(--surface)}
 .certsec.req{border-color:var(--warn)}
 .certsec.ok{border-color:var(--ok);border-style:solid}
@@ -115,6 +132,8 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
 .scanner .sc-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .scanner .sc-mira{position:absolute;left:6%;right:6%;top:50%;height:22%;transform:translateY(-50%);border:2px solid rgba(127,216,255,.9);border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);pointer-events:none}
 .scanner .sc-mira::after{content:"";position:absolute;left:4%;right:4%;top:50%;height:2px;background:#ff5d5d;box-shadow:0 0 8px #ff5d5d}
+.scanner .sc-mira.vert{left:50%;right:auto;top:8%;bottom:auto;width:34%;height:72%;transform:translateX(-50%)}
+.scanner .sc-mira.vert::after{left:50%;right:auto;top:4%;bottom:4%;width:2px;height:auto}
 .scanner .sc-err{background:#5a1e18;color:#ffd9d4;border-radius:6px;padding:10px;font-size:.85rem}
 .dl{display:grid;gap:10px}
 .dl-st{display:flex;gap:8px;align-items:flex-start;font-size:.84rem;border-radius:6px;padding:9px 11px;background:var(--surface-2);color:var(--muted)}
@@ -271,10 +290,30 @@ header.top{border-bottom:0!important;box-shadow:none!important}
         <input id="dlArquivo" type="file" accept=".xlsx,.xls" hidden>
       </div>
 
+      <div class="block" data-tipo="ROM" id="lmBlock">
+        <h3><span class="n">✓</span>Lista de materiais</h3>
+        <div class="dl" id="lm"><div class="dl-st">Carregue a planilha Lista de materiais para buscar os itens do romaneio.</div></div>
+        <div class="f" id="lmBuscaF" hidden><label for="lmBusca">Buscar item por TAG ou descrição</label><input id="lmBusca" autocomplete="off" placeholder="Ex.: 1039-PP-001 ou PARAFUSO"></div>
+        <div class="dl-list" id="lmRes"></div>
+        <div class="shot-btns">
+          <button class="btn" type="button" id="btnLm" hidden>Buscar itens do romaneio</button>
+          <label class="btn ghost" for="lmArquivo" id="lblLmArq">Carregar Lista de materiais</label>
+        </div>
+        <input id="lmArquivo" type="file" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+      </div>
+
       <div class="block">
         <h3><span class="n">2</span>Itens recebidos</h3>
         <div class="grid2">
           <div class="f full"><label for="localPadrao">Local de armazenamento (todos os itens)</label><input id="localPadrao" placeholder="Ex.: ALMOXARIFADO, PLATÔ-13, KM 188"></div>
+        </div>
+        <div class="cg" id="certGeral" data-tipo="NF">
+          <div class="cg-h"><b>Certificados da NF</b><span>Fotografe todos os certificados de uma vez. A IA lê e preenche os itens sozinha. Um certificado pode valer para vários itens.</span></div>
+          <div class="shot-btns"><button class="btn primary" type="button" id="cgFoto">📷 Fotografar certificados</button><button class="btn" type="button" id="cgArq">Galeria / PDF</button></div>
+          <div class="thumbs" id="cgThumbs"></div>
+          <div class="cg-st" id="cgSt" hidden></div>
+          <div id="cgCerts" class="cg-list"></div>
+          <div class="cg-acoes" id="cgAcoes" hidden><button type="button" class="lnk" id="cgManual">+ Certificado digitado</button><button type="button" class="lnk" id="cgReler">↻ Ler de novo com IA</button></div>
         </div>
         <div id="itens" style="display:grid;gap:10px"></div>
         <button class="btn" type="button" id="btnItem">+ Adicionar item</button>
@@ -326,9 +365,11 @@ header.top{border-bottom:0!important;box-shadow:none!important}
 
 <script>window.NEXUM_APP="campo"</script>
 <script src="../assets/vendor/html5-qrcode.min.js"></script>
+<script src="../assets/vendor/zxing-reader.js"></script>
 <script src="../assets/vendor/xlsx.mini.min.js"></script>
 <script src="../assets/vendor/msal-browser.min.js"></script>
 <script src="../assets/diligenciamento.js"></script>
+<script src="../assets/listamat.js"></script>
 <script src="../assets/exemplo-docs.js"></script>
 <script src="../assets/dados.js"></script>
 <script src="../assets/vendor/firebase-app-compat.js"></script>
@@ -340,11 +381,13 @@ header.top{border-bottom:0!important;box-shadow:none!important}
 <script src="../assets/topo.js"></script>
 <script src="../assets/fx.js"></script>
 <script src="../assets/assistente.js"></script>
+<script src="../assets/vendor/firebase-ai-nexum.js"></script>
+<script src="../assets/ia.js"></script>
 <script src="../assets/atualizacao.js"></script>
 <script>
 (function(){
 const A=window.AMR, $=id=>document.getElementById(id);
-let dlRes=null, dlSel=new Set(), chaveNF=null, editando=null, fichas=[], tipo="NF", itens=[], fotosDoc=[], fotosCert=[], view="inicio";
+let dlRes=null, dlSel=new Set(), chaveNF=null, editando=null, fichas=[], tipo="NF", itens=[], fotosDoc=[], fotosCert=[], cgFotos=[], cgCerts=[], cgEstado=null, view="inicio";
 
 function toast(t,bad){const e=$("toast");e.textContent=t;e.className="toast"+(bad?" bad":"");e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200)}
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -438,8 +481,8 @@ function novoItem(){return{descricao:"",tag:"",und:tipo==="ROM"?"PÇ":"UND",qtd:
 function localLembrado(){try{return localStorage.getItem("amr_local_padrao")||""}catch(e){return""}}
 function lembrarLocal(v){try{if(v)localStorage.setItem("amr_local_padrao",v)}catch(e){}}
 function abrirNovo(t){
-  editando=null;setChave(null);resetDilig();$("segTipo").hidden=false;$("devolMsg").hidden=true;$("btnChegada").hidden=false;$("btnEnviar").textContent="Enviar recebimento";
-  itens=[novoItem()]; fotosDoc=[]; fotosCert=[];
+  editando=null;setChave(null);resetDilig();if(window.resetLM)resetLM();$("segTipo").hidden=false;$("devolMsg").hidden=true;$("btnChegada").hidden=false;$("btnEnviar").textContent="Enviar recebimento";
+  itens=[novoItem()]; fotosDoc=[]; fotosCert=[]; cgFotos=[]; cgCerts=[]; cgEstado=null;
   ["nf","fornecedor","romaneio","romaneioA","obs","localPadrao"].forEach(id=>$(id).value="");
   $("data").value=A.hoje();$("localPadrao").value=localLembrado();
   setTipo(t); itens=[novoItem()]; renderItens(); renderThumbs(); show("lancar");
@@ -452,7 +495,9 @@ function abrirEdicao(f){
   $("obs").value=(f.observacao||"").replace(A.OBS_ANGLO,"").trim();
   itens=JSON.parse(JSON.stringify(f.itens||[]));if(!itens.length)itens=[novoItem()];
   fotosDoc=[...(f.anexos?.doc||[])];fotosCert=[];
-  (f.anexos?.cert||[]).forEach(a=>{if(Number.isInteger(a.item)&&itens[a.item])(itens[a.item].certAnexos=itens[a.item].certAnexos||[]).push(a);else fotosCert.push(a)});
+  cgFotos=[];cgCerts=[];cgEstado=null;
+  (f.anexos?.cert||[]).forEach(a=>{if(a.geral){const k=cgFotos.push({nome:a.nome,img:a.img,pdf:a.pdf,data:a.data,thumb:a.thumb})-1;(a.certs||[{numero:a.numero,lote:a.lote,material:a.material,itens:a.itens||[]}]).forEach(c=>{let x=cgCerts.find(y=>y.numero===c.numero);if(!x)cgCerts.push(x={...c,itens:[...(c.itens||[])],imagens:[],fonte:"manual"});x.imagens.push(k)});return}
+    if(Number.isInteger(a.item)&&itens[a.item])(itens[a.item].certAnexos=itens[a.item].certAnexos||[]).push(a);else fotosCert.push(a)});
   $("devolMsg").innerHTML=`<strong>Devolvida pelo escritório: corrija e reenvie</strong><ul>${(c.motivos||[]).map(m=>`<li>${esc(A.MOTIVOS[m]||m)}</li>`).join("")}</ul>${(c.itens||[]).length?`<span>Itens marcados: ${c.itens.map(i=>i+1).join(", ")}</span>`:""}${c.comentario?`<span>“${esc(c.comentario)}”</span>`:""}`;
   $("devolMsg").hidden=false;$("btnChegada").hidden=true;$("btnEnviar").textContent="Reenviar corrigido";
   renderItens();renderThumbs();show("lancar");checarDup();
@@ -461,6 +506,7 @@ document.querySelectorAll("[data-novo]").forEach(b=>b.onclick=()=>abrirNovo(b.da
 $("btnNovoOutro").onclick=()=>abrirNovo(tipo);
 
 function certSecao(it,i){
+  if(it.certDeGeral)return `<div class="certsec ok"><div class="cs-geral"><span class="cs-st" style="color:var(--ok)">✓ Certificado ${esc(it.certificado)}<br><small style="color:var(--muted);font-weight:500">pelo certificado da NF (acima)</small></span><button type="button" class="lnk" data-tirageral>Não é este</button></div></div>`;
   const cr=A.materialCritico(it.descricao,it.tag),ex=A.exigeCert({tipo},it),fotos=it.certAnexos||[];
   const tem=!!(it.certificado||fotos.length), nr=it.certStatus==="nao_recebido";
   const estado=nr?"nao_recebido":(tem||it.certStatus==="recebido")?"recebido":"";
@@ -513,6 +559,7 @@ function renderItens(){
     const exb=el.querySelector("[data-ex]");if(exb)exb.onchange=()=>{itens[i].exigeCertificado=exb.checked;renderItens()};
     const sc=el.querySelector("[data-semcert]");if(sc)sc.onchange=()=>{
       if(sc.checked){if(((itens[i].certAnexos||[]).length||itens[i].certificado)&&!sc.dataset.ok){sc.dataset.ok=1;sc.checked=false;toast("Este item já tem certificado. Marque de novo para apagar o certificado e registrar como sem certificado.",true);return}
+        cgCerts.forEach(c=>c.itens=c.itens.filter(x=>x!==i));itens[i].certDeGeral=false;
         itens[i].certificado="";itens[i].certAnexos=[];itens[i].certStatus="nao_recebido"}
       else itens[i].certStatus=undefined;
       renderItens()};
@@ -521,62 +568,171 @@ function renderItens(){
     const ca=el.querySelector("[data-certarq]");if(ca)ca.onclick=()=>escolherArquivo(false,addCert);
     el.querySelectorAll("[data-rc]").forEach(b=>b.onclick=()=>{itens[i].certAnexos.splice(+b.dataset.rc,1);renderItens()});
     const cinp=el.querySelector('[data-k="certificado"]');if(cinp)cinp.addEventListener("change",()=>{if(cinp.value.trim())itens[i].certStatus="recebido";renderItens()});
-    const sb=el.querySelector("[data-scantag]");if(sb)sb.onclick=()=>abrirScanner("TAG do item "+(i+1),"Aponte para a etiqueta, código de barras ou QR code do material.",txt=>{itens[i].tag=A.norm(txt);renderItens();toast("TAG do item "+(i+1)+" preenchida")});
-    const d=el.querySelector("[data-del]"); if(d)d.onclick=()=>{itens.splice(i,1);renderItens()};
+    const sb=el.querySelector("[data-scantag]");if(sb)sb.onclick=()=>abrirScanner("TAG do item "+(i+1),"Aponte para a etiqueta, código de barras ou QR code do material.",txt=>{itens[i].tag=A.norm(txt);const lx=tipo==="ROM"&&window.NXLM&&NXLM.porTag(txt);if(lx){if(!itens[i].descricao)itens[i].descricao=lx.descricao;if(lx.und)itens[i].und=lx.und}renderItens();toast("TAG do item "+(i+1)+" preenchida")});
+    const tg=el.querySelector("[data-tirageral]");if(tg)tg.onclick=()=>{cgCerts.forEach(c=>c.itens=c.itens.filter(x=>x!==i));aplicarCG();renderItens()};
+    const d=el.querySelector("[data-del]"); if(d)d.onclick=()=>{itens.splice(i,1);cgCerts.forEach(c=>c.itens=c.itens.filter(x=>x!==i).map(x=>x>i?x-1:x));renderItens()};
   });
+  renderCG();
 }
 $("btnItem").onclick=()=>{itens.push(novoItem());renderItens();const l=$("itens").lastElementChild;l.scrollIntoView({behavior:"smooth",block:"center"});l.querySelector("input").focus()};
 $("localPadrao").addEventListener("change",()=>{const v=$("localPadrao").value.trim().toUpperCase();$("localPadrao").value=v;lembrarLocal(v);itens.forEach(it=>it.local=v);renderItens()});
 
 /* fotos (etapa 1: ficam só nesta tela; o armazenamento entra na etapa 3) */
-function lerFotos(files,arr,depois){
-  const fim=depois||renderThumbs;
+function lerFotos(files,arr,depois,op){
+  const fim=depois||renderThumbs,MAX=(op&&op.max)||1100,Q=(op&&op.q)||.6;
   [...files].forEach(file=>{
     if(file.type==="application/pdf"){if(file.size>2.5e6){toast("PDF muito grande ("+(file.size/1e6).toFixed(1)+" MB). Use até 2,5 MB ou fotografe o certificado.",true);return}const fr=new FileReader();fr.onload=()=>{arr.push({nome:file.name,pdf:true,data:fr.result});fim()};fr.readAsDataURL(file);return}
     const img=new Image(),url=URL.createObjectURL(file);
-    img.onload=()=>{const s=Math.min(1,1100/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);arr.push({nome:file.name,img:c.toDataURL("image/jpeg",.6)});URL.revokeObjectURL(url);fim()};
+    img.onload=()=>{const s=Math.min(1,MAX/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);arr.push({nome:file.name,img:c.toDataURL("image/jpeg",Q)});URL.revokeObjectURL(url);fim()};
     img.src=url;
   });
 }
 function thumbs(arr,el){el.innerHTML=arr.map((f,i)=>`<figure>${f.pdf?`<div style="width:76px;height:96px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font:600 .75rem var(--f-mono);color:var(--muted)">PDF</div>`:`<img src="${f.img||f.thumb}" alt="Foto ${i+1}">`}<button type="button" aria-label="Remover foto" data-r="${i}">×</button></figure>`).join("");el.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{arr.splice(+b.dataset.r,1);renderThumbs()})}
 function renderThumbs(){thumbs(fotosDoc,$("thumbsDoc"))}
+
+/* ===== Certificados da NF: uma foto (ou várias) e a IA preenche todos os itens ===== */
+const itemRot=(it,n)=>`Item ${n+1}${it.descricao?" · "+(it.descricao.length>34?it.descricao.slice(0,32)+"…":it.descricao):""}`;
+function aplicarCG(){
+  itens.forEach((it,n)=>{
+    const cs=cgCerts.filter(c=>c.itens.includes(n)&&(c.numero||"").trim());
+    if(cs.length){it.certificado=cs.map(c=>c.numero.trim()).join(" / ");it.certDeGeral=true;it.certStatus="recebido";it.certLote=cs.map(c=>c.lote).filter(Boolean).join(" / ")||undefined}
+    else if(it.certDeGeral){it.certDeGeral=false;it.certificado="";it.certStatus=undefined;delete it.certLote}
+  });
+}
+function anexosCG(){
+  if(tipo!=="NF")return[];
+  return cgFotos.map((a,k)=>{const cs=cgCerts.filter(c=>c.imagens.includes(k)||!c.imagens.length);
+    const its=[...new Set(cs.flatMap(c=>c.itens))].sort((x,y)=>x-y);
+    return{...a,geral:true,numero:cs.map(c=>c.numero).filter(Boolean).join(" / "),lote:cs.map(c=>c.lote).filter(Boolean).join(" / "),material:cs.map(c=>c.material).filter(Boolean).join(" / "),
+      certs:cs.map(c=>({numero:c.numero,lote:c.lote||"",material:c.material||"",itens:c.itens})),itens:its,item:its.length?its[0]:undefined,
+      nome:`Certificado ${cs.map(c=>c.numero).filter(Boolean).join(" / ")||"da NF"}${its.length?" · itens "+its.map(x=>x+1).join(", "):""}${cgFotos.length>1?" (foto "+(k+1)+")":""}`}});
+}
+function cgStatus(tom,html){const e=$("cgSt");cgEstado={tom,html};e.hidden=!html;e.className="cg-st "+(tom||"");e.innerHTML=html||""}
+function renderCG(){
+  if(!$("certGeral"))return;
+  $("cgThumbs").innerHTML=cgFotos.map((f,k)=>`<figure>${f.pdf?`<div style="width:76px;height:96px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font:600 .75rem var(--f-mono);color:var(--muted)">PDF</div>`:`<img src="${f.img||f.thumb}" alt="Certificado ${k+1}">`}<button type="button" aria-label="Remover foto" data-rcg="${k}">×</button></figure>`).join("");
+  $("cgThumbs").querySelectorAll("[data-rcg]").forEach(b=>b.onclick=()=>{const k=+b.dataset.rcg;cgFotos.splice(k,1);cgCerts.forEach(c=>c.imagens=c.imagens.filter(x=>x!==k).map(x=>x>k?x-1:x));if(!cgFotos.length){cgCerts=[];cgStatus("","")}aplicarCG();renderItens()});
+  const vis=itens.map((it,n)=>({it,n})).filter(x=>x.it.descricao||x.it.tag||itens.length===1);
+  $("cgCerts").innerHTML=cgCerts.map((c,k)=>`<div class="cg-c ${c.fonte==="ia"?"ia":""}" data-cg="${k}">
+      <div class="cg-ch">${c.fonte==="ia"?'<span class="tag">✓ Lido pela IA</span>':"<span>Certificado "+(k+1)+"</span>"}<span>${c.imagens.length?"foto "+c.imagens.map(x=>x+1).join(", "):""}</span><button type="button" class="lnk x" data-cgdel>Remover</button></div>
+      <div class="grid2"><div class="f"><label>Nº do certificado</label><input data-cgk="numero" value="${esc(c.numero||"")}" autocomplete="off" placeholder="Ex.: 3023651"></div><div class="f"><label>Lote / corrida</label><input data-cgk="lote" value="${esc(c.lote||"")}" autocomplete="off" placeholder="Se houver"></div></div>
+      ${c.material||c.fabricante?`<div class="meta">${esc([c.material,c.norma,c.fabricante].filter(Boolean).join(" · "))}</div>`:""}
+      <div class="f"><label>Vale para os itens (toque para marcar)</label><div class="cg-chips">${vis.map(({it,n})=>`<button type="button" data-cgi="${n}" aria-pressed="${c.itens.includes(n)}">${esc(itemRot(it,n))}</button>`).join("")||'<span class="meta">Adicione os itens abaixo primeiro.</span>'}${vis.length>1?`<button type="button" data-cgtodos>${c.itens.length===vis.length?"Desmarcar todos":"Todos os itens"}</button>`:""}</div></div>
+    </div>`).join("");
+  $("cgCerts").querySelectorAll("[data-cg]").forEach(el=>{const c=cgCerts[+el.dataset.cg];
+    el.querySelectorAll("[data-cgk]").forEach(inp=>inp.addEventListener("change",()=>{c[inp.dataset.cgk]=inp.value.trim().toUpperCase();inp.value=c[inp.dataset.cgk];aplicarCG();renderItens()}));
+    el.querySelectorAll("[data-cgi]").forEach(b=>b.onclick=()=>{const n=+b.dataset.cgi;c.itens=c.itens.includes(n)?c.itens.filter(x=>x!==n):[...c.itens,n].sort((a,b)=>a-b);
+      if(itens[n].certStatus==="nao_recebido")itens[n].certStatus=undefined;aplicarCG();renderItens();if(!c.numero)toast("Informe o nº do certificado para preencher os itens.",true)});
+    const td=el.querySelector("[data-cgtodos]");if(td)td.onclick=()=>{c.itens=c.itens.length===vis.length?[]:vis.map(x=>x.n);aplicarCG();renderItens()};
+    el.querySelector("[data-cgdel]").onclick=()=>{cgCerts.splice(+el.dataset.cg,1);aplicarCG();renderItens()};
+  });
+  $("cgAcoes").hidden=!cgFotos.length&&!cgCerts.length;
+  $("cgReler").hidden=!cgFotos.length||!(window.NXIA&&NXIA.disponivel());
+  if(cgEstado){const e=$("cgSt");e.hidden=!cgEstado.html;e.className="cg-st "+(cgEstado.tom||"");e.innerHTML=cgEstado.html||""}else $("cgSt").hidden=true;
+}
+async function lerCG(){
+  if(!cgFotos.length)return;
+  const manual=()=>{if(!cgCerts.length)cgCerts.push({numero:"",lote:"",material:"",itens:[],imagens:cgFotos.map((_,k)=>k),fonte:"manual"});aplicarCG();renderItens()};
+  if(!(window.NXIA&&NXIA.disponivel())){cgStatus("warn","Leitura automática indisponível. Digite o nº e toque nos itens que o certificado cobre.");manual();return}
+  const lista=itens.map(it=>({descricao:it.descricao,tag:it.tag,qtd:it.qtd,und:it.und}));
+  cgStatus("",`<span class="spin"></span>Lendo ${cgFotos.length>1?cgFotos.length+" fotos":"o certificado"} com IA…`);renderCG();
+  const btns=[$("cgFoto"),$("cgArq"),$("cgReler")];btns.forEach(b=>b.disabled=true);
+  try{
+    const r=await NXIA.lerCertificados(cgFotos,lista);
+    if(!r.length){cgStatus("warn","A IA não encontrou certificado legível. Tire outra foto mais de perto ou digite o nº.");manual();return}
+    cgCerts=cgCerts.filter(c=>c.fonte!=="ia"&&(c.numero||c.itens.length));
+    r.forEach(c=>{const ja=cgCerts.find(x=>x.numero&&x.numero===c.numero);if(ja){ja.itens=[...new Set([...ja.itens,...c.itens])];return}
+      cgCerts.push({...c,imagens:(c.imagens||[]).length?c.imagens:cgFotos.map((_,k)=>k),fonte:"ia"})});
+    const cob=new Set(cgCerts.flatMap(c=>c.itens)).size;
+    cgStatus("ok",`✓ ${r.length} ${r.length===1?"certificado lido":"certificados lidos"} · ${cob} ${cob===1?"item preenchido":"itens preenchidos"}. Confira os itens marcados.`);
+    aplicarCG();renderItens();
+  }catch(e){cgStatus("warn",esc(e.message));manual()}
+  finally{btns.forEach(b=>b.disabled=false)}
+}
+const addCG=files=>{const n=[...files].filter(f=>!(f.type==="application/pdf"&&f.size>2.5e6)).length;if(!n)return;let c=0;lerFotos(files,cgFotos,()=>{if(++c<n)return;renderCG();lerCG()},{max:1600,q:.8})};
+$("cgFoto").onclick=()=>escolherArquivo(true,addCG);
+$("cgArq").onclick=()=>escolherArquivo(false,addCG);
+$("cgReler").onclick=lerCG;
+$("cgManual").onclick=()=>{cgCerts.push({numero:"",lote:"",material:"",itens:[],imagens:[],fonte:"manual"});renderCG();const l=$("cgCerts").lastElementChild;l&&l.querySelector("input").focus()};
 [["fotoDoc",()=>fotosDoc],["fotoDocGal",()=>fotosDoc]].forEach(([id,arr])=>$(id).onchange=e=>{lerFotos(e.target.files,arr());e.target.value=""});
 
 /* ---------- scanner de código de barras / QR ---------- */
 let leitor=null,scDestino=null,scLido=false;
 const FMT=window.Html5QrcodeSupportedFormats;
-/* Leitor de código: usa o leitor nativo do aparelho (Android/Chrome) em alta resolução; senão, o html5-qrcode.
-   Leitura por foto como alternativa. Para NF, só aceita chave de 44 dígitos com dígito verificador certo. */
-let scStream=null,scTimer=null,scDet=null,scAceitar=null,scOpt={};
+/* Leitor de código: motor ZXing (zxing-cpp em WebAssembly, guardado no próprio app) em todos os celulares,
+   inclusive iPhone; no Android também tenta o leitor nativo. Lê a faixa da mira na resolução cheia da câmera
+   e o quadro inteiro, alternando. Leitura por foto como alternativa. Para NF, só aceita chave de 44 dígitos válida. */
+let scStream=null,scTimer=null,scDet=null,scAceitar=null,scOpt={},scZX=null,scVez=0,scCanvas=null;
 const FMT_TODOS=["code_128","qr_code","code_39","ean_13","itf","data_matrix"];
+const ZXF={code_128:"Code128",qr_code:"QRCode",code_39:"Code39",ean_13:"EAN-13",itf:"ITF",data_matrix:"DataMatrix"};
+function zx(){
+  if(scZX)return scZX;
+  if(!window.ZXingWASM)return Promise.resolve(null);
+  try{ZXingWASM.prepareZXingModule({overrides:{locateFile:(p,pre)=>p.endsWith(".wasm")?new URL("../assets/vendor/zxing_reader.wasm",location.href).href:pre+p},fireImmediately:true})}catch(e){}
+  return scZX=Promise.resolve(ZXingWASM);
+}
+zx();
+async function lerZX(fonte,fmts,forte){
+  const Z=await zx();if(!Z)return[];
+  const r=await Z.readBarcodes(fonte,{formats:fmts.map(x=>ZXF[x]).filter(Boolean),tryHarder:true,tryRotate:true,tryInvert:!!forte,tryDownscale:true,maxNumberOfSymbols:forte?4:1});
+  return r.filter(x=>x.isValid&&x.text).map(x=>x.text);
+}
 async function abrirScanner(titulo,dica,destino,opt){
-  scOpt=opt||{};scDestino=destino;scLido=false;$("scTitle").textContent=titulo;$("scDica").textContent=dica;$("scErr").hidden=true;$("scManual").value="";
+  scOpt=opt||{};scDestino=destino;scLido=false;$("scTitle").textContent=titulo;$("scDica").textContent=dica;scOpt.dica=dica;$("scErr").hidden=true;$("scManual").value="";
   $("scTorch").hidden=true;$("scTorch").setAttribute("aria-pressed","false");
   $("scanner").hidden=false;document.body.style.overflow="hidden";
   scAceitar=txt=>{if(scLido)return false;const t=String(txt||"").replace(/\s+/g,"").trim()||String(txt||"").trim();if(!t)return false;
-    if(scOpt.validar&&!scOpt.validar(t))return false;
+    if(scOpt.validar&&!scOpt.validar(t)){scInvalido(t);return false}
     scLido=true;if(navigator.vibrate)navigator.vibrate(80);const d=scDestino;fecharScanner().then(()=>d(t));return true};
-  const fmts=scOpt.formatos||FMT_TODOS;
+  const fmts=scOpt.formatos||FMT_TODOS;scDet=null;
   if("BarcodeDetector" in window){
-    try{const sup=await BarcodeDetector.getSupportedFormats();const f=fmts.filter(x=>sup.includes(x));
-      if(f.length){scDet=new BarcodeDetector({formats:f});await iniciarNativo();return}}catch(e){if(/NotAllowed|Permission|NotFound|NotReadable/i.test(String(e&&e.name||e)))return erroCamera(e)}
+    try{const sup=await BarcodeDetector.getSupportedFormats();const f=fmts.filter(x=>sup.includes(x));if(f.length)scDet=new BarcodeDetector({formats:f})}catch(e){}
   }
-  iniciarHtml5(fmts);
+  if(!window.ZXingWASM&&!scDet){iniciarHtml5(fmts);return}
+  try{await iniciarCamera(fmts)}catch(e){erroCamera(e)}
 }
-async function iniciarNativo(){
+let scUltInv=0;
+function scInvalido(t){if(Date.now()-scUltInv<2500)return;scUltInv=Date.now();$("scDica").textContent=/^\d{40,}$/.test(t)?"Li um código, mas o dígito verificador não confere. Segure firme, mais perto.":"Esse código não é a chave da NF. Mire no código de barras do alto da DANFE (o mais comprido).";}
+async function iniciarCamera(fmts){
   const r=$("scReader");r.innerHTML="";
-  const v=document.createElement("video");v.className="sc-video";v.muted=true;v.playsInline=true;v.setAttribute("playsinline","");
-  const mira=document.createElement("div");mira.className="sc-mira";r.append(v,mira);
-  scStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}}});
+  const v=document.createElement("video");v.className="sc-video";v.muted=true;v.playsInline=true;v.autoplay=true;v.setAttribute("playsinline","");v.setAttribute("muted","");
+  /* código de barras comprido (NF): no celular em pé, a moldura fica em pé, para o código ocupar o lado
+     maior da imagem da câmera (o dobro de resolução por barra). */
+  const linear=fmts.every(x=>x==="code_128"||x==="code_39"||x==="itf"||x==="ean_13"),vert=linear&&r.clientHeight>r.clientWidth*1.2;
+  const mira=document.createElement("div");mira.className="sc-mira"+(vert?" vert":"");r.append(v,mira);
+  if(vert)$("scDica").textContent=(scOpt.dica?scOpt.dica+" ":"")+"Deixe o código de barras em pé, dentro da moldura, preenchendo de ponta a ponta.";
+  const pedir=c=>navigator.mediaDevices.getUserMedia({audio:false,video:c});
+  try{scStream=await pedir({facingMode:{ideal:"environment"},width:{ideal:2560},height:{ideal:1440}})}
+  catch(e){if(/NotAllowed|Permission/i.test(String(e&&e.name||e)))throw e;scStream=await pedir({facingMode:"environment"})}
   v.srcObject=scStream;await v.play().catch(()=>{});
   const track=scStream.getVideoTracks()[0];
   try{const c=track.getCapabilities?track.getCapabilities():{};const adv=[];
     if(c.focusMode&&c.focusMode.includes("continuous"))adv.push({focusMode:"continuous"});
     if(adv.length)await track.applyConstraints({advanced:adv});
-    if(c.torch)$("scTorch").hidden=false}catch(e){}
+    if(c.torch)$("scTorch").hidden=false;
+    /* zoom de 2x (quando a câmera permite): lê de mais longe, onde o foco funciona, com barras mais largas */
+    if(linear&&c.zoom&&c.zoom.max>=1.5){const z=Math.min(2,c.zoom.max);await track.applyConstraints({advanced:[{zoom:z}]}).catch(()=>{})}}catch(e){}
+  scCanvas=scCanvas||document.createElement("canvas");const ctx=scCanvas.getContext("2d",{willReadFrequently:true});
+  const quadro=(faixa)=>{
+    const vw=v.videoWidth,vh=v.videoHeight;if(!vw||!vh)return null;
+    let sx=0,sy=0,sw=vw,sh=vh;
+    if(faixa){/* parte do vídeo que aparece na tela (object-fit: cover) e a faixa da mira, com folga */
+      const rw=r.clientWidth||vw,rh=r.clientHeight||vh,esc=Math.max(rw/vw,rh/vh),visW=rw/esc,visH=rh/esc;
+      if(vert){sw=visW*.5;sx=(vw-sw)/2;sh=visH*.86;sy=(vh-visH)/2+visH*.07}
+      else{sx=(vw-visW)/2;sw=visW;sh=Math.min(vh,visH*.42);sy=vh/2-sh/2}}
+    const k=Math.min(1,(faixa?2560:1280)/Math.max(sw,sh));
+    scCanvas.width=Math.round(sw*k);scCanvas.height=Math.round(sh*k);
+    ctx.drawImage(v,sx,sy,sw,sh,0,0,scCanvas.width,scCanvas.height);
+    return ctx.getImageData(0,0,scCanvas.width,scCanvas.height);
+  };
   const loop=async()=>{if(!scStream||scLido)return;
-    try{if(v.readyState>=2){const res=await scDet.detect(v);for(const b of res){if(scAceitar(b.rawValue))return}}}catch(e){}
-    scTimer=setTimeout(loop,110)};
+    try{if(v.readyState>=2){
+      const vez=scVez++%3;
+      if(scDet&&vez===2){const res=await scDet.detect(v);for(const b of res)if(scAceitar(b.rawValue))return}
+      else if(window.ZXingWASM){const img=quadro(vez===0);if(img){const lidos=await lerZX(img,fmts,false);for(const t of lidos)if(scAceitar(t))return}}
+      else if(scDet){const res=await scDet.detect(v);for(const b of res)if(scAceitar(b.rawValue))return}
+    }}catch(e){}
+    scTimer=setTimeout(loop,60)};
   loop();
 }
 function iniciarHtml5(fmts){
@@ -602,10 +758,11 @@ $("scTorch").onclick=async()=>{if(!scStream)return;const on=$("scTorch").getAttr
   try{await scStream.getVideoTracks()[0].applyConstraints({advanced:[{torch:on}]});$("scTorch").setAttribute("aria-pressed",String(on))}catch(e){toast("Esta câmera não liberou a lanterna.",true)}};
 $("scFoto").onclick=()=>$("scArq").click();
 $("scArq").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
-  $("scErr").hidden=true;$("scDica").textContent="Lendo a foto…";
+  $("scErr").hidden=true;$("scDica").textContent="Lendo a foto…";const fmts=scOpt.formatos||FMT_TODOS;
   try{let lidos=[];
-    if("BarcodeDetector" in window){const sup=await BarcodeDetector.getSupportedFormats();const det=new BarcodeDetector({formats:(scOpt.formatos||FMT_TODOS).filter(x=>sup.includes(x))});
-      const bmp=await createImageBitmap(f);lidos=(await det.detect(bmp)).map(b=>b.rawValue)}
+    try{lidos=await lerZX(f,fmts,true)}catch(_){}
+    if(!lidos.length&&"BarcodeDetector" in window){try{const sup=await BarcodeDetector.getSupportedFormats();const det=new BarcodeDetector({formats:fmts.filter(x=>sup.includes(x))});
+      const bmp=await createImageBitmap(f);lidos=(await det.detect(bmp)).map(b=>b.rawValue)}catch(_){}}
     if(!lidos.length&&window.Html5Qrcode){let tmp=document.getElementById("scTmp");if(!tmp){tmp=document.createElement("div");tmp.id="scTmp";tmp.hidden=true;document.body.appendChild(tmp)}
       const h=new Html5Qrcode("scTmp",{verbose:false});try{const r=await h.scanFileV2(f,false);lidos=[r.decodedText]}catch(_){}try{h.clear()}catch(_){}}
     for(const t of lidos)if(scAceitar(t))return;
@@ -648,12 +805,17 @@ const D=window.DILIG;
 function dlStatus(html,cls,spin){$("dl").innerHTML=`<div class="dl-st ${cls||""}">${spin?'<span class="spin"></span>':""}<span>${html}</span></div>`}
 function fonteTxt(f){if(!f)return"";const quando=f.modificado?new Date(f.modificado).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}):"";return `${f.tipo==="local"?"Cópia local":f.tipo==="pasta"?"Pasta do escritório":"SharePoint"} · ${esc(f.nome)}${quando?" · atualizada em "+quando:""}`}
 function fmtQ(n){return n===""||n==null?"—":Number(n).toLocaleString("pt-BR",{maximumFractionDigits:3})}
-function resetDilig(){dlRes=null;dlSel=new Set();if(!D){$("dlBlock").hidden=true;return}$("lblDlArq").hidden=D.configurado();dlStatus(D.configurado()?"Escaneie ou digite a NF e o fornecedor para buscar os itens na planilha de Diligenciamento.":"A consulta automática ao SharePoint aguarda a liberação da TI. Para testar agora, toque em <b>Carregar planilha (teste)</b> e escolha uma cópia do arquivo.")}
+function resetDilig(){dlRes=null;dlSel=new Set();if(!D){$("dlBlock").hidden=true;return}$("lblDlArq").hidden=D.configurado();
+  const fa=D.fonteAtual();$("lblDlArq").textContent=fa?"Trocar planilha":"Carregar planilha do dia";
+  dlStatus(D.configurado()?"Escaneie ou digite a NF e o fornecedor para buscar os itens na planilha de Diligenciamento."
+    :fa?"✓ Planilha de hoje já carregada ("+fonteTxt(fa)+"). Escaneie ou digite a NF. Ela só será pedida de novo amanhã."
+    :"Carregue a planilha de Diligenciamento <b>uma vez por dia</b>: toque em <b>Carregar planilha do dia</b> e escolha o arquivo. Ela fica guardada no celular até amanhã.",fa?"ok":"")}
+if(D&&D.restaurarDoDia)D.restaurarDoDia().then(ok=>{if(ok&&!dlRes)resetDilig()});
 async function buscarDilig(auto,cod){
   if(!D)return;
   const nf=$("nf").value.trim(),forn=$("fornecedor").value.trim();
   if(!nf){if(!auto){toast("Informe o nº da NF.",true);$("nf").focus()}return}
-  if(!D.configurado()&&!D.fonteAtual()){if(!auto)toast("Carregue a planilha para testar (aguardando liberação da TI).",true);resetDilig();return}
+  if(!D.configurado()&&!D.fonteAtual()){if(!auto)toast("Carregue a planilha do dia primeiro.",true);resetDilig();return}
   dlStatus(D.configurado()?"Consultando a planilha no SharePoint…":"Buscando na planilha…","",true);
   try{
     const fo=A.cadastros.fornecedorPorNome(forn)||(chaveNF&&A.cadastros.fornecedorPorCnpj(chaveNF.cnpj));
@@ -706,15 +868,58 @@ function usarDilig(){
   $("itens").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("btnDl").onclick=()=>buscarDilig(false);
+/* ===== Romaneio: Lista de materiais ===== */
+const LM=window.NXLM;let lmSel=new Map();
+function lmStatus(html,cls){$("lm").innerHTML=`<div class="dl-st ${cls||""}"><span>${html}</span></div>`}
+function lmInfoTxt(i){return `${esc(i.nome)} · ${i.total.toLocaleString("pt-BR")} itens${i.temRomaneio?"":" · sem coluna de romaneio"}`}
+function resetLM(){
+  if(!LM){$("lmBlock").hidden=true;return}
+  const i=LM.info();lmSel=new Map();$("lmRes").innerHTML="";$("lmBusca").value="";
+  $("lmBuscaF").hidden=!i;$("btnLm").hidden=!(i&&i.temRomaneio);$("lblLmArq").textContent=i?"Trocar Lista de materiais":"Carregar Lista de materiais";
+  lmStatus(i?`✓ Lista carregada (${lmInfoTxt(i)}). ${i.temRomaneio?"Digite o nº do romaneio e toque em <b>Buscar itens do romaneio</b>, ou busque":"Busque"} o item pela TAG ou descrição.`:"Carregue a planilha <b>Lista de materiais</b> uma vez. Ela fica guardada no celular e o app busca os itens nela.",i?"ok":"");
+}
+function lmLinha(x,k){return `<label class="dl-it"><input type="checkbox" data-lm="${k}" ${lmSel.has(k)?"checked":""}><span class="d">${esc(x.descricao||"(sem descrição)")}</span><span class="m">${x.tag?`<span><b>${esc(x.tag)}</b></span>`:""}${x.qtd?`<span>Qtd: <b>${esc(x.qtd)} ${esc(x.und)}</b></span>`:""}${x.romaneio?`<span>Romaneio ${esc(x.romaneio)}</span>`:""}${x.volume?`<span>Vol. ${esc(x.volume)}</span>`:""}</span></label>`}
+function lmMostrar(lista,titulo){
+  lmSel=new Map();const mapa=new Map(lista.map((x,k)=>[k,x]));
+  $("lmRes").innerHTML=lista.length?`<div class="meta" style="font-size:.8rem;color:var(--muted)">${titulo}</div>${lista.map((x,k)=>lmLinha(x,k)).join("")}<button class="btn primary" type="button" id="btnUsarLm">Preencher itens marcados</button>`:"";
+  $("lmRes").querySelectorAll("[data-lm]").forEach(c=>c.onchange=()=>{const k=+c.dataset.lm;c.checked?lmSel.set(k,mapa.get(k)):lmSel.delete(k)});
+  const u=$("btnUsarLm");if(u)u.onclick=()=>{
+    const sel=[...lmSel.keys()].sort((a,b)=>a-b).map(k=>lmSel.get(k));if(!sel.length){toast("Marque pelo menos um item.",true);return}
+    const local=$("localPadrao").value.trim().toUpperCase()||localLembrado();
+    const novos=sel.map(x=>({...novoItem(),descricao:x.descricao,tag:x.tag,und:x.und||"PÇ",qtd:x.qtd&&!isNaN(+String(x.qtd).replace(",","."))?String(+String(x.qtd).replace(",",".")):"",local,origem:"lista_materiais"}));
+    itens=itens.every(x=>!x.descricao&&!x.tag)?novos:[...itens,...novos];
+    renderItens();checarDup();$("lmRes").innerHTML="";$("lmBusca").value="";
+    toast(`${novos.length} ${novos.length===1?"item preenchido":"itens preenchidos"} pela Lista de materiais. Confira a quantidade entregue.`);
+    $("itens").scrollIntoView({behavior:"smooth",block:"start"});
+  };
+}
+function lmRomaneio(auto){
+  if(!LM||!LM.info())return;const rom=$("romaneioA").value.trim();
+  if(!rom){if(!auto){toast("Informe o nº do romaneio.",true);$("romaneioA").focus()}return}
+  const l=LM.doRomaneio(rom);
+  if(!l.length){if(!auto)lmStatus(`Romaneio ${esc(rom)} não encontrado na lista (${lmInfoTxt(LM.info())}). Busque os itens pela TAG ou descrição.`,"warn");return}
+  lmStatus(`<b>${l.length} ${l.length===1?"item":"itens"}</b> do romaneio ${esc(rom)}. Marque os que chegaram.`,"ok");
+  lmMostrar(l,"");$("lmRes").querySelectorAll("[data-lm]").forEach(c=>{c.checked=true;c.onchange()});
+}
+if(LM){
+  $("lmArquivo").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;lmStatus("Lendo "+esc(f.name)+"…");
+    try{await LM.carregar(f);resetLM();toast("Lista de materiais carregada");if($("romaneioA").value)lmRomaneio(true)}catch(err){lmStatus("Não consegui ler a planilha: "+esc(err.message),"bad")}};
+  $("btnLm").onclick=()=>lmRomaneio(false);
+  $("romaneioA").addEventListener("change",()=>lmRomaneio(true));
+  let lmT;$("lmBusca").addEventListener("input",()=>{clearTimeout(lmT);lmT=setTimeout(()=>{const q=$("lmBusca").value;const r=LM.buscar(q,25);
+    lmMostrar(r,q.trim().length<2?"":r.length?`${r.length===25?"Primeiros 25 resultados":r.length+" resultado(s)"} para “${esc(q)}”`:"");if(q.trim().length>=2&&!r.length)$("lmRes").innerHTML='<div class="dl-st warn"><span>Nada encontrado. Tente outra parte da TAG ou da descrição.</span></div>'},250)});
+  LM.restaurar().then(resetLM);
+}else $("lmBlock").hidden=true;
+
 $("dlArquivo").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;dlStatus("Lendo a planilha "+esc(f.name)+"… pode levar alguns segundos.","",true);
-  try{const x=await D.carregarArquivoLocal(f);toast(`Planilha carregada: ${x.registros.length.toLocaleString("pt-BR")} linhas`);if($("nf").value)buscarDilig(true);else dlStatus("Planilha carregada ("+fonteTxt(D.fonteAtual())+"). Agora escaneie ou digite a NF.","ok")}
+  try{const x=await D.carregarArquivoLocal(f);toast(`Planilha carregada: ${x.registros.length.toLocaleString("pt-BR")} linhas`);if($("nf").value)buscarDilig(true);else dlStatus("✓ Planilha carregada ("+fonteTxt(D.fonteAtual())+"). Fica guardada até amanhã. Agora escaneie ou digite a NF.","ok");$("lblDlArq").textContent="Trocar planilha"}
   catch(err){dlStatus("Não consegui ler a planilha: "+esc(err.message),"bad")}};
 
 /* duplicidade */
 function montar(){
   const base=editando?JSON.parse(JSON.stringify(editando)):{origem:"campo",assinaturas:{},criadoPor:"Campo"};
-  const f={...base,tipo,dataRecebimento:$("data").value,observacao:$("obs").value.trim(),itens:itens.map(x=>{const y={...x,qtd:x.qtd===""?"":Number(x.qtd),temCertAnexo:!!(x.certAnexos||[]).length};delete y.certAnexos;return y}),
-    anexos:{doc:fotosDoc,cert:[...itens.flatMap((x,n)=>(x.certAnexos||[]).map((a,k)=>({...a,item:n,nome:`Item ${n+1} · ${x.certificado?"certificado "+x.certificado:"certificado"}${(x.certAnexos||[]).length>1?" ("+(k+1)+")":""}`}))),...fotosCert]}};
+  const f={...base,tipo,dataRecebimento:$("data").value,observacao:$("obs").value.trim(),itens:itens.map((x,n)=>{const y={...x,qtd:x.qtd===""?"":Number(x.qtd),temCertAnexo:!!(x.certAnexos||[]).length||(x.certDeGeral&&cgCerts.some(c=>c.itens.includes(n)&&c.imagens.length))};delete y.certAnexos;return y}),
+    anexos:{doc:fotosDoc,cert:[...itens.flatMap((x,n)=>(x.certAnexos||[]).map((a,k)=>({...a,item:n,nome:`Item ${n+1} · ${x.certificado?"certificado "+x.certificado:"certificado"}${(x.certAnexos||[]).length>1?" ("+(k+1)+")":""}`}))),...anexosCG(),...fotosCert]}};
   if(tipo==="NF"){Object.assign(f,{chaveNFe:chaveNF&&chaveNF.valida&&chaveNF.nf===$("nf").value.trim()?chaveNF.chave:"",serie:chaveNF?.serie||f.serie||"",cnpjFornecedor:chaveNF?.cnpj||f.cnpjFornecedor||"",nf:$("nf").value.trim(),fornecedor:A.norm($("fornecedor").value),romaneio:A.norm($("romaneio").value),fornecimento:"MILPLAN ENGENHARIA"})}
   else{Object.assign(f,{nf:"",romaneio:A.norm($("romaneioA").value),fornecedor:"ANGLO AMERICAN",fornecimento:"ANGLO AMERICAN",observacao:[A.OBS_ANGLO,$("obs").value.trim()].filter(Boolean).join("\n")})}
   return f;

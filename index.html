@@ -87,6 +87,9 @@ table.its .del{background:none;border:0;color:var(--bad);cursor:pointer;font-siz
 .viewer .none{color:var(--muted);font-size:.85rem;padding:30px 16px;text-align:center}
 .vtabs{display:flex;gap:6px;flex-wrap:wrap}
 .vthumbs{display:flex;gap:6px;overflow-x:auto}
+.vacts{display:flex;gap:8px;flex-wrap:wrap}.vacts .btn{flex:1;min-width:150px}
+.vacts .del{color:var(--bad);border-color:var(--bad)}
+body.ro #vActs{display:none!important}
 .vthumbs button{border:2px solid transparent;border-radius:5px;padding:0;background:none;cursor:pointer;flex:0 0 auto}
 .vthumbs button[aria-pressed="true"]{border-color:var(--accent)}
 .vthumbs img{width:58px;height:58px;object-fit:cover;border-radius:3px;display:block}
@@ -450,6 +453,7 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
       <div class="vtabs" id="vTabs"></div>
       <div class="stage" id="vStage" title="Toque para ampliar"></div>
       <div class="vthumbs" id="vThumbs"></div>
+      <div class="vacts" id="vActs"></div>
       <p class="hint">Confira o documento com os dados ao lado. Toque na imagem para ampliar.</p>
      </aside>
      <div class="sheet-body" style="padding:0">
@@ -756,7 +760,7 @@ function renderItens(){
     <td><input data-k="descricao" value="${esc(it.descricao)}" aria-label="Descrição">${ref}${crit}</td>
     <td><input data-k="tag" value="${esc(it.tag)}" aria-label="TAG"></td>
     <td class="ck">${ed.tipo==="NF"?`<input type="checkbox" data-ex="${i}" ${ex?"checked":""} aria-label="Exige certificado">`:'<span class="hint">—</span>'}</td>
-    <td><input data-k="certificado" value="${esc(ed.tipo==="ROM"&&!it.certificado?"":it.certificado)}" placeholder="${ed.tipo==="ROM"?"OBS 1":it.certStatus==="nao_recebido"?"não recebido":ex?"pendente":"não exige"}" aria-label="Certificado">${it.certStatus==="nao_recebido"&&!A.temCert(it)?'<span class="ref" style="color:var(--bad);font-weight:600">✕ Não recebido no campo</span>':""}${(()=>{const anx=(ed.anexos?.cert||[]).map((a,k)=>({a,k})).filter(x=>x.a.item===i);return anx.length?`<button type="button" class="cval" data-vercert="${anx[0].k}" style="background:none;border:0;padding:0;cursor:pointer;color:var(--accent);font-weight:600">📎 ver ${anx.length} ${anx.length===1?"arquivo":"arquivos"}</button>`:""})()}${ex&&A.temCert(it)?`<label class="cval"><input type="checkbox" data-val="${i}" ${it.certValidado?"checked":""}>validado pela Qualidade</label>`:""}</td>
+    <td><input data-k="certificado" value="${esc(ed.tipo==="ROM"&&!it.certificado?"":it.certificado)}" placeholder="${ed.tipo==="ROM"?"OBS 1":it.certStatus==="nao_recebido"?"não recebido":ex?"pendente":"não exige"}" aria-label="Certificado">${it.certStatus==="nao_recebido"&&!A.temCert(it)?'<span class="ref" style="color:var(--bad);font-weight:600">✕ Não recebido no campo</span>':""}${(()=>{const anx=(ed.anexos?.cert||[]).map((a,k)=>({a,k})).filter(x=>x.a.item===i||(x.a.itens||[]).includes(i));return anx.length?`<button type="button" class="cval" data-vercert="${anx[0].k}" style="background:none;border:0;padding:0;cursor:pointer;color:var(--accent);font-weight:600">📎 ver ${anx.length} ${anx.length===1?"arquivo":"arquivos"}</button>`:""})()}${ex&&A.temCert(it)?`<label class="cval"><input type="checkbox" data-val="${i}" ${it.certValidado?"checked":""}>validado pela Qualidade</label>`:""}</td>
     <td><select data-k="und" aria-label="Unidade">${A.UNIDADES.includes(it.und)?"":`<option>${esc(it.und)}</option>`}${und}</select></td>
     <td><input data-k="qtd" type="number" step="any" min="0" value="${esc(it.qtd)}" style="width:80px" aria-label="Quantidade"></td>
     <td><input data-k="local" value="${esc(it.local)}" aria-label="Local"></td>
@@ -841,17 +845,32 @@ $("btnExcluir").onclick=async()=>{const b=$("btnExcluir");if(!b.dataset.armed){b
 
 /* prévia dos documentos */
 let vTab="doc",vIdx=0;
+/* o salvar devolve os anexos só com a referência na nuvem; mantém as imagens já abertas na tela */
+function mesclarAnexos(sv,g){const r=JSON.parse(JSON.stringify(sv||g));if(!r.anexos)return r;["doc","cert"].forEach(k=>(r.anexos[k]||[]).forEach((a,i)=>{const o=(g.anexos?.[k]||[])[i];if(o){if(o.img&&!a.img)a.img=o.img;if(o.data&&!a.data)a.data=o.data}}));return r}
 function renderViewer(){
   const an=ed.anexos||{},docs=an.doc||[],certs=an.cert||[];
   const tabs=[["doc",ed.tipo==="ROM"?"Romaneio":"Nota fiscal",docs]];if(ed.tipo==="NF")tabs.push(["cert","Certificados",certs]);
   $("vTabs").innerHTML=`<div class="seg" style="width:100%">${tabs.map(([k,l,a])=>`<button type="button" data-vt="${k}" aria-pressed="${k===vTab}">${l} (${a.length})</button>`).join("")}</div>`;
   $("vTabs").querySelectorAll("[data-vt]").forEach(b=>b.onclick=()=>{vTab=b.dataset.vt;vIdx=0;renderViewer()});
   const arr=vTab==="cert"?certs:docs,cur=arr[vIdx];
-  $("vStage").innerHTML=cur?(cur.img?`<img src="${cur.img}" alt="${esc(cur.nome||"Documento")}">`:`<div class="none">Arquivo PDF: ${esc(cur.nome||"")}<br>${cur.data?'<button class="btn small" type="button" id="vPdfAbrir">Abrir PDF</button>':"Arquivo registrado só pelo nome."}</div>`):`<div class="none">${vTab==="cert"?"Nenhum certificado anexado.":"Nenhuma foto do documento."}<br>Se faltar, peça a foto ao campo.</div>`;
+  $("vStage").innerHTML=cur?(cur.img?`<img src="${cur.img}" alt="${esc(cur.nome||"Documento")}">`:`<div class="none">Arquivo PDF: ${esc(cur.nome||"")}<br>${cur.data?'<button class="btn small" type="button" id="vPdfAbrir">Abrir PDF</button>':"Arquivo registrado só pelo nome."}</div>`):`<div class="none">${vTab==="cert"?"Nenhum certificado anexado.":"Nenhuma foto do documento."}<br>${vTab==="doc"?"Se o campo não anexou, toque em <b>Anexar foto/PDF</b> abaixo.":"Anexe o certificado pelo item ou pela aba Certificados."}</div>`;
   const vpa=$("vPdfAbrir");if(vpa)vpa.onclick=e=>{e.stopPropagation();abrirArquivo(cur)};
   $("vStage").onclick=()=>{if(cur&&cur.img){$("lbImg").src=cur.img;$("lb").classList.remove("zoom");$("lb").hidden=false}};
   $("vThumbs").innerHTML=arr.length>1?arr.map((a,i)=>`<button type="button" data-vi="${i}" aria-pressed="${i===vIdx}" aria-label="Página ${i+1}">${a.img?`<img src="${a.img}" alt="">`:'<span class="code" style="display:grid;place-items:center;width:58px;height:58px">PDF</span>'}</button>`).join(""):"";
   $("vThumbs").querySelectorAll("[data-vi]").forEach(b=>b.onclick=()=>{vIdx=+b.dataset.vi;renderViewer()});
+  $("vActs").innerHTML=`${vTab==="doc"?`<button class="btn small" type="button" id="vAdd">📎 Anexar foto/PDF ${ed.tipo==="ROM"?"do romaneio":"da NF"}</button>`:""}${cur?`<button class="btn small del" type="button" id="vDel">🗑 Excluir este anexo</button>`:""}`;
+  const va=$("vAdd");if(va)va.onclick=()=>{const inp=document.createElement("input");inp.type="file";inp.accept="image/*,application/pdf";inp.multiple=true;
+    inp.onchange=async()=>{const novos=(await lerArquivos(inp.files)).filter(Boolean);if(!novos.length)return;
+      const f=coletar();f.anexos={doc:[...(f.anexos?.doc||[]),...novos],cert:[...(f.anexos?.cert||[])]};
+      const g=A.registrar(f,"anexos",{por:"Qualidade",txt:`${novos.length} arquivo(s) ${ed.tipo==="ROM"?"do romaneio":"da NF"} anexado(s) no escritório`});
+      try{ed=mesclarAnexos(await A.store.salvar(g),g);edItens=ed.itens;vTab="doc";vIdx=g.anexos.doc.length-novos.length;renderViewer();renderConf();toast(`${novos.length===1?"Anexo salvo":novos.length+" anexos salvos"} na ficha ${ed.numero||""}`)}catch(e){toast(e.message||"Não foi possível salvar.",true)}};inp.click()};
+  const vd=$("vDel");if(vd)vd.onclick=async()=>{
+    if(!vd.dataset.armed){vd.dataset.armed="1";vd.textContent="Toque de novo para confirmar";setTimeout(()=>{if(vd.isConnected){delete vd.dataset.armed;vd.textContent="🗑 Excluir este anexo"}},4000);return}
+    const f=coletar(),k=vTab==="cert"?"cert":"doc";f.anexos={doc:[...(f.anexos?.doc||[])],cert:[...(f.anexos?.cert||[])]};
+    const [rm]=f.anexos[k].splice(vIdx,1);
+    if(k==="cert"){const its=[...(Number.isInteger(rm.item)?[rm.item]:[]),...(rm.itens||[])];f.itens=(f.itens||[]).map((it,n)=>its.includes(n)&&!f.anexos.cert.some(a=>a.item===n||(a.itens||[]).includes(n))?{...it,temCertAnexo:false}:it)}
+    const g=A.registrar(f,"anexos",{por:"Qualidade",txt:`Anexo excluído: ${rm.nome||(k==="cert"?"certificado":"documento")}`});
+    try{ed=mesclarAnexos(await A.store.salvar(g),g);edItens=ed.itens;vIdx=Math.max(0,vIdx-1);renderViewer();renderConf();if(typeof renderItens==="function")renderItens();toast("Anexo excluído")}catch(e){toast(e.message||"Não foi possível excluir.",true)}};
 }
 $("lb").onclick=e=>{if(e.target.id==="lbImg")$("lb").classList.toggle("zoom");else if(e.target.id==="lb")$("lb").hidden=true};
 $("lbClose").onclick=()=>$("lb").hidden=true;
@@ -1000,7 +1019,7 @@ function renderCerts(){
   const totalC=ls.length;ls.splice(lim.cert);setTimeout(()=>maisBtn("certMais",totalC,"cert",renderCerts));
   const vazio={pendente:"Nenhum certificado pendente. Tudo em dia.",recebido:"Nenhum certificado aguardando validação.",validado:"Nenhum certificado validado ainda.",todos:"Nenhum item que exija certificado."}[fCert];
   $("tCert").innerHTML=`<thead><tr><th>Ficha</th><th>NF · Fornecedor</th><th>Item</th><th>Certificado</th><th>Situação</th><th style="text-align:right">Ações</th></tr></thead><tbody>${ls.length?ls.map(x=>{
-    const anx=(x.f.anexos?.cert||[]).map((a,k)=>({a,k})).filter(y=>y.a.item===x.idx);
+    const anx=(x.f.anexos?.cert||[]).map((a,k)=>({a,k})).filter(y=>y.a.item===x.idx||(y.a.itens||[]).includes(x.idx));
     const [rot,cls]=SIT_CERT[x.sit],key=x.f.id+"|"+x.idx;
     const sem=x.it.certStatus==="nao_recebido"&&x.sit==="pendente";
     return `<tr data-key="${esc(key)}">

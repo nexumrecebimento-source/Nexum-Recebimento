@@ -147,10 +147,20 @@
     fonte = { tipo: "sharepoint", nome: meta.name, modificado: meta.lastModifiedDateTime, eTag: meta.eTag, ...idx };
     return { ...fonte, aviso, recarregada: true };
   }
+  const hojeLocal = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
   async function carregarArquivoLocal(file, tipo) {
     const idx = indexar(await file.arrayBuffer());
-    fonte = { tipo: tipo || "local", nome: file.name, modificado: file.lastModified ? new Date(file.lastModified).toISOString() : "", ...idx };
+    fonte = { tipo: tipo || "local", nome: file.name, modificado: file.lastModified ? new Date(file.lastModified).toISOString() : "", dia: hojeLocal(), ...idx };
+    /* planilha carregada à mão fica guardada no aparelho até o fim do dia (não pede de novo a cada NF) */
+    if (fonte.tipo === "local") IDB.set("fonteDia", fonte).catch(() => { });
     return fonte;
+  }
+  async function restaurarDoDia() {
+    if (fonte) return true;
+    const f = await IDB.get("fonteDia").catch(() => null);
+    if (f && f.dia === hojeLocal() && (f.registros || []).length) { fonte = f; return true; }
+    if (f) IDB.del("fonteDia").catch(() => { });
+    return false;
   }
 
   /* ---------- Ponte pelo PC do escritório: pasta sincronizada pelo OneDrive ----------
@@ -213,6 +223,7 @@
   };
   async function obterFonte() {
     if (configurado()) return atualizarDoSharePoint();
+    if (fonte && fonte.tipo === "local" && fonte.dia && fonte.dia !== hojeLocal()) { fonte = null; IDB.del("fonteDia").catch(() => { }); }
     if (fonte) return fonte;
     const e = new Error("A consulta automática ao SharePoint aguarda a liberação da TI. Para testar, carregue uma cópia da planilha.");
     e.code = "nao_configurado"; throw e;
@@ -258,7 +269,7 @@
   async function itensNFFornecedor(nf, codForn) { const f = await obterFonte(); return ordenar(f.registros.filter(r => r.nf === nfNum(nf) && r.codForn === codForn)); }
   const ordenar = l => l.slice().sort((a, b) => (a.pc + a.itemPc).localeCompare(b.pc + b.itemPc));
 
-  window.DILIG = { parecido, pasta: pastaApi, CFG, configurado, buscar, carregarArquivoLocal, pendentesDoFornecedor, itensNFFornecedor, familia, indexar,
-    fonteAtual: () => fonte ? { tipo: fonte.tipo, nome: fonte.nome, modificado: fonte.modificado, total: fonte.registros.length } : null,
+  window.DILIG = { restaurarDoDia, parecido, pasta: pastaApi, CFG, configurado, buscar, carregarArquivoLocal, pendentesDoFornecedor, itensNFFornecedor, familia, indexar,
+    fonteAtual: () => (fonte && !(fonte.tipo === "local" && fonte.dia && fonte.dia !== hojeLocal())) ? { tipo: fonte.tipo, nome: fonte.nome, modificado: fonte.modificado, total: fonte.registros.length } : null,
     contaAtual: () => conta ? (conta.name || conta.username) : "", iniciarMsal: () => configurado() ? iniciarMsal() : Promise.resolve(null) };
 })();
