@@ -5,7 +5,7 @@
   const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/\s+/g, " ").trim();
   const chave = s => norm(s).replace(/[^A-Z0-9]/g, "");
   const COLS = {
-    romaneio: [/ROMANEIO/, /PACKING/, /^PL$/, /DOCUMENTO DE TRANSPORTE/],
+    romaneio: [/ROMANEIO/, /^RM\b/, /\bRM$/, /^N[ºO°.]*\s*(DA\s+)?RM\b/, /PACKING/, /^PL$/, /DOCUMENTO DE TRANSPORTE/],
     tag: [/^TAG/, /TAG$/, /^CODIGO/, /^COD\b/, /COD\. ?MATERIAL/, /PART ?(NUMBER|NO|N)/, /^P\/?N$/, /^ITEM CODE/, /^MATERIAL$/, /SAP/],
     descricao: [/DESCRI/, /^MATERIAL DESC/, /^ITEM$/, /^NOME/],
     qtd: [/^QTD/, /QUANT/, /^QTY/],
@@ -39,7 +39,7 @@
     }
     if (!alvo) throw new Error("Não encontrei as colunas de descrição / TAG nesta planilha.");
     const m = alvo.c.mapa, v = (r, k) => m[k] === undefined ? "" : String(r[m[k]] ?? "").trim();
-    const linhas = alvo.linhas.slice(alvo.c.i + 1).map(r => ({ romaneio: norm(v(r, "romaneio")), tag: norm(v(r, "tag")), descricao: norm(v(r, "descricao")), qtd: v(r, "qtd"), und: norm(v(r, "und")), volume: v(r, "volume"), desenho: v(r, "desenho") }))
+    const linhas = alvo.linhas.slice(alvo.c.i + 1).map(r => ({ romaneio: norm(v(r, "romaneio")), tag: norm(v(r, "tag")), descricao: norm(v(r, "descricao")), qtd: v(r, "qtd"), und: window.AMR && AMR.normUnd ? AMR.normUnd(v(r, "und")) : v(r, "und").toUpperCase(), volume: v(r, "volume"), desenho: v(r, "desenho") }))
       .filter(x => x.descricao || x.tag);
     if (!linhas.length) throw new Error("A planilha não tem itens abaixo do cabeçalho.");
     return { nome, aba: alvo.aba, colunas: Object.keys(m), carregadaEm: new Date().toISOString(), linhas };
@@ -47,9 +47,13 @@
   async function carregar(file) { lista = ler(await file.arrayBuffer(), file.name); IDB.set("lista", lista).catch(() => { }); return info(); }
   async function restaurar() { if (lista) return true; const l = await IDB.get("lista").catch(() => null); if (l && (l.linhas || []).length) { lista = l; return true; } return false; }
   const info = () => lista ? { nome: lista.nome, aba: lista.aba, total: lista.linhas.length, temRomaneio: lista.colunas.includes("romaneio"), carregadaEm: lista.carregadaEm } : null;
-  function doRomaneio(rom) {
+  function doRomaneio(rom, soExato) {
     if (!lista) return []; const k = chave(rom); if (!k) return [];
-    return lista.linhas.filter(x => x.romaneio && (chave(x.romaneio) === k || chave(x.romaneio).includes(k) || k.includes(chave(x.romaneio)) && chave(x.romaneio).length >= 4));
+    /* RM exata primeiro (também sem zeros à esquerda: RM 0123 = RM 123); parcial só se não houver exata */
+    const sz = t => t.replace(/^(RM)?0+/, "$1").replace(/^RM/, "");
+    const ex = lista.linhas.filter(x => x.romaneio && (chave(x.romaneio) === k || sz(chave(x.romaneio)) === sz(k)));
+    if (ex.length || soExato) return ex;
+    return lista.linhas.filter(x => x.romaneio && (chave(x.romaneio).includes(k) || k.includes(chave(x.romaneio)) && chave(x.romaneio).length >= 4));
   }
   function buscar(txt, max) {
     if (!lista) return []; const q = norm(txt), qk = chave(txt); if (q.length < 2) return [];

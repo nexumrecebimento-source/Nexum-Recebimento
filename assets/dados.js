@@ -26,7 +26,10 @@
   };
   const ORDEM_STATUS = ["sem_acao", "em_andamento", "cert_pendente", "finalizado"];
   const CONF = { C: "Conforme", NC: "Não conforme", NA: "Não se aplica" };
-  const UNIDADES = ["PÇ", "PC", "UND", "UN", "M", "KG", "GL", "LT", "L", "CJ", "PAR", "CX", "M²", "M³", "M3", "VB", "TB", "SC", "RL", "BR", "PT"];
+  /* Condição do recebimento: só C ou NC. "N/A" antigo vira C (o N/A pertence ao certificado, não ao recebimento) */
+  const CONF_REC = { C: "Conforme", NC: "Não conforme" };
+  const confRec = i => i.conf === "NA" ? "C" : (i.conf || "");
+  const UNIDADES = ["PÇ", "PC", "UND", "UN", "M", "KG", "T", "GL", "LT", "L", "CJ", "PAR", "CX", "M²", "M³", "M3", "VB", "TB", "SC", "RL", "BR", "PT"];
   const MOTIVOS = {
     foto: "Foto ilegível ou incompleta",
     doc_divergente: "Dados do documento divergentes (nº, fornecedor, data)",
@@ -50,6 +53,8 @@
   };
   const hoje = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
   const fmtData = s => s ? s.slice(0, 10).split("-").reverse().join("/") : "—";
+  /* unidade: grafias de tonelada viram "T" (padrão do sistema) */
+  const normUnd = u => { const x = norm(u); return /^(T|TN|TON|TONS|TONELADAS?)\.?$/.test(x) ? "T" : x; };
   const fmtQtd = n => (n === "" || n == null) ? "" : Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 3 });
 
   /* ---------- Chave de acesso da NF-e (código de barras de 44 dígitos do DANFE) ---------- */
@@ -215,13 +220,19 @@
   }
 
   /* Linhas do mapa (FP-11): uma por item */
-  const COLS_MAPA = ["STATUS", "FICHA N°", "ITEM", "DESCRIÇÃO", "TAG", "NOTA FISCAL", "ROMANEIO", "CERTIFICADO", "UND", "QUANT RECEBIDA", "DATA RECEBIMENTO", "FORNECIMENTO", "FORNECEDOR", "LOCALIZAÇÃO/ARMAZENAMENTO", "STATUS ITEM"];
+  const COLS_MAPA = ["STATUS", "FICHA N°", "ITEM", "DESCRIÇÃO", "TAG", "NOTA FISCAL", "ROMANEIO", "CERTIFICADO", "SITUAÇÃO CERTIFICADO", "UND", "QUANT RECEBIDA", "DATA RECEBIMENTO", "FORNECIMENTO", "FORNECEDOR", "LOCALIZAÇÃO/ARMAZENAMENTO", "RECEBIMENTO (C/NC)"];
   /* Texto do certificado no relatório e no mapa */
   function textoCert(f, i) {
     if (f.tipo === "ROM") return i.certificado || "OBS 1";
     if (i.certificado) return i.certificado;
     if (i.temCertAnexo) return "RECEBIDO";
     return exigeCert(f, i) ? "PENDENTE – CERTIFICADO" : "N/A";
+  }
+  /* Situação do certificado (independente da condição do recebimento): CONFORME | PENDENTE | N/A */
+  function certSit(f, i) {
+    if (f.tipo !== "NF") return temCert(i) ? "CONFORME" : "N/A";
+    if (!exigeCert(f, i)) return temCert(i) ? "CONFORME" : "N/A";
+    return temCert(i) ? "CONFORME" : "PENDENTE";
   }
   /* Situação do certificado de um item: nao_exige | pendente | recebido | validado */
   function certSituacao(f, i) {
@@ -253,8 +264,8 @@
     fichas.slice().sort((a, b) => a.numero - b.numero).forEach(f => {
       const its = itensValidos(f);
       const base = [STATUS[f.status]?.rotulo || "", String(f.numero)];
-      if (!its.length) { out.push([...base, "", "", "", f.tipo === "ROM" ? "N/A" : f.nf, f.romaneio, "", "", "", fmtData(f.dataRecebimento), f.fornecimento, f.fornecedor, "", ""]); return; }
-      its.forEach((i, n) => out.push([...base, n + 1, i.descricao, i.tag, f.tipo === "ROM" ? "N/A" : f.nf, f.romaneio, textoCert(f, i), i.und, fmtQtd(i.qtd), fmtData(f.dataRecebimento), f.fornecimento, f.fornecedor, i.local, i.conf || ""]));
+      if (!its.length) { out.push([...base, "", "", "", f.tipo === "ROM" ? "N/A" : f.nf, f.romaneio, "", "", "", "", fmtData(f.dataRecebimento), f.fornecimento, f.fornecedor, "", ""]); return; }
+      its.forEach((i, n) => out.push([...base, n + 1, i.descricao, i.tag, f.tipo === "ROM" ? "N/A" : f.nf, f.romaneio, textoCert(f, i), certSit(f, i), i.und, fmtQtd(i.qtd), fmtData(f.dataRecebimento), f.fornecimento, f.fornecedor, i.local, confRec(i)]));
     });
     return out.map(limpa);
   }
@@ -443,6 +454,6 @@
     return { manha: "Que bom ter você por aqui. Vamos manter tudo em ordem hoje?", tarde: "Seguimos firmes. Vamos fechar o dia com tudo em ordem?", noite: "Ainda por aqui? Vamos deixar tudo pronto para amanhã." }[periodo()];
   }
   function dataLonga() { const d = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }); return d.charAt(0).toUpperCase() + d.slice(1); }
-  window.AMR = { cobrancasPorFornecedor, montarEmailCobrancaFornecedor, saudacao, fraseDoDia, dataLonga, CONTRATOS, ctrDe, textoCert, certSituacao, autoStatus, anexarCertificado, temCert, CMC, LEGENDA_CMC, materialCritico, exigeCert, STATUS_ITEM, statusItem, semCertificado, pendentesDeCobranca, montarEmailCobranca, registrarCobranca, registrar: marcarConferencia, lerChaveNFe, soCnpj, MOTIVOS, CONFER, conf, marcarConferencia, GRUPOS, cadastros, destinatariosCertPendente, emailOk, CONTRATO, OBRA, ESCOPO, DOC_FICHA, DOC_MAPA, FICHA_INICIAL, TIPOS, STATUS, ORDEM_STATUS, CONF, UNIDADES, OBS_ANGLO, COLS_MAPA,
+  window.AMR = { certSit, confRec, CONF_REC, normUnd, cobrancasPorFornecedor, montarEmailCobrancaFornecedor, saudacao, fraseDoDia, dataLonga, CONTRATOS, ctrDe, textoCert, certSituacao, autoStatus, anexarCertificado, temCert, CMC, LEGENDA_CMC, materialCritico, exigeCert, STATUS_ITEM, statusItem, semCertificado, pendentesDeCobranca, montarEmailCobranca, registrarCobranca, registrar: marcarConferencia, lerChaveNFe, soCnpj, MOTIVOS, CONFER, conf, marcarConferencia, GRUPOS, cadastros, destinatariosCertPendente, emailOk, CONTRATO, OBRA, ESCOPO, DOC_FICHA, DOC_MAPA, FICHA_INICIAL, TIPOS, STATUS, ORDEM_STATUS, CONF, UNIDADES, OBS_ANGLO, COLS_MAPA,
     norm, normForn, hoje, fmtData, fmtQtd, chaveDoc, duplicada, msgDuplicada, proximoNumero, itensValidos, pendencias, linhasMapa, csvMapa, store };
 })();

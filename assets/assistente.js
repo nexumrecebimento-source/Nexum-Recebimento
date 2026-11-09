@@ -64,7 +64,7 @@
     if (pend.length) { const v = pend.slice().sort((x, y) => dias(y.f.dataRecebimento) - dias(x.f.dataRecebimento))[0]; L.push({ nivel: dias(v.f.dataRecebimento) >= 7 ? "crit" : "warn", texto: `${pl(pend.length, "item aguarda", "itens aguardam")} certificado. Se chegou na obra, fotografe agora${dias(v.f.dataRecebimento) >= 1 ? ` (o mais antigo é da ficha ${v.f.numero ?? "—"}, há ${pl(dias(v.f.dataRecebimento), "dia", "dias")})` : ""}.`, acao: go.cert }); }
     const semSinal = F.filter(f => f.numeroPendente);
     if (semSinal.length) L.push({ nivel: "warn", texto: `${pl(semSinal.length, "ficha aguarda", "fichas aguardam")} sinal de internet para sincronizar e receber o número.` });
-    const semFotoNF = hoje.filter(f => f.tipo === "NF" && !(f.anexos && (f.anexos.doc || []).length));
+    const semFotoNF = hoje.filter(f => f.tipo === "NF" && !(f.anexos && (f.anexos.doc || []).some(a => !a.pc)));
     if (semFotoNF.length) L.push({ nivel: "warn", texto: `${pl(semFotoNF.length, "ficha de hoje foi enviada", "fichas de hoje foram enviadas")} sem foto da NF (ficha ${semFotoNF.map(f => f.numero ?? "—").slice(0, 3).join(", ")}).` });
     const semLocal = hoje.filter(f => a.itensValidos(f).some(i => !i.local));
     if (semLocal.length) L.push({ nivel: "info", texto: `Em ${pl(semLocal.length, "ficha de hoje", "fichas de hoje")}, há item sem local de armazenamento informado.` });

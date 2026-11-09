@@ -56,7 +56,7 @@
     return its.map((i, n) => {
       const cert = /^PENDENTE/i.test(A.textoCert(f, i)) ? "PENDENTE" : A.textoCert(f, i);
       return [String(n + 1), i.descricao, i.tag || "", f.tipo === "ROM" ? "N/A" : (f.nf || ""), f.romaneio || "", cert, i.und || "",
-        A.fmtQtd(i.qtd), A.fmtData(f.dataRecebimento), f.fornecimento || "", f.fornecedor || "", i.local || "", i.conf === "NA" ? "N/A" : (i.conf || "")];
+        A.fmtQtd(i.qtd), A.fmtData(f.dataRecebimento), f.fornecimento || "", f.fornecedor || "", i.local || "", A.confRec(i)];
     });
   }
   function observacao(A, f) {

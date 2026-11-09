@@ -484,7 +484,7 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
       </div>
       <div class="box">
         <div style="display:flex;align-items:center;gap:8px"><h4 class="grow">Itens <span class="code" id="dCount"></span></h4><button class="btn small" type="button" id="btnAddIt">+ Item</button></div>
-        <div class="it-wrap"><table class="its"><thead><tr><th>#</th><th style="width:30%">Descrição</th><th>TAG</th><th title="Exige certificado">Exige cert.</th><th>Certificado</th><th>Und</th><th>Qtd</th><th>Local</th><th>Inspeção</th><th>Situação</th><th></th></tr></thead><tbody id="dItens"></tbody></table></div>
+        <div class="it-wrap"><table class="its"><thead><tr><th>#</th><th style="width:30%">Descrição</th><th>TAG</th><th title="Exige certificado">Exige cert.</th><th>Certificado</th><th>Und</th><th>Qtd</th><th>Local</th><th title="Condição do recebimento: C = conforme, NC = não conforme">Receb.</th><th>Situação</th><th></th></tr></thead><tbody id="dItens"></tbody></table></div>
         <p class="hint" id="dZero" hidden>Itens com quantidade 0 no romaneio aparecem apagados e não entram na ficha nem no mapa.</p>
       </div>
       <div class="box" id="cobBox" hidden>
@@ -684,7 +684,7 @@ function renderMapa(){
   const q=A.norm($("qMapa").value);
   const todasL=A.linhasMapa(fichas).filter(r=>!q||A.norm(r.join(" ")).includes(q)),linhas=todasL.slice(0,lim.mapa);
   $("mapaInfo").textContent=`${todasL.length.toLocaleString("pt-BR")} linhas · ${A.DOC_MAPA} · ${CT().nome} · uma linha por item, gerada das fichas`;
-  $("tMapa").innerHTML=`<thead><tr>${A.COLS_MAPA.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>${linhas.map(r=>`<tr>${r.map((v,i)=>`<td${i===3?' class="d"':""}>${esc(v)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="15" style="padding:20px;color:var(--muted)">Nenhuma linha.</td></tr>`}</tbody>`;
+  $("tMapa").innerHTML=`<thead><tr>${A.COLS_MAPA.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>${linhas.map(r=>`<tr>${r.map((v,i)=>`<td${i===3?' class="d"':""}>${esc(v)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="16" style="padding:20px;color:var(--muted)">Nenhuma linha.</td></tr>`}</tbody>`;
   maisBtn("mapaMais",todasL.length,"mapa",renderMapa);
 }
 $("qMapa").oninput=()=>{lim.mapa=300;renderMapa()};
@@ -704,11 +704,11 @@ async function xl(nome,abas,btn){
 const numQ=v=>{if(v===""||v===null||v===undefined)return "";const q=typeof v==="number"?v:Number(String(v).replace(/\./g,"").replace(",","."));return isFinite(q)?q:v};
 function abaMapa(lista,ctrObj){
   const datas=new Map();lista.forEach(f=>datas.set(String(f.numero),f.dataRecebimento));
-  const linhas=A.linhasMapa(lista).map(r=>{const o=r.slice();o[1]=isFinite(Number(o[1]))?Number(o[1]):o[1];if(o[2]!==""&&isFinite(Number(o[2])))o[2]=Number(o[2]);o[9]=numQ(o[9]);o[10]=dataXL(datas.get(String(r[1])))||"";return o});
+  const linhas=A.linhasMapa(lista).map(r=>{const o=r.slice();o[1]=isFinite(Number(o[1]))?Number(o[1]):o[1];if(o[2]!==""&&isFinite(Number(o[2])))o[2]=Number(o[2]);o[10]=numQ(o[10]);o[11]=dataXL(datas.get(String(r[1])))||"";return o});
   const cnt=s=>lista.filter(f=>f.status===s).length;
   return {nome:"Mapa FP-11",titulo:"MAPA - RECEBIMENTO DE MATERIAIS",subtitulo:`${A.DOC_MAPA} · ${ctrObj.projeto}`,info:infoXL(),congelarCol:2,
     kpis:[["Fichas",lista.length],["Itens",linhas.length],["Finalizadas",cnt("finalizado"),"ok"],["Em andamento",cnt("em_andamento"),"prog"],["Certificado pendente",cnt("cert_pendente"),"warn"]],
-    cols:[{h:"STATUS",w:17,tipo:"cor"},{h:"FICHA N°",w:9,tipo:"int",forte:true},{h:"ITEM",w:6,tipo:"int"},{h:"DESCRIÇÃO",w:56},{h:"TAG",w:18},{h:"NOTA FISCAL",w:13,al:"center"},{h:"ROMANEIO",w:17,al:"center"},{h:"CERTIFICADO",w:22,tipo:"cor"},{h:"UND",w:7,al:"center"},{h:"QUANT. RECEBIDA",w:11,tipo:"num"},{h:"DATA RECEBIMENTO",w:13,tipo:"data"},{h:"FORNECIMENTO",w:21},{h:"FORNECEDOR",w:32},{h:"LOCALIZAÇÃO / ARMAZENAMENTO",w:22},{h:"STATUS ITEM",w:9,tipo:"cor"}],
+    cols:[{h:"STATUS",w:17,tipo:"cor"},{h:"FICHA N°",w:9,tipo:"int",forte:true},{h:"ITEM",w:6,tipo:"int"},{h:"DESCRIÇÃO",w:56},{h:"TAG",w:18},{h:"NOTA FISCAL",w:13,al:"center"},{h:"ROMANEIO",w:17,al:"center"},{h:"CERTIFICADO",w:22,tipo:"cor"},{h:"SITUAÇÃO CERTIFICADO",w:13,tipo:"cor",al:"center"},{h:"UND",w:7,al:"center"},{h:"QUANT. RECEBIDA",w:11,tipo:"num"},{h:"DATA RECEBIMENTO",w:13,tipo:"data"},{h:"FORNECIMENTO",w:21},{h:"FORNECEDOR",w:32},{h:"LOCALIZAÇÃO / ARMAZENAMENTO",w:22},{h:"RECEBIMENTO (C/NC)",w:12,tipo:"cor",al:"center"}],
     linhas,vazio:"Nenhuma ficha no período."};
 }
 function exportarMapa(lista,sufixo,btn){
@@ -760,15 +760,15 @@ function renderItens(){
     <td><input data-k="descricao" value="${esc(it.descricao)}" aria-label="Descrição">${ref}${crit}</td>
     <td><input data-k="tag" value="${esc(it.tag)}" aria-label="TAG"></td>
     <td class="ck">${ed.tipo==="NF"?`<input type="checkbox" data-ex="${i}" ${ex?"checked":""} aria-label="Exige certificado">`:'<span class="hint">—</span>'}</td>
-    <td><input data-k="certificado" value="${esc(ed.tipo==="ROM"&&!it.certificado?"":it.certificado)}" placeholder="${ed.tipo==="ROM"?"OBS 1":it.certStatus==="nao_recebido"?"não recebido":ex?"pendente":"não exige"}" aria-label="Certificado">${it.certStatus==="nao_recebido"&&!A.temCert(it)?'<span class="ref" style="color:var(--bad);font-weight:600">✕ Não recebido no campo</span>':""}${(()=>{const anx=(ed.anexos?.cert||[]).map((a,k)=>({a,k})).filter(x=>x.a.item===i||(x.a.itens||[]).includes(i));return anx.length?`<button type="button" class="cval" data-vercert="${anx[0].k}" style="background:none;border:0;padding:0;cursor:pointer;color:var(--accent);font-weight:600">📎 ver ${anx.length} ${anx.length===1?"arquivo":"arquivos"}</button>`:""})()}${ex&&A.temCert(it)?`<label class="cval"><input type="checkbox" data-val="${i}" ${it.certValidado?"checked":""}>validado pela Qualidade</label>`:""}</td>
+    <td><input data-k="certificado" value="${esc(ed.tipo==="ROM"&&!it.certificado?"":it.certificado)}" placeholder="${ed.tipo==="ROM"?"OBS 1":it.certStatus==="nao_recebido"?"não recebido":ex?"pendente":"não exige"}" aria-label="Certificado">${it.certStatus==="nao_recebido"&&!A.temCert(it)?'<span class="ref" style="color:var(--bad);font-weight:600">✕ Não recebido no campo</span>':""}${(()=>{const anx=(ed.anexos?.cert||[]).map((a,k)=>({a,k})).filter(x=>x.a.item===i||(x.a.itens||[]).includes(i));return anx.length?`<button type="button" class="cval" data-vercert="${anx[0].k}" style="background:none;border:0;padding:0;cursor:pointer;color:var(--accent);font-weight:600">📎 ver ${anx.length} ${anx.length===1?"arquivo":"arquivos"}</button>`:""})()}${(()=>{const cs=A.certSit(ed,it);return `<span class="ref">Certificado: <b style="color:${cs==="PENDENTE"?"var(--warn)":cs==="CONFORME"?"var(--ok)":"var(--muted)"}">${cs==="N/A"?"N/A – não aplicável":cs==="PENDENTE"?"Pendente":"Conforme"}</b></span>`})()}${ex&&A.temCert(it)?`<label class="cval"><input type="checkbox" data-val="${i}" ${it.certValidado?"checked":""}>validado pela Qualidade</label>`:""}</td>
     <td><select data-k="und" aria-label="Unidade">${A.UNIDADES.includes(it.und)?"":`<option>${esc(it.und)}</option>`}${und}</select></td>
     <td><input data-k="qtd" type="number" step="any" min="0" value="${esc(it.qtd)}" style="width:80px" aria-label="Quantidade"></td>
     <td><input data-k="local" value="${esc(it.local)}" aria-label="Local"></td>
-    <td><select data-k="conf" aria-label="Inspeção do item"><option value="C">C</option><option value="NC">NC</option><option value="NA">N/A</option></select></td>
+    <td><select data-k="conf" aria-label="Condição do recebimento"><option value="C">C</option><option value="NC">NC</option></select></td>
     <td><span class="st-it pill ${S.cls}">${S.rotulo}</span></td>
     <td><button class="del" type="button" data-del="${i}" aria-label="Remover item">×</button></td></tr>`}).join("");
   $("dItens").querySelectorAll("tr").forEach(tr=>{const i=+tr.dataset.i;
-    tr.querySelector('[data-k="und"]').value=edItens[i].und||"UND";tr.querySelector('[data-k="conf"]').value=edItens[i].conf||"C";
+    tr.querySelector('[data-k="und"]').value=edItens[i].und||"UND";tr.querySelector('[data-k="conf"]').value=A.confRec(edItens[i])||"C";
     tr.querySelectorAll("[data-k]").forEach(inp=>inp.addEventListener("change",()=>{const k=inp.dataset.k;edItens[i][k]=k==="qtd"?(inp.value===""?"":Number(inp.value)):(["descricao","tag","local"].includes(k)?inp.value.toUpperCase():inp.value);if(k==="certificado"){edItens[i].certValidado=false;if(inp.value.trim())edItens[i].certStatus="recebido"}if(k==="qtd"||k==="und")edItens[i].conferirNF=false;if(k==="qtd"||k==="certificado"||k==="conf"||k==="descricao"||k==="tag")renderItens();avisos()}));
     tr.querySelector("[data-del]").onclick=()=>{edItens.splice(i,1);renderItens();avisos()};
     const ex=tr.querySelector("[data-ex]");if(ex)ex.onchange=()=>{edItens[i].exigeCertificado=ex.checked;renderItens();avisos()};
@@ -847,27 +847,32 @@ $("btnExcluir").onclick=async()=>{const b=$("btnExcluir");if(!b.dataset.armed){b
 let vTab="doc",vIdx=0;
 /* o salvar devolve os anexos só com a referência na nuvem; mantém as imagens já abertas na tela */
 function mesclarAnexos(sv,g){const r=JSON.parse(JSON.stringify(sv||g));if(!r.anexos)return r;["doc","cert"].forEach(k=>(r.anexos[k]||[]).forEach((a,i)=>{const o=(g.anexos?.[k]||[])[i];if(o){if(o.img&&!a.img)a.img=o.img;if(o.data&&!a.data)a.data=o.data}}));return r}
+/* abas da prévia: documento (NF/romaneio), pedido de compra (fica em anexos.doc com pc:true) e certificados */
+function vLista(t){const an=ed.anexos||{};return t==="cert"?(an.cert||[]).map((a,i)=>({a,i})):(an.doc||[]).map((a,i)=>({a,i})).filter(x=>t==="pc"?!!x.a.pc:!x.a.pc)}
 function renderViewer(){
-  const an=ed.anexos||{},docs=an.doc||[],certs=an.cert||[];
-  const tabs=[["doc",ed.tipo==="ROM"?"Romaneio":"Nota fiscal",docs]];if(ed.tipo==="NF")tabs.push(["cert","Certificados",certs]);
-  $("vTabs").innerHTML=`<div class="seg" style="width:100%">${tabs.map(([k,l,a])=>`<button type="button" data-vt="${k}" aria-pressed="${k===vTab}">${l} (${a.length})</button>`).join("")}</div>`;
+  const tabs=[["doc",ed.tipo==="ROM"?"Romaneio":"Nota fiscal"]];if(ed.tipo==="NF"){tabs.push(["pc","Pedido de compra"]);tabs.push(["cert","Certificados"])}
+  if(!tabs.some(t=>t[0]===vTab))vTab="doc";
+  $("vTabs").innerHTML=`<div class="seg" style="width:100%">${tabs.map(([k,l])=>`<button type="button" data-vt="${k}" aria-pressed="${k===vTab}">${l} (${vLista(k).length})</button>`).join("")}</div>`;
   $("vTabs").querySelectorAll("[data-vt]").forEach(b=>b.onclick=()=>{vTab=b.dataset.vt;vIdx=0;renderViewer()});
-  const arr=vTab==="cert"?certs:docs,cur=arr[vIdx];
-  $("vStage").innerHTML=cur?(cur.img?`<img src="${cur.img}" alt="${esc(cur.nome||"Documento")}">`:`<div class="none">Arquivo PDF: ${esc(cur.nome||"")}<br>${cur.data?'<button class="btn small" type="button" id="vPdfAbrir">Abrir PDF</button>':"Arquivo registrado só pelo nome."}</div>`):`<div class="none">${vTab==="cert"?"Nenhum certificado anexado.":"Nenhuma foto do documento."}<br>${vTab==="doc"?"Se o campo não anexou, toque em <b>Anexar foto/PDF</b> abaixo.":"Anexe o certificado pelo item ou pela aba Certificados."}</div>`;
+  const lst=vLista(vTab),arr=lst.map(x=>x.a);if(vIdx>=arr.length)vIdx=Math.max(0,arr.length-1);const cur=arr[vIdx];
+  const nomeTab={doc:ed.tipo==="ROM"?"do romaneio":"da NF",pc:"do pedido de compra"}[vTab];
+  $("vStage").innerHTML=cur?(cur.img?`<img src="${cur.img}" alt="${esc(cur.nome||"Documento")}">`:`<div class="none">Arquivo PDF: ${esc(cur.nome||"")}<br>${cur.data?'<button class="btn small" type="button" id="vPdfAbrir">Abrir PDF</button>':"Arquivo registrado só pelo nome."}</div>`)
+    :`<div class="none">${vTab==="cert"?"Nenhum certificado anexado.<br>Anexe o certificado pelo item ou pela aba Certificados.":vTab==="pc"?"Nenhum pedido de compra anexado.<br>Toque em <b>Anexar foto/PDF</b> abaixo.":"Nenhuma foto do documento.<br>Se o campo não anexou, toque em <b>Anexar foto/PDF</b> abaixo."}</div>`;
   const vpa=$("vPdfAbrir");if(vpa)vpa.onclick=e=>{e.stopPropagation();abrirArquivo(cur)};
   $("vStage").onclick=()=>{if(cur&&cur.img){$("lbImg").src=cur.img;$("lb").classList.remove("zoom");$("lb").hidden=false}};
   $("vThumbs").innerHTML=arr.length>1?arr.map((a,i)=>`<button type="button" data-vi="${i}" aria-pressed="${i===vIdx}" aria-label="Página ${i+1}">${a.img?`<img src="${a.img}" alt="">`:'<span class="code" style="display:grid;place-items:center;width:58px;height:58px">PDF</span>'}</button>`).join(""):"";
   $("vThumbs").querySelectorAll("[data-vi]").forEach(b=>b.onclick=()=>{vIdx=+b.dataset.vi;renderViewer()});
-  $("vActs").innerHTML=`${vTab==="doc"?`<button class="btn small" type="button" id="vAdd">📎 Anexar foto/PDF ${ed.tipo==="ROM"?"do romaneio":"da NF"}</button>`:""}${cur?`<button class="btn small del" type="button" id="vDel">🗑 Excluir este anexo</button>`:""}`;
-  const va=$("vAdd");if(va)va.onclick=()=>{const inp=document.createElement("input");inp.type="file";inp.accept="image/*,application/pdf";inp.multiple=true;
-    inp.onchange=async()=>{const novos=(await lerArquivos(inp.files)).filter(Boolean);if(!novos.length)return;
+  $("vActs").innerHTML=`${vTab!=="cert"?`<button class="btn small" type="button" id="vAdd">📎 Anexar foto/PDF ${nomeTab}</button>`:""}${cur?`<button class="btn small del" type="button" id="vDel">🗑 Excluir este anexo</button>`:""}`;
+  const va=$("vAdd");if(va)va.onclick=()=>{const t=vTab,inp=document.createElement("input");inp.type="file";inp.accept="image/*,application/pdf";inp.multiple=true;
+    inp.onchange=async()=>{let novos=(await lerArquivos(inp.files)).filter(Boolean);if(!novos.length)return;
+      if(t==="pc")novos=novos.map((a,k)=>({...a,pc:true,nome:"Pedido de compra"+(ed.pc?" "+ed.pc:"")+(novos.length>1?" ("+(k+1)+")":"")}));
       const f=coletar();f.anexos={doc:[...(f.anexos?.doc||[]),...novos],cert:[...(f.anexos?.cert||[])]};
-      const g=A.registrar(f,"anexos",{por:"Qualidade",txt:`${novos.length} arquivo(s) ${ed.tipo==="ROM"?"do romaneio":"da NF"} anexado(s) no escritório`});
-      try{ed=mesclarAnexos(await A.store.salvar(g),g);edItens=ed.itens;vTab="doc";vIdx=g.anexos.doc.length-novos.length;renderViewer();renderConf();toast(`${novos.length===1?"Anexo salvo":novos.length+" anexos salvos"} na ficha ${ed.numero||""}`)}catch(e){toast(e.message||"Não foi possível salvar.",true)}};inp.click()};
+      const g=A.registrar(f,"anexos",{por:"Qualidade",txt:`${novos.length} arquivo(s) ${nomeTab} anexado(s) no escritório`});
+      try{ed=mesclarAnexos(await A.store.salvar(g),g);edItens=ed.itens;vTab=t;vIdx=vLista(t).length-novos.length;renderViewer();renderConf();toast(`${novos.length===1?"Anexo salvo":novos.length+" anexos salvos"} na ficha ${ed.numero||""}`)}catch(e){toast(e.message||"Não foi possível salvar.",true)}};inp.click()};
   const vd=$("vDel");if(vd)vd.onclick=async()=>{
     if(!vd.dataset.armed){vd.dataset.armed="1";vd.textContent="Toque de novo para confirmar";setTimeout(()=>{if(vd.isConnected){delete vd.dataset.armed;vd.textContent="🗑 Excluir este anexo"}},4000);return}
     const f=coletar(),k=vTab==="cert"?"cert":"doc";f.anexos={doc:[...(f.anexos?.doc||[])],cert:[...(f.anexos?.cert||[])]};
-    const [rm]=f.anexos[k].splice(vIdx,1);
+    const [rm]=f.anexos[k].splice(lst[vIdx].i,1);
     if(k==="cert"){const its=[...(Number.isInteger(rm.item)?[rm.item]:[]),...(rm.itens||[])];f.itens=(f.itens||[]).map((it,n)=>its.includes(n)&&!f.anexos.cert.some(a=>a.item===n||(a.itens||[]).includes(n))?{...it,temCertAnexo:false}:it)}
     const g=A.registrar(f,"anexos",{por:"Qualidade",txt:`Anexo excluído: ${rm.nome||(k==="cert"?"certificado":"documento")}`});
     try{ed=mesclarAnexos(await A.store.salvar(g),g);edItens=ed.itens;vIdx=Math.max(0,vIdx-1);renderViewer();renderConf();if(typeof renderItens==="function")renderItens();toast("Anexo excluído")}catch(e){toast(e.message||"Não foi possível excluir.",true)}};

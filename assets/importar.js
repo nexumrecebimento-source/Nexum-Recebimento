@@ -35,7 +35,7 @@
     m = u.match(/^KM\s*-?\s*(\d+)$/); if (m) return "KM " + m[1];
     return s;
   }
-  function conf(v) { const s = semAc(v).replace(/[^A-Z]/g, ""); return s === "C" ? "C" : s === "NC" ? "NC" : s === "NA" ? "NA" : ""; }
+  function conf(v) { const s = semAc(v).replace(/[^A-Z]/g, ""); return s === "C" ? "C" : s === "NC" ? "NC" : s === "NA" ? "C" : ""; }
   function qtd(v) {
     if (typeof v === "number") return v;
     const s = txt(v).replace(/\s/g, ""); if (!s) return "";
@@ -120,7 +120,7 @@
       const herd = [];
       const itens = rs.filter(r => !vazio(v(r, "desc")) || !vazio(v(r, "tag")) || !vazio(v(r, "qtd"))).map((r, k) => {
         if (herdadas.has(r)) herd.push(k);
-        const it = { descricao: txt(v(r, "desc")).toUpperCase(), tag: txt(v(r, "tag")).toUpperCase(), und: txt(v(r, "und")).toUpperCase(), qtd: qtd(v(r, "qtd")), local: local(v(r, "local")), conf: conf(v(r, "statusItem")) };
+        const it = { descricao: txt(v(r, "desc")).toUpperCase(), tag: txt(v(r, "tag")).toUpperCase(), und: (window.AMR && AMR.normUnd ? AMR.normUnd(txt(v(r, "und"))) : txt(v(r, "und")).toUpperCase()), qtd: qtd(v(r, "qtd")), local: local(v(r, "local")), conf: conf(v(r, "statusItem")) };
         const ct = cert(v(r, "cert")); if (ct) it.certificado = ct;
         return it;
       });

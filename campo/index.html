@@ -59,6 +59,9 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
 .item-ref .div{color:var(--warn);font-weight:600;font-family:var(--f-body)}
 .confnf{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:8px 10px;font-size:.82rem;font-weight:500}
 .confnf button{margin-left:auto;border:1px solid currentColor;background:transparent;color:inherit;border-radius:5px;padding:5px 9px;font:600 .78rem var(--f-body);cursor:pointer}
+.cs-sit{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:700;background:var(--bg);color:var(--muted);border:1px solid var(--line);text-transform:none;letter-spacing:0}
+.cs-sit.ok{color:var(--ok);border-color:var(--ok)}.cs-sit.pend{color:var(--warn);border-color:var(--warn);background:var(--warn-bg)}
+.pcbox{display:grid;gap:8px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);margin:10px 0}
 .cg{display:grid;gap:10px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px;background:var(--surface);margin-bottom:12px}
 .cg-h{display:grid;gap:3px}.cg-h b{font-size:.98rem}.cg-h span{font-size:.8rem;color:var(--muted)}
 .cg-st{font-size:.84rem;font-weight:600;padding:8px 10px;border-radius:8px;background:var(--bg);display:flex;gap:8px;align-items:center}
@@ -265,13 +268,22 @@ header.top{border-bottom:0!important;box-shadow:none!important}
           <input id="fotoDoc" type="file" accept="image/*" capture="environment" hidden>
           <input id="fotoDocGal" type="file" accept="image/*,application/pdf" multiple hidden>
           <div class="thumbs" id="thumbsDoc"></div>
-          <div class="ai"><i>IA</i><span>A leitura automática do documento será ligada na etapa 4. Por enquanto, preencha os campos abaixo.</span></div>
+        </div>
+        <div class="pcbox" data-tipo="NF">
+          <div class="cg-h"><b>Pedido de compra (PC)</b><span>Foto ou PDF do pedido. Fica junto com esta NF para consulta.</span></div>
+          <div class="shot-btns">
+            <label class="btn" for="fotoPC">Fotografar pedido</label>
+            <label class="btn" for="fotoPCGal">Galeria / PDF</label>
+          </div>
+          <input id="fotoPC" type="file" accept="image/*" capture="environment" hidden>
+          <input id="fotoPCGal" type="file" accept="image/*,application/pdf" multiple hidden>
+          <div class="thumbs" id="thumbsPC"></div>
         </div>
         <div class="grid2">
           <div class="f" data-tipo="NF"><label for="nf">Nº da NF</label><input id="nf" inputmode="numeric" autocomplete="off"></div>
           <div class="f" data-tipo="NF"><label for="fornecedor">Fornecedor</label><input id="fornecedor" autocomplete="off" list="listaForn"></div>
           <div class="f" data-tipo="NF"><label for="romaneio">Romaneio (PC-REV)</label><input id="romaneio" placeholder="Ex.: 4166-REV-00" autocomplete="off"></div>
-          <div class="f full" data-tipo="ROM"><label for="romaneioA">Nº do romaneio Anglo</label><input id="romaneioA" placeholder="Ex.: 1039-FLT-2026" autocomplete="off"></div>
+          <div class="f full" data-tipo="ROM"><label for="romaneioA">Nº da RM (Romaneio de Materiais)</label><input id="romaneioA" placeholder="Digite a RM: os itens são carregados sozinhos" autocomplete="off"></div>
           <div class="f"><label for="data">Data de recebimento</label><input id="data" type="date"></div>
         </div>
         <datalist id="listaForn"></datalist>
@@ -291,12 +303,12 @@ header.top{border-bottom:0!important;box-shadow:none!important}
       </div>
 
       <div class="block" data-tipo="ROM" id="lmBlock">
-        <h3><span class="n">✓</span>Lista de materiais</h3>
+        <h3><span class="n">✓</span>Itens da RM</h3>
         <div class="dl" id="lm"><div class="dl-st">Carregue a planilha Lista de materiais para buscar os itens do romaneio.</div></div>
         <div class="f" id="lmBuscaF" hidden><label for="lmBusca">Buscar item por TAG ou descrição</label><input id="lmBusca" autocomplete="off" placeholder="Ex.: 1039-PP-001 ou PARAFUSO"></div>
         <div class="dl-list" id="lmRes"></div>
         <div class="shot-btns">
-          <button class="btn" type="button" id="btnLm" hidden>Buscar itens do romaneio</button>
+          <button class="btn" type="button" id="btnLm" hidden>Buscar itens da RM</button>
           <label class="btn ghost" for="lmArquivo" id="lblLmArq">Carregar Lista de materiais</label>
         </div>
         <input id="lmArquivo" type="file" accept=".xlsx,.xls,.xlsm,.csv" hidden>
@@ -387,7 +399,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
 <script>
 (function(){
 const A=window.AMR, $=id=>document.getElementById(id);
-let dlRes=null, dlSel=new Set(), chaveNF=null, editando=null, fichas=[], tipo="NF", itens=[], fotosDoc=[], fotosCert=[], cgFotos=[], cgCerts=[], cgEstado=null, view="inicio";
+let dlRes=null, dlSel=new Set(), chaveNF=null, editando=null, fichas=[], tipo="NF", itens=[], fotosDoc=[], fotosPC=[], fotosCert=[], cgFotos=[], cgCerts=[], cgEstado=null, view="inicio";
 
 function toast(t,bad){const e=$("toast");e.textContent=t;e.className="toast"+(bad?" bad":"");e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200)}
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -482,7 +494,7 @@ function localLembrado(){try{return localStorage.getItem("amr_local_padrao")||""
 function lembrarLocal(v){try{if(v)localStorage.setItem("amr_local_padrao",v)}catch(e){}}
 function abrirNovo(t){
   editando=null;setChave(null);resetDilig();if(window.resetLM)resetLM();$("segTipo").hidden=false;$("devolMsg").hidden=true;$("btnChegada").hidden=false;$("btnEnviar").textContent="Enviar recebimento";
-  itens=[novoItem()]; fotosDoc=[]; fotosCert=[]; cgFotos=[]; cgCerts=[]; cgEstado=null;
+  itens=[novoItem()]; fotosDoc=[]; fotosPC=[]; fotosCert=[]; cgFotos=[]; cgCerts=[]; cgEstado=null;
   ["nf","fornecedor","romaneio","romaneioA","obs","localPadrao"].forEach(id=>$(id).value="");
   $("data").value=A.hoje();$("localPadrao").value=localLembrado();
   setTipo(t); itens=[novoItem()]; renderItens(); renderThumbs(); show("lancar");
@@ -494,7 +506,7 @@ function abrirEdicao(f){
   $("data").value=f.dataRecebimento||A.hoje();$("localPadrao").value="";
   $("obs").value=(f.observacao||"").replace(A.OBS_ANGLO,"").trim();
   itens=JSON.parse(JSON.stringify(f.itens||[]));if(!itens.length)itens=[novoItem()];
-  fotosDoc=[...(f.anexos?.doc||[])];fotosCert=[];
+  fotosDoc=(f.anexos?.doc||[]).filter(a=>!a.pc);fotosPC=(f.anexos?.doc||[]).filter(a=>a.pc);fotosCert=[];
   cgFotos=[];cgCerts=[];cgEstado=null;
   (f.anexos?.cert||[]).forEach(a=>{if(a.geral){const k=cgFotos.push({nome:a.nome,img:a.img,pdf:a.pdf,data:a.data,thumb:a.thumb})-1;(a.certs||[{numero:a.numero,lote:a.lote,material:a.material,itens:a.itens||[]}]).forEach(c=>{let x=cgCerts.find(y=>y.numero===c.numero);if(!x)cgCerts.push(x={...c,itens:[...(c.itens||[])],imagens:[],fonte:"manual"});x.imagens.push(k)});return}
     if(Number.isInteger(a.item)&&itens[a.item])(itens[a.item].certAnexos=itens[a.item].certAnexos||[]).push(a);else fotosCert.push(a)});
@@ -506,7 +518,7 @@ document.querySelectorAll("[data-novo]").forEach(b=>b.onclick=()=>abrirNovo(b.da
 $("btnNovoOutro").onclick=()=>abrirNovo(tipo);
 
 function certSecao(it,i){
-  if(it.certDeGeral)return `<div class="certsec ok"><div class="cs-geral"><span class="cs-st" style="color:var(--ok)">✓ Certificado ${esc(it.certificado)}<br><small style="color:var(--muted);font-weight:500">pelo certificado da NF (acima)</small></span><button type="button" class="lnk" data-tirageral>Não é este</button></div></div>`;
+  if(it.certDeGeral)return `<div class="certsec ok"><div class="cs-h">Certificado do item ${i+1} <span class="cs-sit ok">Conforme</span></div><div class="cs-geral"><span class="cs-st" style="color:var(--ok)">✓ Certificado ${esc(it.certificado)}<br><small style="color:var(--muted);font-weight:500">pelo certificado da NF (acima)</small></span><button type="button" class="lnk" data-tirageral>Não é este</button></div></div>`;
   const cr=A.materialCritico(it.descricao,it.tag),ex=A.exigeCert({tipo},it),fotos=it.certAnexos||[];
   const tem=!!(it.certificado||fotos.length), nr=it.certStatus==="nao_recebido";
   const estado=nr?"nao_recebido":(tem||it.certStatus==="recebido")?"recebido":"";
@@ -515,7 +527,7 @@ function certSecao(it,i){
     :estado==="recebido"?'<span class="cs-st" style="color:var(--warn)">Informe o nº ou anexe a foto do certificado</span>'
     :ex?'<span class="cs-st" style="color:var(--warn)">Anexe o certificado ou marque "Sem certificado"</span>':'<span class="cs-st" style="color:var(--muted)">Não exige certificado</span>';
   return `<div class="certsec ${nr?"nr":tem?"ok":ex?"req":""}">
-      <div class="cs-h">Certificado do item ${i+1}</div>
+      <div class="cs-h">Certificado do item ${i+1} ${!ex?'<span class="cs-sit">N/A – Não aplicável</span>':tem?'<span class="cs-sit ok">Conforme</span>':'<span class="cs-sit pend">Pendente</span>'}</div>
       <label class="excert"><input type="checkbox" data-ex ${ex?"checked":""} ${nr?"disabled":""}><span>Exige certificado de qualidade${cr?`<br><span style="color:var(--warn);font-size:.78rem;font-weight:600">Material crítico (CMC): ${esc(cr.rotulo)} · CQ ${esc(cr.cq)}</span><br><span style="color:var(--muted);font-size:.76rem">${esc(cr.evidencia||"")}</span>`:""}${!cr&&it.pedidoPedeCertificado?`<br><span style="color:var(--muted);font-size:.78rem">O pedido de compra pede certificado</span>`:""}</span></label>
       <label class="semcert"><input type="checkbox" data-semcert ${nr?"checked":""}><span><b>Sem certificado</b><br><small>Material recebido sem o certificado</small></span></label>
       ${nr?"":`<div class="f"><label>Nº do certificado</label><input data-k="certificado" value="${esc(it.certificado)}" autocomplete="off" placeholder="${ex?"Ex.: 3023651":"Se houver"}"></div>
@@ -543,7 +555,7 @@ function renderItens(){
         <div class="f full"><label>Local</label><input data-k="local" value="${esc(it.local)}" autocomplete="off"></div>
       </div>
       ${tipo==="NF"?certSecao(it,i):""}
-      <div class="f"><label>Inspeção</label><div class="seg" data-conf>${Object.keys(A.CONF).map(k=>`<button type="button" class="${k}" data-c="${k}" aria-pressed="${it.conf===k}">${k==="NA"?"N/A":k}</button>`).join("")}</div></div>
+      <div class="f"><label>Condição do recebimento</label><div class="seg" data-conf>${Object.keys(A.CONF_REC).map(k=>`<button type="button" class="${k}" data-c="${k}" aria-pressed="${A.confRec(it)===k}">${k==="NC"?"NC – Não conforme":"C – Conforme"}</button>`).join("")}</div></div>
     </div>`}).join("");
   $("itens").querySelectorAll(".item").forEach(el=>{
     const i=+el.dataset.i;
@@ -588,7 +600,7 @@ function lerFotos(files,arr,depois,op){
   });
 }
 function thumbs(arr,el){el.innerHTML=arr.map((f,i)=>`<figure>${f.pdf?`<div style="width:76px;height:96px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font:600 .75rem var(--f-mono);color:var(--muted)">PDF</div>`:`<img src="${f.img||f.thumb}" alt="Foto ${i+1}">`}<button type="button" aria-label="Remover foto" data-r="${i}">×</button></figure>`).join("");el.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{arr.splice(+b.dataset.r,1);renderThumbs()})}
-function renderThumbs(){thumbs(fotosDoc,$("thumbsDoc"))}
+function renderThumbs(){thumbs(fotosDoc,$("thumbsDoc"));thumbs(fotosPC,$("thumbsPC"))}
 
 /* ===== Certificados da NF: uma foto (ou várias) e a IA preenche todos os itens ===== */
 const itemRot=(it,n)=>`Item ${n+1}${it.descricao?" · "+(it.descricao.length>34?it.descricao.slice(0,32)+"…":it.descricao):""}`;
@@ -654,7 +666,7 @@ $("cgFoto").onclick=()=>escolherArquivo(true,addCG);
 $("cgArq").onclick=()=>escolherArquivo(false,addCG);
 $("cgReler").onclick=lerCG;
 $("cgManual").onclick=()=>{cgCerts.push({numero:"",lote:"",material:"",itens:[],imagens:[],fonte:"manual"});renderCG();const l=$("cgCerts").lastElementChild;l&&l.querySelector("input").focus()};
-[["fotoDoc",()=>fotosDoc],["fotoDocGal",()=>fotosDoc]].forEach(([id,arr])=>$(id).onchange=e=>{lerFotos(e.target.files,arr());e.target.value=""});
+[["fotoDoc",()=>fotosDoc],["fotoDocGal",()=>fotosDoc],["fotoPC",()=>fotosPC],["fotoPCGal",()=>fotosPC]].forEach(([id,arr])=>$(id).onchange=e=>{lerFotos(e.target.files,arr());e.target.value=""});
 
 /* ---------- scanner de código de barras / QR ---------- */
 let leitor=null,scDestino=null,scLido=false;
@@ -857,7 +869,7 @@ function usarDilig(){
   const sel=[...dlSel].sort((a,b)=>a-b).map(i=>dlRes.itens[i]);
   if(!sel.length){toast("Marque pelo menos um item.",true);return}
   const enc=dlRes.situacao==="encontrada",local=$("localPadrao").value.trim().toUpperCase()||localLembrado();
-  const novos=sel.map(it=>({descricao:A.norm(it.descricao+(it.descComp?" - "+it.descComp:"")),tag:it.codigo,und:A.norm(it.un),qtd:enc?(it.qtdReceb||it.qtd):"",certificado:"",local,conf:"C",
+  const novos=sel.map(it=>({descricao:A.norm(it.descricao+(it.descComp?" - "+it.descComp:"")),tag:it.codigo,und:A.normUnd(it.un),qtd:enc?(it.qtdReceb||it.qtd):"",certificado:"",local,conf:"C",
     pc:it.pc,itemPc:it.itemPc,conferirNF:true,pedidoPedeCertificado:!!it.pedidoPedeCertificado,exigeCertificado:!!it.pedeCertificado,origem:"diligenciamento",qtdPedido:it.qtd,undPedido:A.norm(it.un)}));
   const vazios=itens.every(x=>!x.descricao&&!x.tag);
   itens=vazios?novos:[...itens,...novos];
@@ -876,7 +888,7 @@ function resetLM(){
   if(!LM){$("lmBlock").hidden=true;return}
   const i=LM.info();lmSel=new Map();$("lmRes").innerHTML="";$("lmBusca").value="";
   $("lmBuscaF").hidden=!i;$("btnLm").hidden=!(i&&i.temRomaneio);$("lblLmArq").textContent=i?"Trocar Lista de materiais":"Carregar Lista de materiais";
-  lmStatus(i?`✓ Lista carregada (${lmInfoTxt(i)}). ${i.temRomaneio?"Digite o nº do romaneio e toque em <b>Buscar itens do romaneio</b>, ou busque":"Busque"} o item pela TAG ou descrição.`:"Carregue a planilha <b>Lista de materiais</b> uma vez. Ela fica guardada no celular e o app busca os itens nela.",i?"ok":"");
+  lmStatus(i?`✓ Lista carregada (${lmInfoTxt(i)}). ${i.temRomaneio?"Digite o nº da RM acima: todos os itens dela são carregados automaticamente. Se precisar, busque":"Esta planilha não tem coluna de RM. Busque"} o item pela TAG ou descrição.`:"Carregue a planilha <b>Lista de materiais</b> (com a coluna da RM) uma vez. Ela fica guardada no celular e, ao digitar a RM, os itens são carregados sozinhos.",i?"ok":"");
 }
 function lmLinha(x,k){return `<label class="dl-it"><input type="checkbox" data-lm="${k}" ${lmSel.has(k)?"checked":""}><span class="d">${esc(x.descricao||"(sem descrição)")}</span><span class="m">${x.tag?`<span><b>${esc(x.tag)}</b></span>`:""}${x.qtd?`<span>Qtd: <b>${esc(x.qtd)} ${esc(x.und)}</b></span>`:""}${x.romaneio?`<span>Romaneio ${esc(x.romaneio)}</span>`:""}${x.volume?`<span>Vol. ${esc(x.volume)}</span>`:""}</span></label>`}
 function lmMostrar(lista,titulo){
@@ -886,7 +898,7 @@ function lmMostrar(lista,titulo){
   const u=$("btnUsarLm");if(u)u.onclick=()=>{
     const sel=[...lmSel.keys()].sort((a,b)=>a-b).map(k=>lmSel.get(k));if(!sel.length){toast("Marque pelo menos um item.",true);return}
     const local=$("localPadrao").value.trim().toUpperCase()||localLembrado();
-    const novos=sel.map(x=>({...novoItem(),descricao:x.descricao,tag:x.tag,und:x.und||"PÇ",qtd:x.qtd&&!isNaN(+String(x.qtd).replace(",","."))?String(+String(x.qtd).replace(",",".")):"",local,origem:"lista_materiais"}));
+    const novos=sel.map(x=>({...novoItem(),descricao:x.descricao,tag:x.tag,und:A.normUnd(x.und)||"PÇ",qtd:x.qtd&&!isNaN(+String(x.qtd).replace(",","."))?String(+String(x.qtd).replace(",",".")):"",local,origem:"lista_materiais"}));
     itens=itens.every(x=>!x.descricao&&!x.tag)?novos:[...itens,...novos];
     renderItens();checarDup();$("lmRes").innerHTML="";$("lmBusca").value="";
     toast(`${novos.length} ${novos.length===1?"item preenchido":"itens preenchidos"} pela Lista de materiais. Confira a quantidade entregue.`);
@@ -897,15 +909,20 @@ function lmRomaneio(auto){
   if(!LM||!LM.info())return;const rom=$("romaneioA").value.trim();
   if(!rom){if(!auto){toast("Informe o nº do romaneio.",true);$("romaneioA").focus()}return}
   const l=LM.doRomaneio(rom);
-  if(!l.length){if(!auto)lmStatus(`Romaneio ${esc(rom)} não encontrado na lista (${lmInfoTxt(LM.info())}). Busque os itens pela TAG ou descrição.`,"warn");return}
-  lmStatus(`<b>${l.length} ${l.length===1?"item":"itens"}</b> do romaneio ${esc(rom)}. Marque os que chegaram.`,"ok");
-  lmMostrar(l,"");$("lmRes").querySelectorAll("[data-lm]").forEach(c=>{c.checked=true;c.onchange()});
+  if(!l.length){if(!auto||rom.length>=4)lmStatus(`RM ${esc(rom)} não encontrada na lista (${lmInfoTxt(LM.info())}). Busque os itens pela TAG ou descrição.`,"warn");return}
+  /* RM encontrada: carrega todos os itens direto no formulário (o inspetor só confere a quantidade entregue) */
+  const ja=new Set(itens.map(x=>A.norm(x.tag)+"|"+A.norm(x.descricao)));
+  const novosL=l.filter(x=>!ja.has(A.norm(x.tag)+"|"+A.norm(x.descricao)));
+  if(!novosL.length){lmStatus(`✓ Os ${l.length} ${l.length===1?"item":"itens"} da RM ${esc(rom)} já estão no formulário.`,"ok");return}
+  lmMostrar(novosL,"");$("lmRes").querySelectorAll("[data-lm]").forEach(c=>{c.checked=true;c.onchange()});$("btnUsarLm").click();
+  lmStatus(`✓ RM ${esc(rom)}: <b>${novosL.length} ${novosL.length===1?"item carregado":"itens carregados"}</b> da Lista de materiais. Confira a quantidade entregue de cada um.`,"ok");
 }
 if(LM){
   $("lmArquivo").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;lmStatus("Lendo "+esc(f.name)+"…");
     try{await LM.carregar(f);resetLM();toast("Lista de materiais carregada");if($("romaneioA").value)lmRomaneio(true)}catch(err){lmStatus("Não consegui ler a planilha: "+esc(err.message),"bad")}};
   $("btnLm").onclick=()=>lmRomaneio(false);
   $("romaneioA").addEventListener("change",()=>lmRomaneio(true));
+  let rmT;$("romaneioA").addEventListener("input",()=>{clearTimeout(rmT);rmT=setTimeout(()=>{if($("romaneioA").value.trim().length>=3&&LM.doRomaneio($("romaneioA").value,true).length)lmRomaneio(true)},700)});
   let lmT;$("lmBusca").addEventListener("input",()=>{clearTimeout(lmT);lmT=setTimeout(()=>{const q=$("lmBusca").value;const r=LM.buscar(q,25);
     lmMostrar(r,q.trim().length<2?"":r.length?`${r.length===25?"Primeiros 25 resultados":r.length+" resultado(s)"} para “${esc(q)}”`:"");if(q.trim().length>=2&&!r.length)$("lmRes").innerHTML='<div class="dl-st warn"><span>Nada encontrado. Tente outra parte da TAG ou da descrição.</span></div>'},250)});
   LM.restaurar().then(resetLM);
@@ -919,7 +936,7 @@ $("dlArquivo").onchange=async e=>{const f=e.target.files[0];e.target.value="";if
 function montar(){
   const base=editando?JSON.parse(JSON.stringify(editando)):{origem:"campo",assinaturas:{},criadoPor:"Campo"};
   const f={...base,tipo,dataRecebimento:$("data").value,observacao:$("obs").value.trim(),itens:itens.map((x,n)=>{const y={...x,qtd:x.qtd===""?"":Number(x.qtd),temCertAnexo:!!(x.certAnexos||[]).length||(x.certDeGeral&&cgCerts.some(c=>c.itens.includes(n)&&c.imagens.length))};delete y.certAnexos;return y}),
-    anexos:{doc:fotosDoc,cert:[...itens.flatMap((x,n)=>(x.certAnexos||[]).map((a,k)=>({...a,item:n,nome:`Item ${n+1} · ${x.certificado?"certificado "+x.certificado:"certificado"}${(x.certAnexos||[]).length>1?" ("+(k+1)+")":""}`}))),...anexosCG(),...fotosCert]}};
+    anexos:{doc:[...fotosDoc,...(tipo==="NF"?fotosPC.map((a,k)=>({...a,pc:true,nome:"Pedido de compra"+(fotosPC.length>1?" ("+(k+1)+")":"")})):[])],cert:[...itens.flatMap((x,n)=>(x.certAnexos||[]).map((a,k)=>({...a,item:n,nome:`Item ${n+1} · ${x.certificado?"certificado "+x.certificado:"certificado"}${(x.certAnexos||[]).length>1?" ("+(k+1)+")":""}`}))),...anexosCG(),...fotosCert]}};
   if(tipo==="NF"){Object.assign(f,{chaveNFe:chaveNF&&chaveNF.valida&&chaveNF.nf===$("nf").value.trim()?chaveNF.chave:"",serie:chaveNF?.serie||f.serie||"",cnpjFornecedor:chaveNF?.cnpj||f.cnpjFornecedor||"",nf:$("nf").value.trim(),fornecedor:A.norm($("fornecedor").value),romaneio:A.norm($("romaneio").value),fornecimento:"MILPLAN ENGENHARIA"})}
   else{Object.assign(f,{nf:"",romaneio:A.norm($("romaneioA").value),fornecedor:"ANGLO AMERICAN",fornecimento:"ANGLO AMERICAN",observacao:[A.OBS_ANGLO,$("obs").value.trim()].filter(Boolean).join("\n")})}
   return f;
