@@ -203,6 +203,19 @@ td.ck input{width:18px;height:18px;min-height:0}
 .tbl-f{border-radius:14px;box-shadow:var(--shadow)}
 .tab-n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:#c98500;color:#fff;font:700 .68rem var(--f-body);vertical-align:1px}
 table.ct tbody tr{cursor:default}
+.cob-sec{margin:2px 0 16px}
+.cob-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}.cob-h h3{margin:0;font:700 1rem var(--f-display);color:var(--ink)}
+.cob-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
+.cob{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px 12px 16px;display:grid;gap:6px;box-shadow:0 4px 14px rgba(11,45,91,.06);overflow:hidden}
+.cob::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(180deg,#ffd27a,#f59e0b)}
+.cob.velho::before{background:linear-gradient(180deg,#ff8a8a,#d03b3b)}
+.cob b.nm{font:700 .98rem var(--f-display);color:var(--ink)}
+.cob .mt{font-size:.8rem;color:var(--muted)}
+.cob .tg{display:flex;gap:6px;flex-wrap:wrap}
+.cob .tg span{font:600 .7rem var(--f-body);border-radius:999px;padding:2px 8px;background:#e6eef7;color:#1c5cab}
+.cob .tg .rf{background:#fdf0d9;color:#8a5a00}.cob .tg .se{background:#fbe4e4;color:#b42318}
+.cob .bt{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+body.ro [data-cob-reg]{display:none!important}
 .ctrsel{display:flex;gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--head-line);margin-right:10px}
 .ctrsel button{border:0;background:none;color:#c9d6e8;font:600 .78rem var(--f-body);padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
 .ctrsel button[aria-pressed="true"]{background:#fff;color:#0b2d5b}
@@ -311,6 +324,10 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
 
   <section id="v-certs" hidden>
     <div class="sec-h" style="margin-bottom:10px"><div><h2 style="margin:0;font:700 1.15rem var(--f-display)">Certificados</h2><p class="hint" style="margin:2px 0 0">Itens que exigem certificado (CMC). Ao anexar, a pendência sai sozinha e a ficha e o relatório se atualizam.</p></div></div>
+    <div class="cob-sec" id="cobSec" hidden>
+      <div class="cob-h"><h3>Cobranças por fornecedor</h3><span class="hint" id="cobHint"></span></div>
+      <div class="cob-grid" id="cobGrid"></div>
+    </div>
     <div class="filters">
       <input id="qCert" type="search" placeholder="Buscar ficha, NF, fornecedor, item, TAG, nº do certificado…" aria-label="Buscar certificados">
     </div>
@@ -950,10 +967,32 @@ async function abrirArquivo(a){
   if(a.data){try{const b=atob(a.data.split(",")[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);window.open(URL.createObjectURL(new Blob([u],{type:"application/pdf"})),"_blank")}catch(e){toast("Não consegui abrir o PDF.",true)}return}
   toast("Este PDF foi registrado só pelo nome (sem o arquivo).",true);
 }
+function renderCobGrupos(){
+  const gs=A.cobrancasPorFornecedor(fichas,5);
+  $("cobSec").hidden=!gs.length||!CT().ativo;if(!gs.length)return;
+  $("cobHint").textContent=`${gs.length} ${gs.length===1?"e-mail pronto":"e-mails prontos"} · um por fornecedor, com tudo o que ele deve. Itens cobrados há 5 dias ou mais sem retorno entram de novo para reforçar.`;
+  $("cobGrid").innerHTML=gs.map((g,k)=>{const nf=g.fichas.length;return `<div class="cob${g.maisAntigo>=7?" velho":""}" data-k="${k}">
+    <b class="nm">${esc(g.fornecedor)}</b>
+    <span class="mt">${g.itens} ${g.itens===1?"item":"itens"} em ${nf} ${nf===1?"NF":"NFs"} (${g.fichas.map(y=>"NF "+esc(y.f.nf)).slice(0,4).join(", ")}${nf>4?"…":""}) · mais antigo há ${g.maisAntigo} ${g.maisAntigo===1?"dia":"dias"}</span>
+    <span class="tg">${g.novos?`<span>${g.novos} ${g.novos===1?"novo":"novos"}</span>`:""}${g.reforco?`<span class="rf">${g.reforco} para reforçar</span>`:""}${g.semEmail?`<span class="se">fornecedor sem e-mail no cadastro</span>`:""}</span>
+    <span class="bt"><a class="btn small primary" data-cob-out href="#" target="_blank" rel="noopener">Abrir no Outlook</a><button class="btn small" type="button" data-cob-cp>Copiar e-mail</button><button class="btn small" type="button" data-cob-reg>Registrar envio</button></span></div>`}).join("");
+  $("cobGrid").querySelectorAll(".cob").forEach(el=>{const g=gs[+el.dataset.k],m=A.montarEmailCobrancaFornecedor(g);
+    const href="mailto:"+encodeURIComponent(m.para.join(";")).replace(/%3B/g,";").replace(/%40/g,"@")+"?subject="+encodeURIComponent(m.assunto)+"&body="+encodeURIComponent(m.corpo);
+    const out=el.querySelector("[data-cob-out]");out.href=href;
+    out.onclick=e=>{if(href.length>1900){e.preventDefault();copiarCob(m);toast("E-mail grande demais para abrir direto: copiei o texto. Abra um e-mail novo no Outlook e cole (Ctrl+V).")}};
+    el.querySelector("[data-cob-cp]").onclick=()=>copiarCob(m);
+    el.querySelector("[data-cob-reg]").onclick=async()=>{
+      const muda=m.porFicha.map(p=>{const f=fichas.find(x=>x.id===p.id);if(!f)return null;let h=A.registrarCobranca(f,{para:m.para,assunto:m.assunto,itens:p.itens},"Qualidade");
+        if(h.status!=="cert_pendente"&&h.status!=="sem_acao"&&h.status!=="finalizado")h.status="cert_pendente";return h}).filter(Boolean);
+      try{await A.store.salvarVarias(muda);toast(`Cobrança à ${g.fornecedor} registrada em ${muda.length} ${muda.length===1?"ficha":"fichas"}`)}catch(e){toast(e.message,true)}};
+  });
+}
+async function copiarCob(m){const t=`Para: ${m.para.join("; ")}\nAssunto: ${m.assunto}\n\n${m.corpo}`;try{await navigator.clipboard.writeText(t);toast("E-mail copiado: cole no Outlook")}catch(e){toast("Não consegui copiar automaticamente.",true)}}
 function renderCerts(){
   const todas=linhasCert(),n={pendente:0,recebido:0,validado:0};todas.forEach(x=>n[x.sit]++);
   $("tabCertN").hidden=!n.pendente;$("tabCertN").textContent=n.pendente;
   if($("v-certs").hidden)return;
+  renderCobGrupos();
   $("chipsCert").innerHTML=[["pendente","Pendentes"],["recebido","A validar"],["validado","Validados"],["todos","Todos"]].map(([k,l])=>`<button class="chip" type="button" data-k="${k}" aria-pressed="${k===fCert}">${l} · ${k==="todos"?todas.length:n[k]}</button>`).join("");
   $("chipsCert").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{fCert=c.dataset.k;renderCerts()});
   const q=A.norm($("qCert").value||"");

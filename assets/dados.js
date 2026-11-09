@@ -168,6 +168,38 @@
     const corpo = `Prezados,\n\nNo recebimento de materiais do Projeto Flotação Recleaner (contrato ${CONTRATO}), os itens abaixo chegaram sem o certificado de qualidade.\n\nNota fiscal: ${f.nf}${f.serie ? " (série " + f.serie + ")" : ""}\nFornecedor: ${f.fornecedor}\nData do recebimento: ${fmtData(f.dataRecebimento)}\nFicha de recebimento: ${f.numero}\n\nItens pendentes:\n${linhas.join("\n")}\n\nSolicitamos o envio dos certificados de qualidade pendentes, identificando o número da NF e o item a que cada um se refere.\n\nAtenciosamente,\nQualidade - Milplan Engenharia\nProjeto AMR / Flotação Recleaner\n(mensagem gerada pelo Nexum – Recebimento inteligente)`;
     return { para, assunto, corpo, itens: lista.map(x => x.k) };
   }
+  /* Cobranças agrupadas por fornecedor: junta tudo o que a empresa deve (novos e para reforçar após N dias) */
+  function cobrancasPorFornecedor(todas, diasReforco) {
+    const lim = (diasReforco || 5) * 864e5, agora = Date.now(), g = new Map();
+    todas.filter(f => f.tipo === "NF" && f.status !== "finalizado" && !f.lacuna && !f.exemplo).forEach(f => {
+      const sem = semCertificado(f); if (!sem.length) return;
+      const ultimo = new Map(); (f.cobrancas || []).forEach(c => (c.itens || []).forEach(k => ultimo.set(k, c.em)));
+      const lista = sem.map(x => ({ ...x, cobradoEm: ultimo.get(x.k) || "" })).filter(x => !x.cobradoEm || agora - new Date(x.cobradoEm) >= lim);
+      if (!lista.length) return;
+      const nome = (f.fornecedor || "Fornecedor não informado").trim(), k = norm(nome);
+      if (!g.has(k)) g.set(k, { fornecedor: nome, fichas: [] });
+      g.get(k).fichas.push({ f, lista });
+    });
+    return [...g.values()].map(x => {
+      const itens = x.fichas.reduce((s, y) => s + y.lista.length, 0), novos = x.fichas.reduce((s, y) => s + y.lista.filter(i => !i.cobradoEm).length, 0);
+      const maisAntigo = Math.max(...x.fichas.map(y => y.f.dataRecebimento ? Math.floor((agora - new Date(y.f.dataRecebimento + "T12:00:00")) / 864e5) : 0));
+      const fo = cadastros.fornecedorPorNome(x.fornecedor);
+      return { ...x, itens, novos, reforco: itens - novos, maisAntigo, semEmail: !(fo && (fo.emails || []).length) };
+    }).sort((a, b) => b.maisAntigo - a.maisAntigo);
+  }
+  function montarEmailCobrancaFornecedor(gr) {
+    const para = [...new Set(gr.fichas.flatMap(y => destinatariosCertPendente(y.f)))];
+    const nNF = gr.fichas.length;
+    const assunto = `Certificados de qualidade pendentes - ${gr.fornecedor} - ${gr.itens} ${gr.itens === 1 ? "item" : "itens"} em ${nNF} ${nNF === 1 ? "NF" : "NFs"}`;
+    const blocos = gr.fichas.slice().sort((a, b) => String(a.f.dataRecebimento).localeCompare(String(b.f.dataRecebimento))).map(({ f, lista }) =>
+      `NF ${f.nf}${f.serie ? " (série " + f.serie + ")" : ""} · recebida em ${fmtData(f.dataRecebimento)} · ficha ${f.numero}
+` +
+      lista.map(({ i, n, cobradoEm }) => `  - Item ${n + 1}: ${i.tag || "(sem código)"} - ${i.descricao}
+    Quantidade: ${fmtQtd(i.qtd)} ${i.und}${i.pc ? `  |  Pedido ${i.pc}/${i.itemPc}` : ""}${cobradoEm ? `  |  já solicitado em ${fmtData(cobradoEm)}` : ""}`).join("\n"));
+    const reforco = gr.reforco ? `\n\nAlguns destes itens já foram solicitados anteriormente e seguem sem retorno.` : "";
+    const corpo = `Prezados,\n\nNo recebimento de materiais do Projeto Flotação Recleaner (contrato ${CONTRATO}), os itens abaixo, fornecidos por ${gr.fornecedor}, estão sem o certificado de qualidade.${reforco}\n\n${blocos.join("\n\n")}\n\nSolicitamos o envio dos certificados de qualidade pendentes, identificando o número da NF e o item a que cada um se refere.\n\nAtenciosamente,\nQualidade - Milplan Engenharia\nProjeto AMR / Flotação Recleaner\n(mensagem gerada pelo Nexum – Recebimento inteligente)`;
+    return { para, assunto, corpo, porFicha: gr.fichas.map(y => ({ id: y.f.id, itens: y.lista.map(x => x.k) })) };
+  }
   function registrarCobranca(f, email, por) {
     const reg = { em: new Date().toISOString(), por: por || "", para: email.para, itens: email.itens, assunto: email.assunto };
     const g = { ...f, cobrancas: [...(f.cobrancas || []), reg] };
@@ -411,6 +443,6 @@
     return { manha: "Que bom ter você por aqui. Vamos manter tudo em ordem hoje?", tarde: "Seguimos firmes. Vamos fechar o dia com tudo em ordem?", noite: "Ainda por aqui? Vamos deixar tudo pronto para amanhã." }[periodo()];
   }
   function dataLonga() { const d = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }); return d.charAt(0).toUpperCase() + d.slice(1); }
-  window.AMR = { saudacao, fraseDoDia, dataLonga, CONTRATOS, ctrDe, textoCert, certSituacao, autoStatus, anexarCertificado, temCert, CMC, LEGENDA_CMC, materialCritico, exigeCert, STATUS_ITEM, statusItem, semCertificado, pendentesDeCobranca, montarEmailCobranca, registrarCobranca, registrar: marcarConferencia, lerChaveNFe, soCnpj, MOTIVOS, CONFER, conf, marcarConferencia, GRUPOS, cadastros, destinatariosCertPendente, emailOk, CONTRATO, OBRA, ESCOPO, DOC_FICHA, DOC_MAPA, FICHA_INICIAL, TIPOS, STATUS, ORDEM_STATUS, CONF, UNIDADES, OBS_ANGLO, COLS_MAPA,
+  window.AMR = { cobrancasPorFornecedor, montarEmailCobrancaFornecedor, saudacao, fraseDoDia, dataLonga, CONTRATOS, ctrDe, textoCert, certSituacao, autoStatus, anexarCertificado, temCert, CMC, LEGENDA_CMC, materialCritico, exigeCert, STATUS_ITEM, statusItem, semCertificado, pendentesDeCobranca, montarEmailCobranca, registrarCobranca, registrar: marcarConferencia, lerChaveNFe, soCnpj, MOTIVOS, CONFER, conf, marcarConferencia, GRUPOS, cadastros, destinatariosCertPendente, emailOk, CONTRATO, OBRA, ESCOPO, DOC_FICHA, DOC_MAPA, FICHA_INICIAL, TIPOS, STATUS, ORDEM_STATUS, CONF, UNIDADES, OBS_ANGLO, COLS_MAPA,
     norm, normForn, hoje, fmtData, fmtQtd, chaveDoc, duplicada, msgDuplicada, proximoNumero, itensValidos, pendencias, linhasMapa, csvMapa, store };
 })();
