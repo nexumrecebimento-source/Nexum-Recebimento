@@ -144,7 +144,7 @@
     });
     /* Rodapé discreto: rastreabilidade */
     doc.setFont("helvetica", "normal"); doc.setFontSize(5.5); doc.setTextColor(120);
-    doc.text(`Gerado pelo Nexum em ${new Date().toLocaleString("pt-BR")}${f.chaveNFe ? " · Chave NF-e " + f.chaveNFe : ""}`, M, H - 2.5);
+    if (f.chaveNFe) doc.text("Chave NF-e " + f.chaveNFe, M, H - 2.5);
     doc.setTextColor(0);
   }
 

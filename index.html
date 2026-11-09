@@ -693,7 +693,7 @@ $("qMapa").oninput=()=>{lim.mapa=300;renderMapa()};
 function dataXL(iso){if(!iso)return "";const [y,m,d]=String(iso).slice(0,10).split("-").map(Number);return y?new Date(y,m-1,d):""}
 const semAcentoArq=n=>String(n).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[\\/:*?"<>|]+/g,"-");
 const fmtAgora=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}).replace(","," às");
-function infoXL(extra){const c=CT();return `${c.nome}${c.numero?" · Contrato "+c.numero:""}${extra?" · "+extra:""} · Atualizado em ${fmtAgora()} · Gerado pelo Nexum – Recebimento inteligente`}
+function infoXL(extra){const c=CT();return `${c.nome}${c.numero?" · Contrato "+c.numero:""}${extra?" · "+extra:""}`}
 async function xl(nome,abas,btn){
   nome=semAcentoArq(nome);const txt=btn?btn.textContent:"";
   if(btn){btn.disabled=true;btn.textContent="Gerando planilha…"}
