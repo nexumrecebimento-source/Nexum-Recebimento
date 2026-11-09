@@ -3,7 +3,7 @@
    Se o AI Logic não estiver ativado no Firebase, lança erro com code "ia_desligada". */
 (function () {
   const cfg = () => { const t = window.NEXUM_NUVEM_TESTE, n = window.NEXUM_NUVEM; return (t && t.FIREBASE) ? t : (n || t || {}); };
-  const modelos = () => [cfg().IA_MODELO, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"].filter(Boolean);
+  const modelos = () => [cfg().IA_MODELO, "gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash"].filter(Boolean);
   let ai = null, modeloOk = null;
   function iniciar() {
     if (ai) return ai;
@@ -66,7 +66,7 @@ Se não conseguir ler nenhum certificado, responda {"certificados":[]}.`;
     const partes = arquivos.map(parte).filter(Boolean);
     if (!partes.length) return [];
     let a; try { a = iniciar(); } catch (e) { throw e; }
-    const S = window.NXAI_SDK, lista = modeloOk ? [modeloOk] : modelos();
+    const S = window.NXAI_SDK, lista = [...new Set([modeloOk, ...modelos()].filter(Boolean))];
     let ultimo = null;
     for (const nome of lista) {
       try {
@@ -76,7 +76,9 @@ Se não conseguir ler nenhum certificado, responda {"certificados":[]}.`;
         return interpretar(r.response.text(), itens.length, partes.length);
       } catch (e) {
         ultimo = e; const m = String(e && e.message || e);
+        /* modelo inexistente ou cota do dia esgotada nesse modelo: cada modelo tem a sua cota, tenta o próximo */
         if (/not found|404|is not supported|unknown model/i.test(m)) continue;
+        if (/quota|RESOURCE_EXHAUSTED|429/i.test(m)) { if (modeloOk === nome) modeloOk = null; continue; }
         throw traduzErro(e);
       }
     }
