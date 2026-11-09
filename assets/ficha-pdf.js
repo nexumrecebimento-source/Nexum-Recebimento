@@ -44,13 +44,10 @@
     linhas.forEach((l, i) => doc.text(l, tx, y0 + i * lh, { align: al === "c" ? "center" : al === "r" ? "right" : "left" }));
     return doc.getTextWidth(linhas[linhas.length - 1] || "");
   }
-  /* Campo sem informação: traço diagonal no espaço correspondente (padrão em todos os formulários) */
-  function anular(doc, x, y, w, h) { doc.setLineWidth(0.2); doc.line(x + 0.6, y + h - 0.6, x + w - 0.6, y + 0.6); doc.setLineWidth(0.25); }
   /* Rótulo + valor; se o valor estiver vazio, anula o espaço depois do rótulo */
   function campo(doc, rotulo, valor, x, y, w, h, fs) {
     const v = String(valor ?? "").trim();
     const lw = texto(doc, rotulo + (v ? " " + v : ""), x, y, w, h, { fs: fs || FS.campo, b: true });
-    if (!v) { const x0 = x + 1.2 + lw + 1.5; if (x + w - x0 > 4) anular(doc, x0, y, x + w - x0, h); }
   }
   const caixa = (doc, x, y, w, h, fill) => { if (fill) { doc.setFillColor(fill); doc.rect(x, y, w, h, "FD"); } else doc.rect(x, y, w, h); };
 
@@ -124,8 +121,7 @@
         if (i === 0) texto(doc, String((nFolha - 1) * ITENS_POR_FOLHA + r + 1), x, y, LARG[i], hLin, { fs: fsTab, al: "c", pad: 0.4 });
         else if (lin) {
           const v = String(lin[i] ?? "").trim();
-          if (!v) anular(doc, x, y, LARG[i], hLin);
-          else {
+          if (v) {
             const destaque = (i === 5 && /^PENDENTE/.test(v)) || (i === 12 && v === "NC");
             if (destaque) doc.setTextColor(178, 58, 46);
             texto(doc, v, x, y, LARG[i], hLin, { fs: fsTab, al: c[2], pad: pads[i] });
@@ -137,14 +133,15 @@
       y += hLin;
     }
     /* linhas sem item: um traço diagonal único anulando todo o espaço em branco da tabela */
-    if (linhas.length < ITENS_POR_FOLHA) anular(doc, M + LARG[0], yVazio, CW - LARG[0], y - yVazio);
+    /* linhas sem item: um único traço diagonal, do canto superior esquerdo ao inferior direito do espaço em branco */
+    if (linhas.length < ITENS_POR_FOLHA) { doc.setLineWidth(0.3); doc.line(M, yVazio, M + CW, y); doc.setLineWidth(0.25); }
     /* Observação */
     const hObs = 14;
     caixa(doc, M, y, CW, hObs);
     texto(doc, "Observação:", M, y, CW, 5, { fs: FS.campo, b: true, top: true });
     const obs = observacao(A, f);
     if (obs) texto(doc, obs, M, y + 4, CW, hObs - 4, { fs: FS.obs, top: true });
-    else anular(doc, M + 20, y, CW - 20, hObs);
+
     y += hObs;
     /* Legenda */
     const hLeg = 5.5;

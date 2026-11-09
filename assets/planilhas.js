@@ -100,8 +100,6 @@
         x.font = { name: FONTE, size: 10, color: { argb: "FF1F2937" }, bold: !!c.forte };
         x.alignment = { vertical: "middle", horizontal: c.al || (["num", "dec", "int", "data"].includes(c.tipo) ? "center" : "left"), wrapText: !!c.quebra };
         x.border = borda(LINHA);
-        /* campo sem informação: traço diagonal na célula (padrão dos formulários) */
-        if (x.value === null && !aba.semDiagonal) x.border = { ...borda(LINHA), diagonal: { up: true, down: false, style: "thin", color: { argb: "FF8A94A6" } } };
         if (fmt[c.tipo]) x.numFmt = fmt[c.tipo]; else if (v instanceof Date) x.numFmt = fmt.data;
         const cc = c.tipo === "cor" ? corDe(v) : null;
         if (cc) { x.fill = { type: "pattern", pattern: "solid", fgColor: { argb: cc[0] } }; x.font = { name: FONTE, size: 10, bold: true, color: { argb: cc[1] } }; x.alignment = { vertical: "middle", horizontal: "center" }; }
