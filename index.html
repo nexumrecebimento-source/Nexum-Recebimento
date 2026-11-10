@@ -476,6 +476,7 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
           <div class="f" data-t="NF"><label for="dForn">Fornecedor</label><input id="dForn" list="dlForn"></div>
           <div class="f"><label for="dRom" id="lRom">Romaneio</label><input id="dRom"></div>
           <div class="f"><label for="dData">Data de recebimento</label><input id="dData" type="date"></div>
+          <div class="f"><label for="dNumero">Nº da ficha</label><input id="dNumero" type="number" min="1" inputmode="numeric" title="Altere para corrigir a ordem da numeração"></div>
         </div>
         <div class="f" id="dChave" hidden></div>
         <datalist id="dlForn"></datalist>
@@ -730,7 +731,7 @@ function abrir(f){
   $("dChave").hidden=!ed.chaveNFe;if(ed.chaveNFe)$("dChave").innerHTML=`<span class="lbl">Chave de acesso (lida do código de barras)</span><span class="code">${ed.chaveNFe.replace(/(\d{4})/g,"$1 ").trim()}</span>${ed.cnpjFornecedor?`<span class="code">CNPJ ${esc(ed.cnpjFornecedor)}${ed.serie?" · série "+esc(ed.serie):""}</span>`:""}`;
   document.querySelectorAll("[data-t]").forEach(e=>e.hidden=e.dataset.t!==ed.tipo);
   $("lRom").textContent=ed.tipo==="ROM"?"Romaneio Anglo":"Romaneio (PC-REV)";
-  $("dNf").value=ed.nf||"";$("dForn").value=ed.fornecedor||"";$("dRom").value=ed.romaneio||"";$("dData").value=ed.dataRecebimento||"";$("dObs").value=ed.observacao||"";
+  $("dNf").value=ed.nf||"";$("dForn").value=ed.fornecedor||"";$("dRom").value=ed.romaneio||"";$("dData").value=ed.dataRecebimento||"";$("dNumero").value=ed.numero||"";$("dObs").value=ed.observacao||"";
   $("dlForn").innerHTML=(cad?.fornecedores||[]).map(x=>`<option value="${esc(x.nome)}">`).join("");
   $("dStatus").innerHTML=A.ORDEM_STATUS.map(s=>`<button type="button" data-s="${s}" aria-pressed="${s===ed.status}">${A.STATUS[s].rotulo}</button>`).join("");
   $("dStatus").querySelectorAll("button").forEach(b=>b.onclick=()=>{ed.status=b.dataset.s;$("dStatus").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));avisos()});
@@ -803,12 +804,30 @@ $("btnSalvar").onclick=async()=>{
   if(f.status==="finalizado"&&A.pendencias(f).includes("certificado")){toast("Não dá para finalizar com item sem certificado obrigatório. Use Certificado pendente.",true);return}
   if(f.status==="finalizado"&&A.pendencias(f).includes("validar certificado")){toast("Valide os certificados (coluna Certificado) antes de finalizar.",true);return}
   if(f.status==="finalizado"&&A.conf(f).situacao!=="aprovada"){toast("Aprove a conferência antes de finalizar.",true);return}
+  /* número da ficha editável: confere se o número novo está livre no mesmo contrato */
+  const nNovo=parseInt($("dNumero").value,10),nVelho=ed.numero;let troca=null,lacunaOcupando=null;
+  if($("dNumero").value.trim()&&nNovo!==+nVelho){
+    if(!(nNovo>0)){toast("Informe um número de ficha válido.",true);$("dNumero").focus();return}
+    const ctr=A.ctrDe(ed),outra=todas.find(x=>x.id!==ed.id&&A.ctrDe(x)===ctr&&+x.numero===nNovo);
+    if(outra&&outra.lacuna)lacunaOcupando=outra;
+    else if(outra){
+      const desc=outra.tipo==="ROM"?"romaneio "+(outra.romaneio||"-"):"NF "+(outra.nf||"-")+" · "+(outra.fornecedor||"");
+      if(!confirm(`O Nº ${nNovo} já é da ficha (${desc}).\n\nTrocar os números? Essa ficha passa a ser o Nº ${nVelho||"(sem número)"} e esta passa a ser o Nº ${nNovo}.`)){$("dNumero").value=nVelho||"";return}
+      troca=outra;
+    }
+    f.numero=nNovo;
+  }
   const orig=fichas.find(x=>x.id===f.id),oi=orig?.itens||[];let g=f;
+  if(f.numero!==nVelho)g=A.registrar(g,"numero_alterado",{por:"Qualidade",de:nVelho,para:f.numero});
   const vinc=edItens.map((it,n)=>it.certificado&&it.certificado!==oi[n]?.certificado?n+1:0).filter(Boolean);
   const vali=edItens.map((it,n)=>it.certValidado&&!oi[n]?.certValidado?n+1:0).filter(Boolean);
   if(vinc.length)g=A.registrar(g,"cert_vinculado",{por:"Qualidade",itensTxt:vinc.join(", ")});
   if(vali.length)g=A.registrar(g,"cert_validado",{por:"Qualidade",itensTxt:vali.join(", ")});
-  try{await A.store.salvar(g);toast("Ficha "+f.numero+" salva");fechar()}catch(e){toast(e.message||"Não foi possível salvar.",true)}
+  try{
+    if(lacunaOcupando)await A.store.excluir(lacunaOcupando.id);
+    if(troca){await A.store.salvar(A.registrar({...troca,numero:nVelho||null},"numero_alterado",{por:"Qualidade",de:troca.numero,para:nVelho}))}
+    await A.store.salvar(g);toast(f.numero!==nVelho?`Ficha salva com o Nº ${f.numero}${troca?" (a outra ficha ficou com o Nº "+nVelho+")":""}`:"Ficha "+f.numero+" salva");fechar()
+  }catch(e){toast(e.message||"Não foi possível salvar.",true)}
 };
 /* cobrança de certificados (ponto 5) */
 let cobEmail=null;
@@ -882,7 +901,7 @@ $("lbClose").onclick=()=>$("lb").hidden=true;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("lb").hidden){$("lb").hidden=true;e.stopImmediatePropagation()}},true);
 
 /* conferência */
-const ACOES={enviada:"Enviada pelo campo",reenviada:"Reenviada corrigida pelo campo",aprovada:"Conferência aprovada",devolvida:"Devolvida ao campo como inconforme",anexos:"Documentos anexados",cert_vinculado:"Certificado vinculado",cert_validado:"Certificado validado",cert_nao_recebido:"Sem certificado (informado pelo campo)",cert_recebido:"Certificado recebido (anexado depois)",dilig_completado:"Completada com o Diligenciamento",email:"Cobrança de certificado enviada"};
+const ACOES={numero_alterado:"Número da ficha alterado",enviada:"Enviada pelo campo",reenviada:"Reenviada corrigida pelo campo",aprovada:"Conferência aprovada",devolvida:"Devolvida ao campo como inconforme",anexos:"Documentos anexados",cert_vinculado:"Certificado vinculado",cert_validado:"Certificado validado",cert_nao_recebido:"Sem certificado (informado pelo campo)",cert_recebido:"Certificado recebido (anexado depois)",dilig_completado:"Completada com o Diligenciamento",email:"Cobrança de certificado enviada"};
 function renderConf(){
   const c=A.conf(ed);
   $("dConf").className="pill "+(c.situacao==="aprovada"?"finalizado":c.situacao==="devolvida"?"bad":"em_andamento");
@@ -891,7 +910,7 @@ function renderConf(){
   $("dDevolInfo").hidden=c.situacao!=="devolvida";
   if(c.situacao==="devolvida")$("dDevolInfo").innerHTML=`<strong>Aguardando correção do campo.</strong> ${(c.motivos||[]).map(m=>esc(A.MOTIVOS[m]||m)).join(" · ")}${(c.itens||[]).length?` · itens ${c.itens.map(i=>i+1).join(", ")}`:""}${c.comentario?`<br>“${esc(c.comentario)}”`:""}`;
   const h=(c.historico||[]).slice().reverse();
-  $("dHist").innerHTML=h.length?h.map(ev=>`<li><span class="when">${A.fmtData(ev.em)}</span><span><strong>${ACOES[ev.acao]||ev.acao}</strong>${ev.por?" · "+esc(ev.por):""}${ev.motivos&&ev.motivos.length?"<br>"+ev.motivos.map(m=>esc(A.MOTIVOS[m]||m)).join(" · "):""}${ev.comentario?"<br>“"+esc(ev.comentario)+"”":""}${ev.itensTxt?"<br>Itens "+esc(ev.itensTxt):""}${ev.acao==="email"?`<br>${ev.qtd} item(ns) · ${ev.para} destinatário(s)`:""}${ev.acao==="anexos"?`<br>${esc(ev.txt||"")}`:""}</span></li>`).join(""):'<li class="hint">Sem registros.</li>';
+  $("dHist").innerHTML=h.length?h.map(ev=>`<li><span class="when">${A.fmtData(ev.em)}</span><span><strong>${ACOES[ev.acao]||ev.acao}</strong>${ev.por?" · "+esc(ev.por):""}${ev.motivos&&ev.motivos.length?"<br>"+ev.motivos.map(m=>esc(A.MOTIVOS[m]||m)).join(" · "):""}${ev.comentario?"<br>“"+esc(ev.comentario)+"”":""}${ev.itensTxt?"<br>Itens "+esc(ev.itensTxt):""}${ev.acao==="email"?`<br>${ev.qtd} item(ns) · ${ev.para} destinatário(s)`:""}${ev.acao==="anexos"?`<br>${esc(ev.txt||"")}`:""}${ev.acao==="numero_alterado"?`<br>Nº ${esc(ev.de??"-")} → Nº ${esc(ev.para??"-")}`:""}</span></li>`).join(""):'<li class="hint">Sem registros.</li>';
 }
 $("btnAprovar").onclick=async()=>{
   const f=A.marcarConferencia(coletar(),"aprovada",{por:"Qualidade"});
