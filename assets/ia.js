@@ -57,7 +57,8 @@ Se não conseguir ler nenhum certificado, responda {"certificados":[]}.`;
   function traduzErro(e) {
     const m = String((e && (e.message || e.code)) || e);
     const x = new Error("Não consegui ler o certificado agora. Marque os itens manualmente.");
-    if (/not been used|disabled|PERMISSION_DENIED|403|API has not|firebasevertexai|AI Logic|enable/i.test(m)) { x.code = "ia_desligada"; x.message = "A leitura automática ainda não está ativada no Firebase (AI Logic). Marque os itens manualmente por enquanto."; }
+    if (/App Check/i.test(m)) { x.code = "ia_appcheck"; x.message = "A leitura automática está bloqueada pelo App Check do Firebase (precisa desligar a exigência do App Check para o AI Logic). Marque os itens manualmente por enquanto."; }
+    else if (/not been used|disabled|PERMISSION_DENIED|403|API has not|firebasevertexai|AI Logic|enable/i.test(m)) { x.code = "ia_desligada"; x.message = "A leitura automática ainda não está ativada no Firebase (AI Logic). Marque os itens manualmente por enquanto."; }
     else if (/quota|RESOURCE_EXHAUSTED|429/i.test(m)) { x.code = "ia_cota"; x.message = "A cota gratuita de leitura automática do dia acabou. Marque os itens manualmente."; }
     else if (/network|Failed to fetch|offline/i.test(m) || !navigator.onLine) { x.code = "ia_offline"; x.message = "Sem internet para a leitura automática. Marque os itens manualmente ou tente de novo com sinal."; }
     x.original = m;
