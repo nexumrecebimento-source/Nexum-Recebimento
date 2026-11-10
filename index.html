@@ -87,6 +87,11 @@ table.its .del{background:none;border:0;color:var(--bad);cursor:pointer;font-siz
 .viewer .none{color:var(--muted);font-size:.85rem;padding:30px 16px;text-align:center}
 .vtabs{display:flex;gap:6px;flex-wrap:wrap}
 .vthumbs{display:flex;gap:6px;overflow-x:auto}
+.numed{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:3px 8px;margin:-3px 4px -3px -8px;border-radius:6px;font:inherit;font-weight:700;color:inherit;border:1px dashed transparent}
+.numed svg{width:13px;height:13px;fill:none;stroke:var(--accent);stroke-width:2;opacity:.55}
+.numed:hover,.numed:focus-visible{border-color:var(--accent);background:var(--accent-soft,#e8f1ff)}.numed:hover svg{opacity:1}
+body.ro .numed svg,body.ro .so-adm{display:none}body.ro .numed{cursor:pointer;border:0;background:none}
+.numinp{width:84px;padding:4px 6px;font:inherit;font-weight:700;border:1.5px solid var(--accent);border-radius:6px}
 .vacts{display:flex;gap:8px;flex-wrap:wrap}.vacts .btn{flex:1;min-width:150px}
 .vacts .del{color:var(--bad);border-color:var(--bad)}
 body.ro #vActs{display:none!important}
@@ -613,7 +618,35 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>show(t.dataset.v));
 
 function docTxt(f){return f.tipo==="ROM"?"Romaneio "+(f.romaneio||"—"):"NF "+(f.nf||"—")+" · "+(f.fornecedor||"—")}
 function card(f){return NXUI.fichaCard(A,f,{mostrarConferencia:true})}
-function bind(root){root.querySelectorAll("[data-id]").forEach(c=>c.onclick=()=>abrir(fichas.find(f=>f.id===c.dataset.id)))}
+function bind(root){root.querySelectorAll("[data-id]").forEach(c=>c.onclick=()=>abrir(fichas.find(f=>f.id===c.dataset.id)));
+  root.querySelectorAll("[data-num]").forEach(b=>b.onclick=e=>{e.stopPropagation();if(document.body.classList.contains("ro"))return abrir(fichas.find(f=>f.id===b.dataset.num));editarNumero(b)})}
+/* número da ficha editável direto na lista: clique no número, digite e Enter */
+function editarNumero(b){
+  const f=todas.find(x=>x.id===b.dataset.num);if(!f)return;
+  const inp=document.createElement("input");inp.type="number";inp.min="1";inp.value=f.numero||"";inp.className="numinp";inp.setAttribute("aria-label","Novo número da ficha");
+  b.replaceWith(inp);inp.focus();inp.select();let feito=false;
+  const fim=async ok=>{if(feito)return;feito=true;const n=parseInt(inp.value,10);
+    if(!ok||!(n>0)||n===+f.numero){renderLista();return}
+    const r=await renumerar(f,n);if(!r)renderLista()};
+  inp.onclick=e=>e.stopPropagation();
+  inp.onkeydown=e=>{if(e.key==="Enter")fim(true);if(e.key==="Escape")fim(false)};
+  inp.onblur=()=>fim(true);
+}
+async function renumerar(f,nNovo){
+  const nVelho=f.numero,ctr=A.ctrDe(f),outra=todas.find(x=>x.id!==f.id&&A.ctrDe(x)===ctr&&+x.numero===nNovo);
+  let troca=null;
+  if(outra&&!outra.lacuna){
+    const desc=outra.tipo==="ROM"?"romaneio "+(outra.romaneio||"-"):"NF "+(outra.nf||"-")+" · "+(outra.fornecedor||"");
+    if(!confirm(`O Nº ${nNovo} já é da ficha (${desc}).\n\nTrocar os números? Essa ficha passa a ser o Nº ${nVelho||"(sem número)"} e esta passa a ser o Nº ${nNovo}.`))return false;
+    troca=outra;
+  }
+  try{
+    if(outra&&outra.lacuna)await A.store.excluir(outra.id);
+    if(troca)await A.store.salvar(A.registrar({...troca,numero:nVelho||null},"numero_alterado",{por:"Qualidade",de:troca.numero,para:nVelho}));
+    await A.store.salvar(A.registrar({...f,numero:nNovo},"numero_alterado",{por:"Qualidade",de:nVelho,para:nNovo}));
+    toast(`Ficha Nº ${nVelho} agora é Nº ${nNovo}${troca?" (a outra ficha ficou com o Nº "+nVelho+")":""}`);return true;
+  }catch(e){toast(e.message||"Não foi possível alterar o número.",true);return false}
+}
 
 /* painel / dashboard */
 let periodo="90";try{periodo=localStorage.getItem("nx_periodo")||"90"}catch(e){}
@@ -667,14 +700,14 @@ function renderLista(){
     .sort((a,b)=>b.numero-a.numero);
   const total=l.length;l.splice(lim.lista);
   const I=NXUI.icon;
-  $("lista").innerHTML=`<thead><tr><th>Ficha</th><th>Tipo</th><th>Documento</th><th>Fornecedor</th><th>Recebimento</th><th>Itens</th><th>Pendências</th><th>Status</th></tr></thead><tbody>${l.length?l.map(f=>{
+  $("lista").innerHTML=`<thead><tr><th>Ficha <span class="so-adm" style="font-weight:500;text-transform:none;letter-spacing:0;opacity:.75">· clique no nº para alterar</span></th><th>Tipo</th><th>Documento</th><th>Fornecedor</th><th>Recebimento</th><th>Itens</th><th>Pendências</th><th>Status</th></tr></thead><tbody>${l.length?l.map(f=>{
     const p=A.pendencias(f),c=A.conf(f),al=[];
     if(c.situacao==="devolvida")al.push(`<span style="color:var(--bad)">${I("undo")}Devolvida</span>`);
     else if(f.status!=="sem_acao"&&f.status!=="finalizado"&&c.situacao==="pendente")al.push(`<span style="color:var(--wait)">${I("eye")}A conferir</span>`);
     if(f.status!=="finalizado"&&p.includes("certificado"))al.push(`<span style="color:var(--warn)">${I("cert")}${A.semCertificado(f).length} sem cert.</span>`);
     if(p.includes("validar certificado"))al.push(`<span style="color:var(--wait)">${I("check")}Validar cert.</span>`);
     if(p.includes("não conformidade"))al.push(`<span style="color:var(--bad)">${I("alert")}NC</span>`);
-    return `<tr data-id="${f.id}"><td class="n">${f.numero}${f.exemplo?' <span class="ex">exemplo</span>':""}</td><td><span class="pill ${f.tipo}">${f.tipo==="ROM"?"ROMANEIO":"NF"}</span></td><td>${esc(f.tipo==="ROM"?f.romaneio:f.nf)}</td><td>${esc(f.tipo==="ROM"?"Anglo American":f.fornecedor)}</td><td class="s">${A.fmtData(f.dataRecebimento)}</td><td>${A.itensValidos(f).length}</td><td><div class="al">${al.join("")||'<span class="s">—</span>'}</div></td><td><span class="pill ${f.status}">${A.STATUS[f.status].rotulo}</span></td></tr>`}).join(""):`<tr><td colspan="8" style="padding:28px;text-align:center;color:var(--muted)">Nenhuma ficha encontrada. Ajuste a busca ou os filtros.</td></tr>`}</tbody>`;
+    return `<tr data-id="${f.id}"><td class="n"><button type="button" class="numed" data-num="${f.id}" title="Clique para alterar o número da ficha">${f.numero??"—"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>${f.exemplo?' <span class="ex">exemplo</span>':""}</td><td><span class="pill ${f.tipo}">${f.tipo==="ROM"?"ROMANEIO":"NF"}</span></td><td>${esc(f.tipo==="ROM"?f.romaneio:f.nf)}</td><td>${esc(f.tipo==="ROM"?"Anglo American":f.fornecedor)}</td><td class="s">${A.fmtData(f.dataRecebimento)}</td><td>${A.itensValidos(f).length}</td><td><div class="al">${al.join("")||'<span class="s">—</span>'}</div></td><td><span class="pill ${f.status}">${A.STATUS[f.status].rotulo}</span></td></tr>`}).join(""):`<tr><td colspan="8" style="padding:28px;text-align:center;color:var(--muted)">Nenhuma ficha encontrada. Ajuste a busca ou os filtros.</td></tr>`}</tbody>`;
   bind($("lista"));maisBtn("listaMais",total,"lista",renderLista);
 }
 $("q").oninput=renderLista;$("fTipo").onchange=renderLista;
