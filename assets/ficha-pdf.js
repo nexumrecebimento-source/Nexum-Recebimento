@@ -7,9 +7,9 @@
   const CW = W - 2 * M;                        /* largura útil */
   /* Colunas na mesma proporção da planilha (B..Q, com C:E e O:P mescladas) */
   const COLS = [
-    ["ITEM", 6.6, "c"], ["DESCRIÇÃO", 84, "l"], ["TAG", 16.6, "c"], ["NOTA FISCAL", 13.3, "c"], ["ROMANEIO", 13.6, "c"],
+    ["ITEM", 6.6, "c"], ["DESCRIÇÃO", 79, "l"], ["TAG", 16.6, "c"], ["NOTA FISCAL", 13.3, "c"], ["ROMANEIO", 13.6, "c"],
     ["CERTIFICADO", 15.6, "c"], ["UND", 8.4, "c"], ["QTD.\nRECEBIDA", 12.4, "c"], ["DATA\nRECEBIMENTO", 15.6, "c"],
-    ["FORNECIMENTO", 18.4, "c"], ["FORNECEDOR", 18.6, "c"], ["LOCALIZAÇÃO/\nARMAZENAMENTO", 28.6, "c"], ["STATUS", 12.6, "c"]
+    ["FORNECIMENTO", 18.4, "c"], ["FORNECEDOR", 26, "c"], ["LOCALIZAÇÃO/\nARMAZENAMENTO", 26.2, "c"], ["STATUS", 12.6, "c"]
   ];
   const soma = COLS.reduce((s, c) => s + c[1], 0);
   const LARG = COLS.map(c => c[1] * CW / soma);
@@ -47,7 +47,9 @@
   /* Rótulo + valor; se o valor estiver vazio, anula o espaço depois do rótulo */
   function campo(doc, rotulo, valor, x, y, w, h, fs) {
     const v = String(valor ?? "").trim();
-    const lw = texto(doc, rotulo + (v ? " " + v : ""), x, y, w, h, { fs: fs || FS.campo, b: true });
+    const t = rotulo + (v ? " " + v : ""), f0 = fs || FS.campo;
+    const fsC = [f0, f0 - 0.5, f0 - 1].find(z => cabe(doc, t, w, h, z, true, 1.2)) || f0 - 1;
+    const lw = texto(doc, t, x, y, w, h, { fs: fsC, b: true });
   }
   const caixa = (doc, x, y, w, h, fill) => { if (fill) { doc.setFillColor(fill); doc.rect(x, y, w, h, "FD"); } else doc.rect(x, y, w, h); };
 
@@ -84,7 +86,7 @@
     texto(doc, "FICHA DE INSPEÇÃO E RECEBIMENTO DE MATERIAIS", xT, y, wT, hCab, { al: "c", fs: FS.titulo, b: true });
     y += hCab;
     /* Linhas 5-7: B:D | E:M | N:Q  e  Escopo B:L | Projeto M:O | Folha P:Q */
-    const r1 = 6, r2 = 8, r3 = 6.5;
+    const r1 = 6, r2 = 10, r3 = 6.5;
     const [xA, wA] = span("B", "D"), [xB, wB] = span("E", "M"), [xC, wC] = span("N", "Q");
     caixa(doc, xA, y, wA, r1); caixa(doc, xB, y, wB, r1); caixa(doc, xC, y, wC, r1);
     campo(doc, "CONTRATO Nº:", cfg.ctr ? cfg.ctr.numero || "" : A.CONTRATO, xA, y, wA, r1);
@@ -124,7 +126,9 @@
           if (v) {
             const destaque = (i === 5 && /^PENDENTE/.test(v)) || (i === 12 && v === "NC");
             if (destaque) doc.setTextColor(178, 58, 46);
-            texto(doc, v, x, y, LARG[i], hLin, { fs: fsTab, al: c[2], pad: pads[i] });
+            /* nome que não cabe no tamanho padrão: só essa célula usa uma letra um pouco menor, em vez de cortar */
+            const fsC = [fsTab, fsTab - 0.5, fsTab - 1, 4.4].find(z => cabe(doc, v, LARG[i], hLin, z, false, pads[i])) || 4.4;
+            texto(doc, v, x, y, LARG[i], hLin, { fs: fsC, al: c[2], pad: pads[i] });
             if (destaque) doc.setTextColor(0);
           }
         }
@@ -136,7 +140,7 @@
     /* linhas sem item: um único traço diagonal, do canto superior esquerdo ao inferior direito do espaço em branco */
     if (linhas.length < ITENS_POR_FOLHA) { doc.setLineWidth(0.3); doc.line(M, yVazio, M + CW, y); doc.setLineWidth(0.25); }
     /* Observação */
-    const hObs = 14;
+    const hObs = 12;
     caixa(doc, M, y, CW, hObs);
     texto(doc, "Observação:", M, y, CW, 5, { fs: FS.campo, b: true, top: true });
     const obs = observacao(A, f);

@@ -61,6 +61,13 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
 .confnf button{margin-left:auto;border:1px solid currentColor;background:transparent;color:inherit;border-radius:5px;padding:5px 9px;font:600 .78rem var(--f-body);cursor:pointer}
 .cs-sit{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:700;background:var(--bg);color:var(--muted);border:1px solid var(--line);text-transform:none;letter-spacing:0}
 .cs-sit.ok{color:var(--ok);border-color:var(--ok)}.cs-sit.pend{color:var(--warn);border-color:var(--warn);background:var(--warn-bg)}
+.dtrec{display:grid;gap:8px;border:1.5px solid var(--accent);border-radius:10px;padding:12px;background:var(--surface);margin-bottom:12px}
+.dtrec label{font-weight:700;font-size:.95rem}.dtrec small{font-size:.78rem;color:var(--muted)}
+.dtrec.falta{border-color:var(--bad);background:var(--bad-bg,#fdecea)}.dtrec.falta small{color:var(--bad);font-weight:600}
+.dt-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.dt-btns button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:9px 14px;font:600 .86rem inherit;color:var(--ink);cursor:pointer}
+.dt-btns button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.dt-btns input{flex:1;min-width:140px}
 .pcbox{display:grid;gap:8px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);margin:10px 0}
 .cg{display:grid;gap:10px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px;background:var(--surface);margin-bottom:12px}
 .cg-h{display:grid;gap:3px}.cg-h b{font-size:.98rem}.cg-h span{font-size:.8rem;color:var(--muted)}
@@ -257,6 +264,11 @@ header.top{border-bottom:0!important;box-shadow:none!important}
     <form id="form" novalidate>
       <div class="block">
         <h3><span class="n">1</span><span id="tDoc">Nota fiscal</span></h3>
+        <div class="dtrec" id="dtRec">
+          <label for="data">Quando o material chegou na obra?</label>
+          <div class="dt-btns"><button type="button" data-dt="0">Hoje</button><button type="button" data-dt="1">Ontem</button><button type="button" data-dt="2">Anteontem</button><input id="data" type="date" aria-label="Data de recebimento"></div>
+          <small id="dtInfo">É esta data que vai para a ficha e para os relatórios, e não o dia do lançamento.</small>
+        </div>
         <div class="seg" id="segTipo"></div>
         <div class="shot">
           <button class="btn scanbtn" type="button" id="btnScanDoc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg><span id="scanDocTxt">Escanear código de barras da NF</span></button>
@@ -284,7 +296,6 @@ header.top{border-bottom:0!important;box-shadow:none!important}
           <div class="f" data-tipo="NF"><label for="fornecedor">Fornecedor</label><input id="fornecedor" autocomplete="off" list="listaForn"></div>
           <div class="f" data-tipo="NF"><label for="romaneio">Romaneio (PC-REV)</label><input id="romaneio" placeholder="Ex.: 4166-REV-00" autocomplete="off"></div>
           <div class="f full" data-tipo="ROM"><label for="romaneioA">Nº da RM (Romaneio de Materiais)</label><input id="romaneioA" placeholder="Digite a RM: os itens são carregados sozinhos" autocomplete="off"></div>
-          <div class="f"><label for="data">Data de recebimento</label><input id="data" type="date"></div>
         </div>
         <datalist id="listaForn"></datalist>
         <div class="notice bad dup" id="dupMsg" hidden></div>
@@ -489,6 +500,14 @@ function setTipo(t){
 $("segTipo").innerHTML=`<button type="button" data-t="NF">Nota fiscal (Milplan)</button><button type="button" data-t="ROM">Romaneio Anglo</button>`;
 $("segTipo").querySelectorAll("button").forEach(b=>b.onclick=()=>setTipo(b.dataset.t));
 
+/* data de recebimento: sem valor automático; o inspetor escolhe (Hoje / Ontem / outra) */
+const diaMenos=n=>{const d=new Date();d.setDate(d.getDate()-n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+function marcarData(){const v=$("data").value;$("data").max=A.hoje();
+  document.querySelectorAll("[data-dt]").forEach(b=>b.setAttribute("aria-pressed",String(v===diaMenos(+b.dataset.dt))));
+  if(v){$("dtRec").classList.remove("falta");$("dtInfo").textContent=v===A.hoje()?"Recebido hoje. É esta data que vai para a ficha e para os relatórios.":"Recebido em "+A.fmtData(v)+". É esta data que vai para a ficha e para os relatórios, e não o dia do lançamento."}
+  else $("dtInfo").textContent="É esta data que vai para a ficha e para os relatórios, e não o dia do lançamento."}
+document.querySelectorAll("[data-dt]").forEach(b=>b.onclick=()=>{$("data").value=diaMenos(+b.dataset.dt);marcarData()});
+$("data").addEventListener("change",marcarData);
 function novoItem(){return{descricao:"",tag:"",und:tipo==="ROM"?"PÇ":"UND",qtd:"",certificado:"",local:$("localPadrao").value.trim().toUpperCase(),conf:"C"}}
 function localLembrado(){try{return localStorage.getItem("amr_local_padrao")||""}catch(e){return""}}
 function lembrarLocal(v){try{if(v)localStorage.setItem("amr_local_padrao",v)}catch(e){}}
@@ -496,14 +515,14 @@ function abrirNovo(t){
   editando=null;setChave(null);resetDilig();if(window.resetLM)resetLM();$("segTipo").hidden=false;$("devolMsg").hidden=true;$("btnChegada").hidden=false;$("btnEnviar").textContent="Enviar recebimento";
   itens=[novoItem()]; fotosDoc=[]; fotosPC=[]; fotosCert=[]; cgFotos=[]; cgCerts=[]; cgEstado=null;
   ["nf","fornecedor","romaneio","romaneioA","obs","localPadrao"].forEach(id=>$(id).value="");
-  $("data").value=A.hoje();$("localPadrao").value=localLembrado();
+  $("data").value="";marcarData();$("localPadrao").value=localLembrado();
   setTipo(t); itens=[novoItem()]; renderItens(); renderThumbs(); show("lancar");
 }
 function abrirEdicao(f){
   editando=f;const c=A.conf(f);resetDilig();setChave(f.chaveNFe?A.lerChaveNFe(f.chaveNFe):null);
   setTipo(f.tipo);$("segTipo").hidden=true;
   $("nf").value=f.nf||"";$("fornecedor").value=f.fornecedor||"";$("romaneio").value=f.tipo==="NF"?(f.romaneio||""):"";$("romaneioA").value=f.tipo==="ROM"?(f.romaneio||""):"";
-  $("data").value=f.dataRecebimento||A.hoje();$("localPadrao").value="";
+  $("data").value=f.dataRecebimento||"";marcarData();$("localPadrao").value="";
   $("obs").value=(f.observacao||"").replace(A.OBS_ANGLO,"").trim();
   itens=JSON.parse(JSON.stringify(f.itens||[]));if(!itens.length)itens=[novoItem()];
   fotosDoc=(f.anexos?.doc||[]).filter(a=>!a.pc);fotosPC=(f.anexos?.doc||[]).filter(a=>a.pc);fotosCert=[];
@@ -951,6 +970,8 @@ function checarDup(){
 async function enviar(status){
   if(checarDup()){toast(tipo==="ROM"?"Romaneio já realizado recebimento":"NF já realizada recebimento",true);$("dupMsg").scrollIntoView({behavior:"smooth",block:"center"});return}
   const f=montar();
+  if(!f.dataRecebimento){$("dtRec").classList.add("falta");$("dtInfo").textContent="Informe quando o material chegou: toque em Hoje, Ontem ou escolha a data.";toast("Informe a data em que o material chegou.",true);$("dtRec").scrollIntoView({behavior:"smooth",block:"center"});return}
+  if(f.dataRecebimento>A.hoje()){toast("A data de recebimento não pode ser no futuro.",true);$("data").focus();return}
   if(tipo==="NF"&&(!f.nf||!f.fornecedor)){toast("Informe o nº da NF e o fornecedor.",true);$(f.nf?"fornecedor":"nf").focus();return}
   if(tipo==="ROM"&&!f.romaneio){toast("Informe o nº do romaneio.",true);$("romaneioA").focus();return}
   if(status==="em_andamento"&&!A.itensValidos(f).length){toast("Adicione pelo menos um item com descrição.",true);return}
