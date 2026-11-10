@@ -902,11 +902,12 @@ $("btnDl").onclick=()=>buscarDilig(false);
 /* ===== Romaneio: Lista de materiais ===== */
 const LM=window.NXLM;let lmSel=new Map();
 function lmStatus(html,cls){$("lm").innerHTML=`<div class="dl-st ${cls||""}"><span>${html}</span></div>`}
-function lmInfoTxt(i){return `${esc(i.nome)} · ${i.total.toLocaleString("pt-BR")} itens${i.temRomaneio?"":" · sem coluna de romaneio"}`}
+function lmInfoTxt(i){return `${esc(i.nome)} · ${i.total.toLocaleString("pt-BR")} itens`}
 function resetLM(){
   if(!LM){$("lmBlock").hidden=true;return}
   const i=LM.info();lmSel=new Map();$("lmRes").innerHTML="";$("lmBusca").value="";
   $("lmBuscaF").hidden=!i;$("btnLm").hidden=!(i&&i.temRomaneio);$("lblLmArq").textContent=i?"Trocar Lista de materiais":"Carregar Lista de materiais";
+  if(i&&i.antiga){lmStatus(`A busca pela RM foi melhorada. Toque em <b>Trocar Lista de materiais</b> e escolha a planilha <b>${esc(i.nome)}</b> de novo, uma única vez.`,"warn");return}
   lmStatus(i?`✓ Lista carregada (${lmInfoTxt(i)}). ${i.temRomaneio?"Digite o nº da RM acima: todos os itens dela são carregados automaticamente. Se precisar, busque":"Esta planilha não tem coluna de RM. Busque"} o item pela TAG ou descrição.`:"Carregue a planilha <b>Lista de materiais</b> (com a coluna da RM) uma vez. Ela fica guardada no celular e, ao digitar a RM, os itens são carregados sozinhos.",i?"ok":"");
 }
 function lmLinha(x,k){return `<label class="dl-it"><input type="checkbox" data-lm="${k}" ${lmSel.has(k)?"checked":""}><span class="d">${esc(x.descricao||"(sem descrição)")}</span><span class="m">${x.tag?`<span><b>${esc(x.tag)}</b></span>`:""}${x.qtd?`<span>Qtd: <b>${esc(x.qtd)} ${esc(x.und)}</b></span>`:""}${x.romaneio?`<span>Romaneio ${esc(x.romaneio)}</span>`:""}${x.volume?`<span>Vol. ${esc(x.volume)}</span>`:""}</span></label>`}
@@ -928,7 +929,7 @@ function lmRomaneio(auto){
   if(!LM||!LM.info())return;const rom=$("romaneioA").value.trim();
   if(!rom){if(!auto){toast("Informe o nº do romaneio.",true);$("romaneioA").focus()}return}
   const l=LM.doRomaneio(rom);
-  if(!l.length){if(!auto||rom.length>=4)lmStatus(`RM ${esc(rom)} não encontrada na lista (${lmInfoTxt(LM.info())}). Busque os itens pela TAG ou descrição.`,"warn");return}
+  if(!l.length){const inf=LM.info();if(!auto||rom.length>=4)lmStatus(inf.antiga?`Toque em <b>Trocar Lista de materiais</b> e escolha a planilha de novo para buscar pela RM.`:`RM ${esc(rom)} não encontrada em nenhuma coluna da lista (${lmInfoTxt(inf)}). Confira o número ou busque pela TAG/descrição.${inf.cabecalho.length?`<br><small>Colunas lidas: ${esc(inf.cabecalho.join(" · "))}</small>`:""}`,"warn");return}
   /* RM encontrada: carrega todos os itens direto no formulário (o inspetor só confere a quantidade entregue) */
   const ja=new Set(itens.map(x=>A.norm(x.tag)+"|"+A.norm(x.descricao)));
   const novosL=l.filter(x=>!ja.has(A.norm(x.tag)+"|"+A.norm(x.descricao)));
