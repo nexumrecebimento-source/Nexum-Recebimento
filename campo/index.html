@@ -910,7 +910,7 @@ function resetLM(){
   if(i&&i.antiga){lmStatus(`A busca pela RM foi melhorada. Toque em <b>Trocar Lista de materiais</b> e escolha a planilha <b>${esc(i.nome)}</b> de novo, uma única vez.`,"warn");return}
   lmStatus(i?`✓ Lista carregada (${lmInfoTxt(i)}). ${i.temRomaneio?"Digite o nº da RM acima: todos os itens dela são carregados automaticamente. Se precisar, busque":"Esta planilha não tem coluna de RM. Busque"} o item pela TAG ou descrição.`:"Carregue a planilha <b>Lista de materiais</b> (com a coluna da RM) uma vez. Ela fica guardada no celular e, ao digitar a RM, os itens são carregados sozinhos.",i?"ok":"");
 }
-function lmLinha(x,k){return `<label class="dl-it"><input type="checkbox" data-lm="${k}" ${lmSel.has(k)?"checked":""}><span class="d">${esc(x.descricao||"(sem descrição)")}</span><span class="m">${x.tag?`<span><b>${esc(x.tag)}</b></span>`:""}${x.qtd?`<span>Qtd: <b>${esc(x.qtd)} ${esc(x.und)}</b></span>`:""}${x.romaneio?`<span>Romaneio ${esc(x.romaneio)}</span>`:""}${x.volume?`<span>Vol. ${esc(x.volume)}</span>`:""}</span></label>`}
+function lmLinha(x,k){return `<label class="dl-it"><input type="checkbox" data-lm="${k}" ${lmSel.has(k)?"checked":""}><span class="d">${esc(x.descricao||"(sem descrição)")}</span><span class="m">${x.tag?`<span><b>${esc(x.tag)}</b></span>`:""}${x.qtd?`<span>Qtd: <b>${esc(x.qtd)} ${esc(x.und)}</b></span>`:""}${x.romaneio?`<span>RM ${esc(x.romaneio)}</span>`:""}${x.local?`<span>${esc(x.local)}</span>`:""}${x.volume?`<span>Vol. ${esc(x.volume)}</span>`:""}</span></label>`}
 function lmMostrar(lista,titulo){
   lmSel=new Map();const mapa=new Map(lista.map((x,k)=>[k,x]));
   $("lmRes").innerHTML=lista.length?`<div class="meta" style="font-size:.8rem;color:var(--muted)">${titulo}</div>${lista.map((x,k)=>lmLinha(x,k)).join("")}<button class="btn primary" type="button" id="btnUsarLm">Preencher itens marcados</button>`:"";
@@ -918,7 +918,7 @@ function lmMostrar(lista,titulo){
   const u=$("btnUsarLm");if(u)u.onclick=()=>{
     const sel=[...lmSel.keys()].sort((a,b)=>a-b).map(k=>lmSel.get(k));if(!sel.length){toast("Marque pelo menos um item.",true);return}
     const local=$("localPadrao").value.trim().toUpperCase()||localLembrado();
-    const novos=sel.map(x=>({...novoItem(),descricao:x.descricao,tag:x.tag,und:A.normUnd(x.und)||"PÇ",qtd:x.qtd&&!isNaN(+String(x.qtd).replace(",","."))?String(+String(x.qtd).replace(",",".")):"",local,origem:"lista_materiais"}));
+    const novos=sel.map(x=>({...novoItem(),descricao:x.descricao,tag:x.tag,und:A.normUnd(x.und)||"PÇ",qtd:x.qtd&&!isNaN(+String(x.qtd).replace(",","."))?String(+String(x.qtd).replace(",",".")):"",local:x.local||local,docRef:x.desenho||undefined,origem:"lista_materiais"}));
     itens=itens.every(x=>!x.descricao&&!x.tag)?novos:[...itens,...novos];
     renderItens();checarDup();$("lmRes").innerHTML="";$("lmBusca").value="";
     toast(`${novos.length} ${novos.length===1?"item preenchido":"itens preenchidos"} pela Lista de materiais. Confira a quantidade entregue.`);
