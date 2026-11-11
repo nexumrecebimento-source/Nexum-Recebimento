@@ -526,7 +526,7 @@ document.querySelectorAll("[data-novo]").forEach(b=>b.onclick=()=>abrirNovo(b.da
 $("btnNovoOutro").onclick=()=>abrirNovo(tipo);
 
 function certSecao(it,i){
-  if(it.certDeGeral)return `<div class="certsec ok"><div class="cs-h">Certificado do item ${i+1} <span class="cs-sit ok">Conforme</span></div><div class="cs-geral"><span class="cs-st" style="color:var(--ok)">✓ Certificado ${esc(it.certificado)}<br><small style="color:var(--muted);font-weight:500">pelo certificado da NF (acima)</small></span><button type="button" class="lnk" data-tirageral>Não é este</button></div></div>`;
+  if(it.certDeGeral)return `<div class="certsec ok"><div class="cs-h">Certificado · ${esc(nomeItem(it,i,40))} <span class="cs-sit ok">Conforme</span></div><div class="cs-geral"><span class="cs-st" style="color:var(--ok)">✓ Certificado ${esc(it.certificado)}<br><small style="color:var(--muted);font-weight:500">pelo certificado da NF (acima)</small></span><button type="button" class="lnk" data-tirageral>Não é este</button></div></div>`;
   const cr=A.materialCritico(it.descricao,it.tag),ex=A.exigeCert({tipo},it),fotos=it.certAnexos||[];
   const tem=!!(it.certificado||fotos.length), nr=it.certStatus==="nao_recebido";
   const estado=nr?"nao_recebido":(tem||it.certStatus==="recebido")?"recebido":"";
@@ -535,7 +535,7 @@ function certSecao(it,i){
     :estado==="recebido"?'<span class="cs-st" style="color:var(--warn)">Informe o nº ou anexe a foto do certificado</span>'
     :ex?'<span class="cs-st" style="color:var(--warn)">Anexe o certificado ou marque "Sem certificado"</span>':'<span class="cs-st" style="color:var(--muted)">Não exige certificado</span>';
   return `<div class="certsec ${nr?"nr":tem?"ok":ex?"req":""}">
-      <div class="cs-h">Certificado do item ${i+1} ${!ex?'<span class="cs-sit">N/A – Não aplicável</span>':tem?'<span class="cs-sit ok">Conforme</span>':'<span class="cs-sit pend">Pendente</span>'}</div>
+      <div class="cs-h">Certificado · ${esc(nomeItem(it,i,40))} ${!ex?'<span class="cs-sit">N/A – Não aplicável</span>':tem?'<span class="cs-sit ok">Conforme</span>':'<span class="cs-sit pend">Pendente</span>'}</div>
       <label class="excert"><input type="checkbox" data-ex ${ex?"checked":""} ${nr?"disabled":""}><span>Exige certificado de qualidade${cr?`<br><span style="color:var(--warn);font-size:.78rem;font-weight:600">Material crítico (CMC): ${esc(cr.rotulo)} · CQ ${esc(cr.cq)}</span><br><span style="color:var(--muted);font-size:.76rem">${esc(cr.evidencia||"")}</span>`:""}${!cr&&it.pedidoPedeCertificado?`<br><span style="color:var(--muted);font-size:.78rem">O pedido de compra pede certificado</span>`:""}</span></label>
       <label class="semcert"><input type="checkbox" data-semcert ${nr?"checked":""}><span><b>Sem certificado</b><br><small>Material recebido sem o certificado</small></span></label>
       ${nr?"":`<div class="f"><label>Nº do certificado</label><input data-k="certificado" value="${esc(it.certificado)}" autocomplete="off" placeholder="${ex?"Ex.: 3023651":"Se houver"}"></div>
@@ -552,7 +552,7 @@ function renderItens(){
     const flag=editando&&(A.conf(editando).itens||[]).includes(i);
     return `<div class="item${zero?" zero":""}${flag?" flag":""}" data-i="${i}">
       ${it.pc?`<div class="item-ref">${it.origem==="diligenciamento"?'<span class="dl">Diligenciamento</span>':""}<span>PC ${esc(it.pc)}/${esc(it.itemPc)}</span>${it.qtdPedido!==undefined&&it.qtdPedido!==""?`<span>pedido ${A.fmtQtd(it.qtdPedido)} ${esc(it.undPedido||"")}</span>`:""}${it.undPedido&&A.norm(it.undPedido)!==A.norm(it.und)?'<span class="div">unidade diferente do pedido</span>':""}</div>`:""}
-      <div class="item-head"><b>Item ${i+1}</b>${flag?'<span class="pill bad">Corrigir</span>':""}${zero?'<span class="zero-note">0 entregue · fora da ficha</span>':""}${itens.length>1?`<button type="button" class="x" data-del="${i}">Remover</button>`:""}</div>
+      <div class="item-head"><b title="Item ${i+1}">${esc(nomeItem(it,i,46))}</b>${flag?'<span class="pill bad">Corrigir</span>':""}${zero?'<span class="zero-note">0 entregue · fora da ficha</span>':""}${itens.length>1?`<button type="button" class="x" data-del="${i}">Remover</button>`:""}</div>
       ${it.conferirNF?`<div class="confnf"><span>Quantidade e unidade vieram do <b>pedido</b>. Confira com a NF e ajuste se for diferente.</span><button type="button" data-okNF>Confere com a NF</button></div>`:""}
       <div class="f"><label>Descrição</label><input data-k="descricao" value="${esc(it.descricao)}" autocomplete="off"></div>
       <div class="grid2">
@@ -570,6 +570,7 @@ function renderItens(){
     el.querySelector('[data-k="und"]').value=itens[i].und;
     el.querySelectorAll("[data-k]").forEach(inp=>inp.addEventListener(inp.tagName==="SELECT"?"change":"input",()=>{
       const k=inp.dataset.k; itens[i][k]=k==="qtd"?inp.value:(k==="descricao"||k==="tag"||k==="local"?inp.value.toUpperCase():inp.value);
+      if(k==="descricao"||k==="tag"){const hb=el.querySelector(".item-head b");if(hb)hb.textContent=nomeItem(itens[i],i,46);const ch=el.querySelector(".certsec .cs-h");if(ch&&ch.firstChild)ch.firstChild.textContent="Certificado · "+nomeItem(itens[i],i,40)+" ";clearTimeout(renderCG.t);renderCG.t=setTimeout(renderCG,400)}
       if((k==="descricao"||k==="tag")&&tipo==="NF"){clearTimeout(renderItens.t);renderItens.t=setTimeout(()=>{const lb=el.querySelector(".excert span");const cr=A.materialCritico(itens[i].descricao,itens[i].tag);if(lb)lb.innerHTML="Exige certificado de qualidade"+(cr?`<br><span style="color:var(--warn);font-size:.78rem;font-weight:600">Material crítico (CMC): ${esc(cr.rotulo)} · CQ ${esc(cr.cq)}</span>`:"");const cb=el.querySelector("[data-ex]");if(cb&&typeof itens[i].exigeCertificado!=="boolean")cb.checked=!!cr},400)}
       if(k==="qtd"&&tipo==="ROM"){const z=inp.value!==""&&Number(inp.value)===0;if(z!==el.classList.contains("zero")){const pos=inp.selectionStart;renderItens();const n=$("itens").querySelector(`[data-i="${i}"] [data-k="qtd"]`);n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}}}
     }));
@@ -611,7 +612,9 @@ function thumbs(arr,el){el.innerHTML=arr.map((f,i)=>`<figure>${f.pdf?`<div style
 function renderThumbs(){thumbs(fotosDoc,$("thumbsDoc"));thumbs(fotosPC,$("thumbsPC"))}
 
 /* ===== Certificados da NF: uma foto (ou várias) e a IA preenche todos os itens ===== */
-const itemRot=(it,n)=>`Item ${n+1}${it.descricao?" · "+(it.descricao.length>34?it.descricao.slice(0,32)+"…":it.descricao):""}`;
+/* itens sempre identificados pela descrição (ou TAG); o número só aparece quando não há nada escrito */
+const nomeItem=(it,n,max)=>{const t=String(it.descricao||it.tag||"").trim();return t?(max&&t.length>max?t.slice(0,max-1)+"…":t):"Item "+(n+1)+" (sem descrição)"};
+const itemRot=(it,n)=>nomeItem(it,n,48);
 function aplicarCG(){
   itens.forEach((it,n)=>{
     const cs=cgCerts.filter(c=>c.itens.includes(n)&&(c.numero||"").trim());
@@ -625,7 +628,7 @@ function anexosCG(){
     const its=[...new Set(cs.flatMap(c=>c.itens))].sort((x,y)=>x-y);
     return{...a,geral:true,numero:cs.map(c=>c.numero).filter(Boolean).join(" / "),lote:cs.map(c=>c.lote).filter(Boolean).join(" / "),material:cs.map(c=>c.material).filter(Boolean).join(" / "),
       certs:cs.map(c=>({numero:c.numero,lote:c.lote||"",material:c.material||"",itens:c.itens})),itens:its,item:its.length?its[0]:undefined,
-      nome:`Certificado ${cs.map(c=>c.numero).filter(Boolean).join(" / ")||"da NF"}${its.length?" · itens "+its.map(x=>x+1).join(", "):""}${cgFotos.length>1?" (foto "+(k+1)+")":""}`}});
+      nome:`Certificado ${cs.map(c=>c.numero).filter(Boolean).join(" / ")||"da NF"}${its.length?" · "+its.map(x=>nomeItem(itens[x]||{},x,40)).join("; "):""}${cgFotos.length>1?" (foto "+(k+1)+")":""}`}});
 }
 function cgStatus(tom,html){const e=$("cgSt");cgEstado={tom,html};e.hidden=!html;e.className="cg-st "+(tom||"");e.innerHTML=html||""}
 function renderCG(){
@@ -900,7 +903,7 @@ $("dlArquivo").onchange=async e=>{const f=e.target.files[0];e.target.value="";if
 function montar(){
   const base=editando?JSON.parse(JSON.stringify(editando)):{origem:"campo",assinaturas:{},criadoPor:"Campo"};
   const f={...base,tipo,dataRecebimento:$("data").value,observacao:$("obs").value.trim(),itens:itens.map((x,n)=>{const y={...x,qtd:x.qtd===""?"":Number(x.qtd),temCertAnexo:!!(x.certAnexos||[]).length||(x.certDeGeral&&cgCerts.some(c=>c.itens.includes(n)&&c.imagens.length))};delete y.certAnexos;return y}),
-    anexos:{doc:[...fotosDoc,...(tipo==="NF"?fotosPC.map((a,k)=>({...a,pc:true,nome:"Pedido de compra"+(fotosPC.length>1?" ("+(k+1)+")":"")})):[])],cert:[...itens.flatMap((x,n)=>(x.certAnexos||[]).map((a,k)=>({...a,item:n,nome:`Item ${n+1} · ${x.certificado?"certificado "+x.certificado:"certificado"}${(x.certAnexos||[]).length>1?" ("+(k+1)+")":""}`}))),...anexosCG(),...fotosCert]}};
+    anexos:{doc:[...fotosDoc,...(tipo==="NF"?fotosPC.map((a,k)=>({...a,pc:true,nome:"Pedido de compra"+(fotosPC.length>1?" ("+(k+1)+")":"")})):[])],cert:[...itens.flatMap((x,n)=>(x.certAnexos||[]).map((a,k)=>({...a,item:n,nome:`${x.certificado?"Certificado "+x.certificado:"Certificado"} · ${nomeItem(x,n,60)}${(x.certAnexos||[]).length>1?" ("+(k+1)+")":""}`}))),...anexosCG(),...fotosCert]}};
   if(tipo==="NF"){Object.assign(f,{chaveNFe:chaveNF&&chaveNF.valida&&chaveNF.nf===$("nf").value.trim()?chaveNF.chave:"",serie:chaveNF?.serie||f.serie||"",cnpjFornecedor:chaveNF?.cnpj||f.cnpjFornecedor||"",nf:$("nf").value.trim(),fornecedor:A.norm($("fornecedor").value),romaneio:A.norm($("romaneio").value),fornecimento:"MILPLAN ENGENHARIA"})}
   else{Object.assign(f,{nf:"",romaneio:A.norm($("romaneioA").value),fornecedor:"ANGLO AMERICAN",fornecimento:"ANGLO AMERICAN",observacao:[A.OBS_ANGLO,$("obs").value.trim()].filter(Boolean).join("\n")})}
   return f;
@@ -923,7 +926,7 @@ async function enviar(status){
   if(editando)status=editando.status==="sem_acao"?"em_andamento":(editando.status==="cert_pendente"?"em_andamento":editando.status);
   if(tipo==="NF"&&status==="em_andamento"){
     const indef=f.itens.map((it,n)=>({it,n})).filter(({it})=>(it.descricao||it.tag)&&A.exigeCert(f,it)&&!A.temCert(it)&&it.certStatus!=="nao_recebido");
-    if(indef.length){toast(`Item ${indef.map(x=>x.n+1).join(", ")}: anexe o certificado ou marque "Sem certificado".`,true);$("itens").querySelector(`[data-i="${indef[0].n}"] .certsec`)?.scrollIntoView({behavior:"smooth",block:"center"});return}
+    if(indef.length){toast(`${indef.map(x=>nomeItem(x.it,x.n,30)).join("; ")}: anexe o certificado ou marque "Sem certificado".`,true);$("itens").querySelector(`[data-i="${indef[0].n}"] .certsec`)?.scrollIntoView({behavior:"smooth",block:"center"});return}
   }
   const naoConf=A.itensValidos(f).filter(i=>i.conferirNF).length;
   if(naoConf&&!enviar.avisado){enviar.avisado=true;toast(`${naoConf} item(ns) ainda não conferidos com a NF (quantidade e unidade). Confira ou toque em Enviar de novo.`,true);setTimeout(()=>enviar.avisado=false,8000);return}

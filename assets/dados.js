@@ -253,7 +253,7 @@
     const g = JSON.parse(JSON.stringify(f));
     const it = g.itens[idx]; if (!it) return f;
     if (d.numero) it.certificado = String(d.numero).trim().toUpperCase();
-    const novos = (d.anexos || []).map((a, k) => ({ ...a, item: idx, nome: `Item ${idx + 1} · ${it.certificado ? "certificado " + it.certificado : "certificado"}${(d.anexos || []).length > 1 ? " (" + (k + 1) + ")" : ""}` }));
+    const novos = (d.anexos || []).map((a, k) => ({ ...a, item: idx, nome: `${it.certificado ? "Certificado " + it.certificado : "Certificado"} · ${String(it.descricao || it.tag || "item " + (idx + 1)).slice(0, 60)}${(d.anexos || []).length > 1 ? " (" + (k + 1) + ")" : ""}` }));
     if (novos.length) { it.temCertAnexo = true; g.anexos = g.anexos || {}; g.anexos.cert = [...(g.anexos.cert || []), ...novos]; }
     it.certStatus = "recebido"; it.certValidado = false;
     let h = marcarConferencia(g, "cert_recebido", { por: por || "", itensTxt: String(idx + 1) + (it.certificado ? " (" + it.certificado + ")" : "") });
