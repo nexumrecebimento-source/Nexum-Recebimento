@@ -92,6 +92,7 @@ table.its .del{background:none;border:0;color:var(--bad);cursor:pointer;font-siz
 .numed:hover,.numed:focus-visible{border-color:var(--accent);background:var(--accent-soft,#e8f1ff)}.numed:hover svg{opacity:1}
 body.ro .numed svg,body.ro .so-adm{display:none}body.ro .numed{cursor:pointer;border:0;background:none}
 .numinp{width:84px;padding:4px 6px;font:inherit;font-weight:700;border:1.5px solid var(--accent);border-radius:6px}
+.cob-em{display:flex;gap:6px;flex-wrap:wrap}.cob-em input{flex:1 1 220px;min-width:0;border:1.5px solid var(--warn);border-radius:8px;padding:6px 10px;font:inherit}
 .vacts{display:flex;gap:8px;flex-wrap:wrap}.vacts .btn{flex:1;min-width:150px}
 .vacts .del{color:var(--bad);border-color:var(--bad)}
 body.ro #vActs{display:none!important}
@@ -517,8 +518,8 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
           <div class="f"><span class="lbl">Assunto</span><span id="cobAssunto"></span></div>
           <pre id="cobCorpo"></pre>
           <div class="actions" style="justify-content:flex-start">
-            <button class="btn small" type="button" id="btnCobCopiar">Copiar e-mail</button>
-            <a class="btn small" id="btnCobOutlook" href="#" target="_blank" rel="noopener">Abrir no Outlook</a>
+            <a class="btn small primary" id="btnCobOutlook" href="#">✉ Abrir no Outlook</a>
+            <button class="btn ghost small" type="button" id="btnCobCopiar">Copiar</button>
             <span class="sp"></span>
             <button class="btn primary small" type="button" id="btnCobReg">Registrar envio</button>
           </div>
@@ -899,7 +900,7 @@ $("btnCobVer").onclick=()=>{
   cobEmail=A.montarEmailCobranca(f,pend);
   $("cobPara").textContent=cobEmail.para.join("; ")||"(sem destinatários cadastrados)";
   $("cobAssunto").textContent=cobEmail.assunto;$("cobCorpo").textContent=cobEmail.corpo;
-  $("btnCobOutlook").href="mailto:"+encodeURIComponent(cobEmail.para.join(";")).replace(/%3B/g,";").replace(/%40/g,"@")+"?subject="+encodeURIComponent(cobEmail.assunto)+"&body="+encodeURIComponent(cobEmail.corpo);
+  $("btnCobOutlook").onclick=e=>{e.preventDefault();if(!cobEmail.para.length){toast("Fornecedor sem e-mail no cadastro (aba Cadastros).",true);return}abrirOutlook(cobEmail)};
   $("cobMail").hidden=false;$("cobMail").scrollIntoView({behavior:"smooth",block:"nearest"});
 };
 $("btnCobCopiar").onclick=async()=>{const t=`Para: ${cobEmail.para.join("; ")}\nAssunto: ${cobEmail.assunto}\n\n${cobEmail.corpo}`;
@@ -1070,18 +1071,33 @@ function renderCobGrupos(){
   $("cobGrid").innerHTML=gs.map((g,k)=>{const nf=g.fichas.length;return `<div class="cob${g.maisAntigo>=7?" velho":""}" data-k="${k}">
     <b class="nm">${esc(g.fornecedor)}</b>
     <span class="mt">${g.itens} ${g.itens===1?"item":"itens"} em ${nf} ${nf===1?"NF":"NFs"} (${g.fichas.map(y=>"NF "+esc(y.f.nf)).slice(0,4).join(", ")}${nf>4?"…":""}) · mais antigo há ${g.maisAntigo} ${g.maisAntigo===1?"dia":"dias"}</span>
-    <span class="tg">${g.novos?`<span>${g.novos} ${g.novos===1?"novo":"novos"}</span>`:""}${g.reforco?`<span class="rf">${g.reforco} para reforçar</span>`:""}${g.semEmail?`<span class="se">fornecedor sem e-mail no cadastro</span>`:""}</span>
-    <span class="bt"><a class="btn small primary" data-cob-out href="#" target="_blank" rel="noopener">Abrir no Outlook</a><button class="btn small" type="button" data-cob-cp>Copiar e-mail</button><button class="btn small" type="button" data-cob-reg>Registrar envio</button></span></div>`}).join("");
+    <span class="tg">${g.novos?`<span>${g.novos} ${g.novos===1?"novo":"novos"}</span>`:""}${g.reforco?`<span class="rf">${g.reforco} para reforçar</span>`:""}</span>
+    ${g.semEmail?`<span class="cob-em"><input type="email" data-cob-em placeholder="E-mail do fornecedor (fica salvo no cadastro)" autocomplete="off"><button class="btn small" type="button" data-cob-emsal>Salvar</button></span>`:""}
+    <span class="bt"><button class="btn small primary" type="button" data-cob-out>✉ Abrir no Outlook</button><button class="btn small" type="button" data-cob-reg>Registrar envio</button><button class="btn ghost small" type="button" data-cob-cp title="Copia o e-mail completo">Copiar</button></span></div>`}).join("");
   $("cobGrid").querySelectorAll(".cob").forEach(el=>{const g=gs[+el.dataset.k],m=A.montarEmailCobrancaFornecedor(g);
-    const href="mailto:"+encodeURIComponent(m.para.join(";")).replace(/%3B/g,";").replace(/%40/g,"@")+"?subject="+encodeURIComponent(m.assunto)+"&body="+encodeURIComponent(m.corpo);
-    const out=el.querySelector("[data-cob-out]");out.href=href;
-    out.onclick=e=>{if(href.length>1900){e.preventDefault();copiarCob(m);toast("E-mail grande demais para abrir direto: copiei o texto. Abra um e-mail novo no Outlook e cole (Ctrl+V).")}};
+    el.querySelector("[data-cob-out]").onclick=()=>{
+      if(!m.para.length){toast("Informe o e-mail do fornecedor no campo acima e toque em Salvar.",true);el.querySelector("[data-cob-em]")?.focus();return}
+      abrirOutlook(m);
+      /* o envio é feito pela Thaynara no Outlook; aqui só lembra de registrar */
+      setTimeout(()=>toast("Depois de enviar no Outlook, toque em “Registrar envio”."),1200)};
     el.querySelector("[data-cob-cp]").onclick=()=>copiarCob(m);
+    const es=el.querySelector("[data-cob-emsal]");if(es)es.onclick=async()=>{const em=el.querySelector("[data-cob-em]").value.trim();if(!em)return;
+      const fo=A.cadastros.fornecedorPorNome(g.fornecedor);
+      try{await A.cadastros.salvarFornecedor(fo?{...fo,emails:[...(fo.emails||[]),em]}:{nome:g.fornecedor,emails:[em]});toast("E-mail salvo no cadastro de "+g.fornecedor);renderCobGrupos()}catch(e){toast(e.message,true)}};
     el.querySelector("[data-cob-reg]").onclick=async()=>{
       const muda=m.porFicha.map(p=>{const f=fichas.find(x=>x.id===p.id);if(!f)return null;let h=A.registrarCobranca(f,{para:m.para,assunto:m.assunto,itens:p.itens},"Qualidade");
         if(h.status!=="cert_pendente"&&h.status!=="sem_acao"&&h.status!=="finalizado")h.status="cert_pendente";return h}).filter(Boolean);
       try{await A.store.salvarVarias(muda);toast(`Cobrança à ${g.fornecedor} registrada em ${muda.length} ${muda.length===1?"ficha":"fichas"}`)}catch(e){toast(e.message,true)}};
   });
+}
+/* Abre o e-mail pronto (para, assunto e texto) no Outlook: no aplicativo do computador quando cabe no link
+   (limite do Windows ~2.000 caracteres); se for maior, no Outlook na web da conta Milplan (Microsoft 365). */
+function abrirOutlook(m){
+  const enc=encodeURIComponent,para=m.para.join(";");
+  const mailto="mailto:"+enc(para).replace(/%3B/g,";").replace(/%40/g,"@")+"?subject="+enc(m.assunto)+"&body="+enc(m.corpo);
+  if(mailto.length<=1900){location.href=mailto;return}
+  const web="https://outlook.office.com/mail/deeplink/compose?to="+enc(para)+"&subject="+enc(m.assunto)+"&body="+enc(m.corpo);
+  window.open(web,"_blank","noopener");
 }
 async function copiarCob(m){const t=`Para: ${m.para.join("; ")}\nAssunto: ${m.assunto}\n\n${m.corpo}`;try{await navigator.clipboard.writeText(t);toast("E-mail copiado: cole no Outlook")}catch(e){toast("Não consegui copiar automaticamente.",true)}}
 function renderCerts(){
