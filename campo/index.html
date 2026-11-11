@@ -68,6 +68,7 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
 .dt-btns button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:9px 14px;font:600 .86rem inherit;color:var(--ink);cursor:pointer}
 .dt-btns button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .dt-btns input{flex:1;min-width:140px}
+.rm-hint{display:block;font-size:.78rem;color:var(--muted);margin-top:4px}
 .pcbox{display:grid;gap:8px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);margin:10px 0}
 .cg{display:grid;gap:10px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px;background:var(--surface);margin-bottom:12px}
 .cg-h{display:grid;gap:3px}.cg-h b{font-size:.98rem}.cg-h span{font-size:.8rem;color:var(--muted)}
@@ -295,7 +296,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
           <div class="f" data-tipo="NF"><label for="nf">Nº da NF</label><input id="nf" inputmode="numeric" autocomplete="off"></div>
           <div class="f" data-tipo="NF"><label for="fornecedor">Fornecedor</label><input id="fornecedor" autocomplete="off" list="listaForn"></div>
           <div class="f" data-tipo="NF"><label for="romaneio">Romaneio (PC-REV)</label><input id="romaneio" placeholder="Ex.: 4166-REV-00" autocomplete="off"></div>
-          <div class="f full" data-tipo="ROM"><label for="romaneioA">Nº da RM (Romaneio de Materiais)</label><input id="romaneioA" placeholder="Digite a RM: os itens são carregados sozinhos" autocomplete="off"></div>
+          <div class="f full" data-tipo="ROM"><label for="romaneioA">Nº da RM (Romaneio de Materiais)</label><input id="romaneioA" placeholder="Ex.: 1684-FLT-2026" autocomplete="off"><small class="rm-hint">Os itens desta RM são buscados e preenchidos <b>automaticamente no escritório</b>. Só adicione item abaixo se algo chegou com problema (NC) ou faltando.</small></div>
         </div>
         <datalist id="listaForn"></datalist>
         <div class="notice bad dup" id="dupMsg" hidden></div>
@@ -313,17 +314,6 @@ header.top{border-bottom:0!important;box-shadow:none!important}
         <input id="dlArquivo" type="file" accept=".xlsx,.xls" hidden>
       </div>
 
-      <div class="block" data-tipo="ROM" id="lmBlock">
-        <h3><span class="n">✓</span>Itens da RM</h3>
-        <div class="dl" id="lm"><div class="dl-st">Carregue a planilha Lista de materiais para buscar os itens do romaneio.</div></div>
-        <div class="f" id="lmBuscaF" hidden><label for="lmBusca">Buscar item por TAG ou descrição</label><input id="lmBusca" autocomplete="off" placeholder="Ex.: 1039-PP-001 ou PARAFUSO"></div>
-        <div class="dl-list" id="lmRes"></div>
-        <div class="shot-btns">
-          <button class="btn" type="button" id="btnLm" hidden>Buscar itens da RM</button>
-          <label class="btn ghost" for="lmArquivo" id="lblLmArq">Carregar Lista de materiais</label>
-        </div>
-        <input id="lmArquivo" type="file" accept=".xlsx,.xls,.xlsm,.csv" hidden>
-      </div>
 
       <div class="block">
         <h3><span class="n">2</span>Itens recebidos</h3>
@@ -392,7 +382,6 @@ header.top{border-bottom:0!important;box-shadow:none!important}
 <script src="../assets/vendor/xlsx.mini.min.js"></script>
 <script src="../assets/vendor/msal-browser.min.js"></script>
 <script src="../assets/diligenciamento.js"></script>
-<script src="../assets/listamat.js"></script>
 <script src="../assets/exemplo-docs.js"></script>
 <script src="../assets/dados.js"></script>
 <script src="../assets/vendor/firebase-app-compat.js"></script>
@@ -512,7 +501,7 @@ function novoItem(){return{descricao:"",tag:"",und:tipo==="ROM"?"PÇ":"UND",qtd:
 function localLembrado(){try{return localStorage.getItem("amr_local_padrao")||""}catch(e){return""}}
 function lembrarLocal(v){try{if(v)localStorage.setItem("amr_local_padrao",v)}catch(e){}}
 function abrirNovo(t){
-  editando=null;setChave(null);resetDilig();if(window.resetLM)resetLM();$("segTipo").hidden=false;$("devolMsg").hidden=true;$("btnChegada").hidden=false;$("btnEnviar").textContent="Enviar recebimento";
+  editando=null;setChave(null);resetDilig();$("segTipo").hidden=false;$("devolMsg").hidden=true;$("btnChegada").hidden=false;$("btnEnviar").textContent="Enviar recebimento";
   itens=[novoItem()]; fotosDoc=[]; fotosPC=[]; fotosCert=[]; cgFotos=[]; cgCerts=[]; cgEstado=null;
   ["nf","fornecedor","romaneio","romaneioA","obs","localPadrao"].forEach(id=>$(id).value="");
   $("data").value="";marcarData();$("localPadrao").value=localLembrado();
@@ -899,54 +888,9 @@ function usarDilig(){
   $("itens").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("btnDl").onclick=()=>buscarDilig(false);
-/* ===== Romaneio: Lista de materiais ===== */
-const LM=window.NXLM;let lmSel=new Map();
-function lmStatus(html,cls){$("lm").innerHTML=`<div class="dl-st ${cls||""}"><span>${html}</span></div>`}
-function lmInfoTxt(i){return `${esc(i.nome)} · ${i.total.toLocaleString("pt-BR")} itens`}
-function resetLM(){
-  if(!LM){$("lmBlock").hidden=true;return}
-  const i=LM.info();lmSel=new Map();$("lmRes").innerHTML="";$("lmBusca").value="";
-  $("lmBuscaF").hidden=!i;$("btnLm").hidden=!(i&&i.temRomaneio);$("lblLmArq").textContent=i?"Trocar Lista de materiais":"Carregar Lista de materiais";
-  if(i&&i.antiga){lmStatus(`A busca pela RM foi melhorada. Toque em <b>Trocar Lista de materiais</b> e escolha a planilha <b>${esc(i.nome)}</b> de novo, uma única vez.`,"warn");return}
-  lmStatus(i?`✓ Lista carregada (${lmInfoTxt(i)}). ${i.temRomaneio?"Digite o nº da RM acima: todos os itens dela são carregados automaticamente. Se precisar, busque":"Esta planilha não tem coluna de RM. Busque"} o item pela TAG ou descrição.`:"Carregue a planilha <b>Lista de materiais</b> (com a coluna da RM) uma vez. Ela fica guardada no celular e, ao digitar a RM, os itens são carregados sozinhos.",i?"ok":"");
-}
-function lmLinha(x,k){return `<label class="dl-it"><input type="checkbox" data-lm="${k}" ${lmSel.has(k)?"checked":""}><span class="d">${esc(x.descricao||"(sem descrição)")}</span><span class="m">${x.tag?`<span><b>${esc(x.tag)}</b></span>`:""}${x.qtd?`<span>Qtd: <b>${esc(x.qtd)} ${esc(x.und)}</b></span>`:""}${x.romaneio?`<span>RM ${esc(x.romaneio)}</span>`:""}${x.local?`<span>${esc(x.local)}</span>`:""}${x.volume?`<span>Vol. ${esc(x.volume)}</span>`:""}</span></label>`}
-function lmMostrar(lista,titulo){
-  lmSel=new Map();const mapa=new Map(lista.map((x,k)=>[k,x]));
-  $("lmRes").innerHTML=lista.length?`<div class="meta" style="font-size:.8rem;color:var(--muted)">${titulo}</div>${lista.map((x,k)=>lmLinha(x,k)).join("")}<button class="btn primary" type="button" id="btnUsarLm">Preencher itens marcados</button>`:"";
-  $("lmRes").querySelectorAll("[data-lm]").forEach(c=>c.onchange=()=>{const k=+c.dataset.lm;c.checked?lmSel.set(k,mapa.get(k)):lmSel.delete(k)});
-  const u=$("btnUsarLm");if(u)u.onclick=()=>{
-    const sel=[...lmSel.keys()].sort((a,b)=>a-b).map(k=>lmSel.get(k));if(!sel.length){toast("Marque pelo menos um item.",true);return}
-    const local=$("localPadrao").value.trim().toUpperCase()||localLembrado();
-    const novos=sel.map(x=>({...novoItem(),descricao:x.descricao,tag:x.tag,und:A.normUnd(x.und)||"PÇ",qtd:x.qtd&&!isNaN(+String(x.qtd).replace(",","."))?String(+String(x.qtd).replace(",",".")):"",local:x.local||local,docRef:x.desenho||undefined,origem:"lista_materiais"}));
-    itens=itens.every(x=>!x.descricao&&!x.tag)?novos:[...itens,...novos];
-    renderItens();checarDup();$("lmRes").innerHTML="";$("lmBusca").value="";
-    toast(`${novos.length} ${novos.length===1?"item preenchido":"itens preenchidos"} pela Lista de materiais. Confira a quantidade entregue.`);
-    $("itens").scrollIntoView({behavior:"smooth",block:"start"});
-  };
-}
-function lmRomaneio(auto){
-  if(!LM||!LM.info())return;const rom=$("romaneioA").value.trim();
-  if(!rom){if(!auto){toast("Informe o nº do romaneio.",true);$("romaneioA").focus()}return}
-  const l=LM.doRomaneio(rom);
-  if(!l.length){const inf=LM.info();if(!auto||rom.length>=4)lmStatus(inf.antiga?`Toque em <b>Trocar Lista de materiais</b> e escolha a planilha de novo para buscar pela RM.`:`RM ${esc(rom)} não encontrada em nenhuma coluna da lista (${lmInfoTxt(inf)}). Confira o número ou busque pela TAG/descrição.${inf.cabecalho.length?`<br><small>Colunas lidas: ${esc(inf.cabecalho.join(" · "))}</small>`:""}`,"warn");return}
-  /* RM encontrada: carrega todos os itens direto no formulário (o inspetor só confere a quantidade entregue) */
-  const ja=new Set(itens.map(x=>A.norm(x.tag)+"|"+A.norm(x.descricao)));
-  const novosL=l.filter(x=>!ja.has(A.norm(x.tag)+"|"+A.norm(x.descricao)));
-  if(!novosL.length){lmStatus(`✓ Os ${l.length} ${l.length===1?"item":"itens"} da RM ${esc(rom)} já estão no formulário.`,"ok");return}
-  lmMostrar(novosL,"");$("lmRes").querySelectorAll("[data-lm]").forEach(c=>{c.checked=true;c.onchange()});$("btnUsarLm").click();
-  lmStatus(`✓ RM ${esc(rom)}: <b>${novosL.length} ${novosL.length===1?"item carregado":"itens carregados"}</b> da Lista de materiais. Confira a quantidade entregue de cada um.`,"ok");
-}
-if(LM){
-  $("lmArquivo").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;lmStatus("Lendo "+esc(f.name)+"…");
-    try{await LM.carregar(f);resetLM();toast("Lista de materiais carregada");if($("romaneioA").value)lmRomaneio(true)}catch(err){lmStatus("Não consegui ler a planilha: "+esc(err.message),"bad")}};
-  $("btnLm").onclick=()=>lmRomaneio(false);
-  $("romaneioA").addEventListener("change",()=>lmRomaneio(true));
-  let rmT;$("romaneioA").addEventListener("input",()=>{clearTimeout(rmT);rmT=setTimeout(()=>{if($("romaneioA").value.trim().length>=3&&LM.doRomaneio($("romaneioA").value,true).length)lmRomaneio(true)},700)});
-  let lmT;$("lmBusca").addEventListener("input",()=>{clearTimeout(lmT);lmT=setTimeout(()=>{const q=$("lmBusca").value;const r=LM.buscar(q,25);
-    lmMostrar(r,q.trim().length<2?"":r.length?`${r.length===25?"Primeiros 25 resultados":r.length+" resultado(s)"} para “${esc(q)}”`:"");if(q.trim().length>=2&&!r.length)$("lmRes").innerHTML='<div class="dl-st warn"><span>Nada encontrado. Tente outra parte da TAG ou da descrição.</span></div>'},250)});
-  LM.restaurar().then(resetLM);
-}else $("lmBlock").hidden=true;
+/* A Lista de materiais NÃO fica no celular: o escritório completa os itens da RM sozinho.
+   Apaga qualquer cópia que tenha ficado guardada aqui por versões anteriores. */
+try{indexedDB.deleteDatabase("nx_listamat")}catch(e){}
 
 $("dlArquivo").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;dlStatus("Lendo a planilha "+esc(f.name)+"… pode levar alguns segundos.","",true);
   try{const x=await D.carregarArquivoLocal(f);toast(`Planilha carregada: ${x.registros.length.toLocaleString("pt-BR")} linhas`);if($("nf").value)buscarDilig(true);else dlStatus("✓ Planilha carregada ("+fonteTxt(D.fonteAtual())+"). Fica guardada até amanhã. Agora escaneie ou digite a NF.","ok");$("lblDlArq").textContent="Trocar planilha"}
@@ -975,7 +919,7 @@ async function enviar(status){
   if(f.dataRecebimento>A.hoje()){toast("A data de recebimento não pode ser no futuro.",true);$("data").focus();return}
   if(tipo==="NF"&&(!f.nf||!f.fornecedor)){toast("Informe o nº da NF e o fornecedor.",true);$(f.nf?"fornecedor":"nf").focus();return}
   if(tipo==="ROM"&&!f.romaneio){toast("Informe o nº do romaneio.",true);$("romaneioA").focus();return}
-  if(status==="em_andamento"&&!A.itensValidos(f).length){toast("Adicione pelo menos um item com descrição.",true);return}
+  if(status==="em_andamento"&&tipo==="NF"&&!A.itensValidos(f).length){toast("Adicione pelo menos um item com descrição.",true);return}
   if(editando)status=editando.status==="sem_acao"?"em_andamento":(editando.status==="cert_pendente"?"em_andamento":editando.status);
   if(tipo==="NF"&&status==="em_andamento"){
     const indef=f.itens.map((it,n)=>({it,n})).filter(({it})=>(it.descricao||it.tag)&&A.exigeCert(f,it)&&!A.temCert(it)&&it.certStatus!=="nao_recebido");

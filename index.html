@@ -421,6 +421,20 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
           </div>
           <div class="hint" id="dlTRes"></div>
         </div>
+        <div class="box" id="lmCfg">
+          <h4>Lista de materiais (RM)</h4>
+          <p class="hint">Planilha <b>Lista - Retirada de Material</b>. Fica só neste computador. Quando o campo lança um romaneio com o nº da RM, o Nexum busca a RM nesta planilha e preenche os itens sozinho (descrição, TAG, quantidade entregue, unidade e local). Carregue de novo sempre que a planilha for atualizada.</p>
+          <div class="notice" id="lmSt">Nenhuma planilha carregada.</div>
+          <div class="actions" style="justify-content:flex-start">
+            <label class="btn primary small" for="lmArqEsc" id="lblLmEsc">Carregar planilha</label>
+            <input id="lmArqEsc" type="file" accept=".xlsx,.xls,.xlsm" hidden>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="lmTeste" hidden>
+            <input id="lmTRm" placeholder="Nº da RM (ex.: 1684-FLT-2026)" style="flex:1 1 200px">
+            <button class="btn small" type="button" id="btnLmTestar">Testar busca</button>
+          </div>
+          <div class="hint" id="lmTRes"></div>
+        </div>
         <div class="box">
           <h4>Materiais críticos (CMC)</h4>
           <p class="hint">Itens de NF que se encaixam nestes grupos exigem certificado de qualidade. O inspetor ou a Qualidade podem marcar ou desmarcar item a item.</p>
@@ -561,6 +575,7 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
 <script src="assets/dashboard.js"></script>
 <script src="assets/atualizacao.js"></script>
 <script src="assets/diligenciamento.js"></script>
+<script src="assets/listamat.js"></script>
 <script src="assets/importar.js"></script>
 <script src="assets/planilhas.js"></script>
 <script>
@@ -705,6 +720,8 @@ function renderLista(){
     if(c.situacao==="devolvida")al.push(`<span style="color:var(--bad)">${I("undo")}Devolvida</span>`);
     else if(f.status!=="sem_acao"&&f.status!=="finalizado"&&c.situacao==="pendente")al.push(`<span style="color:var(--wait)">${I("eye")}A conferir</span>`);
     if(f.status!=="finalizado"&&p.includes("certificado"))al.push(`<span style="color:var(--warn)">${I("cert")}${A.semCertificado(f).length} sem cert.</span>`);
+    if(f.tipo==="ROM"&&f.rmCompletado&&f.rmCompletado.resultado==="nao_encontrada"&&f.status!=="finalizado")al.push(`<span style="color:var(--bad)" title="Confira o nº da RM ou carregue a Lista de materiais atualizada (Cadastros)">${I("alert")}RM não encontrada</span>`);
+    else if(f.tipo==="ROM"&&f.status!=="finalizado"&&!A.itensValidos(f).length)al.push(`<span style="color:var(--wait)" title="Os itens serão preenchidos pela Lista de materiais (Cadastros)">${I("clock")}Aguardando itens da RM</span>`);
     if(p.includes("validar certificado"))al.push(`<span style="color:var(--wait)">${I("check")}Validar cert.</span>`);
     if(p.includes("não conformidade"))al.push(`<span style="color:var(--bad)">${I("alert")}NC</span>`);
     return `<tr data-id="${f.id}"><td class="n"><button type="button" class="numed" data-num="${f.id}" title="Clique para alterar o número da ficha">${f.numero??"—"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>${f.exemplo?' <span class="ex">exemplo</span>':""}</td><td><span class="pill ${f.tipo}">${f.tipo==="ROM"?"ROMANEIO":"NF"}</span></td><td>${esc(f.tipo==="ROM"?f.romaneio:f.nf)}</td><td>${esc(f.tipo==="ROM"?"Anglo American":f.fornecedor)}</td><td class="s">${A.fmtData(f.dataRecebimento)}</td><td>${A.itensValidos(f).length}</td><td><div class="al">${al.join("")||'<span class="s">—</span>'}</div></td><td><span class="pill ${f.status}">${A.STATUS[f.status].rotulo}</span></td></tr>`}).join(""):`<tr><td colspan="8" style="padding:28px;text-align:center;color:var(--muted)">Nenhuma ficha encontrada. Ajuste a busca ou os filtros.</td></tr>`}</tbody>`;
@@ -934,7 +951,7 @@ $("lbClose").onclick=()=>$("lb").hidden=true;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("lb").hidden){$("lb").hidden=true;e.stopImmediatePropagation()}},true);
 
 /* conferência */
-const ACOES={numero_alterado:"Número da ficha alterado",enviada:"Enviada pelo campo",reenviada:"Reenviada corrigida pelo campo",aprovada:"Conferência aprovada",devolvida:"Devolvida ao campo como inconforme",anexos:"Documentos anexados",cert_vinculado:"Certificado vinculado",cert_validado:"Certificado validado",cert_nao_recebido:"Sem certificado (informado pelo campo)",cert_recebido:"Certificado recebido (anexado depois)",dilig_completado:"Completada com o Diligenciamento",email:"Cobrança de certificado enviada"};
+const ACOES={numero_alterado:"Número da ficha alterado",enviada:"Enviada pelo campo",reenviada:"Reenviada corrigida pelo campo",aprovada:"Conferência aprovada",devolvida:"Devolvida ao campo como inconforme",anexos:"Documentos anexados",cert_vinculado:"Certificado vinculado",cert_validado:"Certificado validado",cert_nao_recebido:"Sem certificado (informado pelo campo)",cert_recebido:"Certificado recebido (anexado depois)",dilig_completado:"Completada com o Diligenciamento",rm_completado:"Itens preenchidos pela Lista de materiais (RM)",rm_nao_encontrada:"RM não encontrada na Lista de materiais",email:"Cobrança de certificado enviada"};
 function renderConf(){
   const c=A.conf(ed);
   $("dConf").className="pill "+(c.situacao==="aprovada"?"finalizado":c.situacao==="devolvida"?"bad":"em_andamento");
@@ -1216,6 +1233,61 @@ async function completarDilig(){
   }catch(e){console.warn(e)}finally{diligRodando=false}
 }
 DL.pasta.ouvir(ev=>{if(ev.tipo==="atualizada")setTimeout(completarDilig,500)});
+
+/* ===== Romaneio: o escritório completa os itens pela Lista de materiais (a planilha não vai para o celular) ===== */
+const LMx=window.NXLM;let rmRodando=false;
+const lmChave=()=>{const i=LMx&&LMx.info();return i?i.nome+"|"+i.carregadaEm:""};
+function precisaRM(f){
+  if(f.tipo!=="ROM"||!f.romaneio||f.status==="finalizado"||f.lacuna||f.exemplo||f.importado)return false;
+  const d=f.rmCompletado;if(d&&d.resultado==="ok")return false;
+  return !d||d.planilha!==lmChave();
+}
+async function completarRM(){
+  if(rmRodando||!LMx||!LMx.info()||!CT().ativo)return;
+  if(window.NXNUVEM&&NXNUVEM.perfil&&!["admin","escritorio"].includes(NXNUVEM.perfil()))return;
+  const alvo=fichas.filter(precisaRM);if(!alvo.length)return;
+  rmRodando=true;const planilha=lmChave(),nomeP=LMx.info().nome,hoje=new Date().toISOString(),muda=[];let nOk=0,nIt=0;
+  try{for(const f0 of alvo){
+    const f=JSON.parse(JSON.stringify(f0)),lst=LMx.doRomaneio(f.romaneio,true);
+    f.conferencia=f.conferencia||{historico:[]};f.conferencia.historico=f.conferencia.historico||[];
+    if(!lst.length){
+      if(!(f.rmCompletado&&f.rmCompletado.resultado==="nao_encontrada"))f.conferencia.historico.push({acao:"rm_nao_encontrada",em:hoje,por:"Nexum",itensTxt:"RM "+f.romaneio});
+      f.rmCompletado={resultado:"nao_encontrada",planilha,em:hoje};muda.push(f);continue}
+    const auto=f.auto||[],regra="Lista de materiais ("+nomeP+")";
+    const k=x=>A.norm(x||"").replace(/[^A-Z0-9]/g,"");
+    const doCampo=(f.itens||[]).filter(i=>i.descricao||i.tag),usados=new Set(),novos=[];
+    lst.forEach(x=>{
+      /* item que o inspetor lançou (ex.: marcado NC) e casa por TAG ou descrição: mantém o que ele informou e completa o resto */
+      const j=doCampo.findIndex((i,jj)=>!usados.has(jj)&&((x.tag&&k(i.tag)===k(x.tag))||(x.descricao&&k(i.descricao)===k(x.descricao))));
+      const q=x.qtd&&!isNaN(+String(x.qtd).replace(",","."))?+String(x.qtd).replace(",","."):"";
+      if(j>=0){usados.add(j);const i=doCampo[j];
+        if(!i.descricao)i.descricao=x.descricao;if(!i.tag)i.tag=x.tag;if(!i.und)i.und=A.normUnd(x.und);if(i.qtd===""||i.qtd==null)i.qtd=q;if(!i.local)i.local=x.local||f.localPadrao||"";
+        if(!i.conf)i.conf="C";i.docRef=i.docRef||x.desenho||undefined;i.origem=i.origem||"lista_materiais";novos.push(i);return}
+      novos.push({descricao:x.descricao,tag:x.tag,und:A.normUnd(x.und)||"PÇ",qtd:q,local:x.local||(doCampo[0]&&doCampo[0].local)||"",conf:"C",certificado:"",docRef:x.desenho||undefined,origem:"lista_materiais"});
+    });
+    doCampo.forEach((i,jj)=>{if(!usados.has(jj))novos.push(i)});
+    f.itens=novos;novos.forEach((it,n)=>{if(it.origem==="lista_materiais")auto.push({campo:"itens",item:n,valor:(it.tag||it.descricao)+" · "+it.qtd+" "+it.und,regra})});
+    f.auto=auto;f.rmCompletado={resultado:"ok",planilha,em:hoje,itens:lst.length};
+    f.conferencia.historico.push({acao:"rm_completado",em:hoje,por:"Nexum",itensTxt:lst.length+" item(ns) · "+nomeP});
+    nOk++;nIt+=lst.length;muda.push(f);
+  }
+  if(muda.length){await A.store.salvarVarias(muda);if(nOk)toast(`Romaneio: ${nOk} ficha(s) completada(s) pela Lista de materiais (${nIt} item(ns))`);const nf=muda.length-nOk;if(nf)toast(`${nf} romaneio(s) com RM não encontrada na Lista de materiais. Confira o número na ficha.`,true)}
+  }catch(e){console.warn(e)}finally{rmRodando=false}
+}
+window.NXCompletarRM=completarRM;
+function lmCfgUI(){const i=LMx&&LMx.info();
+  $("lmSt").className="notice"+(i?" ok":"");
+  $("lmSt").innerHTML=i?`✓ <b>${esc(i.nome)}</b> · ${i.total.toLocaleString("pt-BR")} itens · carregada em ${A.fmtData(i.carregadaEm.slice(0,10))} ${new Date(i.carregadaEm).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`:"Nenhuma planilha carregada neste computador.";
+  $("lblLmEsc").textContent=i?"Carregar versão atualizada":"Carregar planilha";$("lmTeste").hidden=!i}
+if(LMx){
+  LMx.restaurar().then(()=>{lmCfgUI();setTimeout(completarRM,1500)});
+  $("lmArqEsc").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;$("lmSt").className="notice";$("lmSt").textContent="Lendo "+f.name+"…";
+    try{await LMx.carregar(f);lmCfgUI();toast("Lista de materiais carregada");
+      /* planilha nova: tenta de novo as RMs que não tinham sido encontradas */
+      setTimeout(completarRM,300)}catch(err){$("lmSt").className="notice bad";$("lmSt").textContent="Não consegui ler a planilha: "+(err.message||err)}};
+  $("btnLmTestar").onclick=()=>{const rm=$("lmTRm").value.trim();if(!rm)return;const l=LMx.doRomaneio(rm,true);
+    $("lmTRes").innerHTML=l.length?`<b>${l.length} item(ns)</b> na RM ${esc(rm)}:<br>`+l.slice(0,12).map(x=>`• ${esc(x.descricao)}${x.tag?" · "+esc(x.tag):""} · ${esc(x.qtd)} ${esc(x.und)}${x.local?" · "+esc(x.local):""}`).join("<br>")+(l.length>12?"<br>…":""):`RM ${esc(rm)} não encontrada na planilha.`};
+}else $("lmCfg").hidden=true;
 window.NXCompletarDilig=completarDilig;
 let autoRodando=false;
 async function autoPreencher(manual){
@@ -1329,7 +1401,7 @@ $("badgeDemo").hidden=A.store.modo!=="exemplo";
 A.cadastros.ouvir(c=>{cad=c;renderCad();if(ed)avisos()});
 renderCtr();
 let autoT;
-A.store.ouvir(l=>{todas=l;filtrar();if(A.store.modo==="exemplo"){const ex=l.some(f=>f.exemplo);$("badgeDemo").textContent=ex?"Modo exemplo":"Dados só neste computador";$("badgeDemo").title=ex?"Fichas de exemplo para teste":"Os dados ficam salvos neste navegador até o Firebase ser ligado"}renderTudo();clearTimeout(autoT);autoT=setTimeout(()=>{autoPreencher(false).then(()=>completarDilig())},1500)});
+A.store.ouvir(l=>{todas=l;filtrar();if(A.store.modo==="exemplo"){const ex=l.some(f=>f.exemplo);$("badgeDemo").textContent=ex?"Modo exemplo":"Dados só neste computador";$("badgeDemo").title=ex?"Fichas de exemplo para teste":"Os dados ficam salvos neste navegador até o Firebase ser ligado"}renderTudo();clearTimeout(autoT);autoT=setTimeout(()=>{autoPreencher(false).then(()=>completarDilig()).then(()=>completarRM())},1500)});
 })();
 </script>
 </body>
