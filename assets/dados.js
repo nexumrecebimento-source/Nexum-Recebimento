@@ -89,10 +89,15 @@
     const doc = f.tipo === "ROM" ? "Romaneio já realizado recebimento" : "NF já realizada recebimento";
     return `${doc} (ficha ${outra.numero}, ${fmtData(outra.dataRecebimento)}).`;
   }
-  function proximoNumero(todas, inicial, contrato) {
-    const c = contrato || "recleaner";
-    const max = todas.filter(f => !f.exemplo && ctrDe(f) === c).reduce((m, f) => Math.max(m, +f.numero || 0), 0);
-    return c === "recleaner" ? Math.max(max + 1, inicial || FICHA_INICIAL) : max + 1;
+  /* Próximo nº: segue a ÚLTIMA sequência configurada (Cadastros ou renumeração), pulando números já usados.
+     "base" = número configurado; sem base, usa a última ficha + 1. */
+  function proximoNumero(todas, inicial, contrato, base) {
+    const c = contrato || "recleaner", minhas = todas.filter(f => !f.exemplo && ctrDe(f) === c);
+    const usados = new Set(minhas.map(f => +f.numero).filter(Boolean));
+    let n = +base || (c === "recleaner" ? +inicial || 0 : 0);
+    if (!n) n = minhas.reduce((m, f) => Math.max(m, +f.numero || 0), 0) + 1;
+    while (usados.has(n)) n++;
+    return n;
   }
   /* Itens válidos para a ficha: romaneio com quantidade 0 não entra */
   function itensValidos(f) {
@@ -429,7 +434,7 @@
       const bad = l.find(s => !emailOk(s)); if (bad) throw new Error("E-mail inválido: " + bad);
       c.grupos[k] = [...new Set(l)]; gravarCad(); avisarCad();
     },
-    async salvarFichaInicial(n) { const c = lerCad(); c.fichaInicial = Math.max(1, parseInt(n, 10) || FICHA_INICIAL); gravarCad(); avisarCad(); },
+    async salvarFichaInicial(n) { const c = lerCad(); c.fichaInicial = Math.max(1, parseInt(n, 10) || FICHA_INICIAL); c.seqEm = new Date().toISOString(); gravarCad(); avisarCad(); },
     fichaInicial() { return lerCad().fichaInicial || FICHA_INICIAL; },
     async salvarDocumento(d) { const c = lerCad(); c.responsavel = norm(d.responsavel); c.projetoCliente = String(d.projetoCliente || "").trim(); gravarCad(); avisarCad(); },
     documento() { const c = lerCad(); return { responsavel: c.responsavel, projetoCliente: c.projetoCliente }; },

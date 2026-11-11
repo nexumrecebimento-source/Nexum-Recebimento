@@ -394,7 +394,7 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
         </div>
         <div class="box">
           <h4>Numeração das fichas</h4>
-          <p class="hint">Sequência única para NF e romaneio Anglo. O app usa o maior entre este número e a última ficha lançada + 1.</p>
+          <p class="hint">Sequência única para NF e romaneio Anglo. Informe o número da <b>próxima ficha</b> e salve: as próximas fichas seguem a partir dele (números que já existem são pulados). Ao renumerar a ficha mais recente na lista, a sequência também passa a seguir o novo número.</p>
           <div style="display:flex;gap:8px"><input id="fichaIni" type="number" min="1" inputmode="numeric" style="max-width:160px"><button class="btn" type="button" id="btnFichaIni">Salvar</button></div>
           <span class="code" id="proxFicha"></span>
         </div>
@@ -648,6 +648,13 @@ function editarNumero(b){
   inp.onkeydown=e=>{if(e.key==="Enter")fim(true);if(e.key==="Escape")fim(false)};
   inp.onblur=()=>fim(true);
 }
+/* renumerou a ficha mais recente do contrato: a sequência passa a continuar dela (ex.: 2296 → 400, a próxima é 401) */
+async function seguirSequencia(f,n){
+  const ctr=A.ctrDe(f);if(ctr!=="recleaner")return;
+  const minhas=todas.filter(x=>!x.exemplo&&!x.lacuna&&A.ctrDe(x)===ctr&&x.criadoEm);
+  const recente=minhas.reduce((a,b)=>!a||String(b.criadoEm)>String(a.criadoEm)?b:a,null);
+  if(recente&&recente.id===f.id){try{await definirSequencia(n+1)}catch(e){}}
+}
 async function renumerar(f,nNovo){
   const nVelho=f.numero,ctr=A.ctrDe(f),outra=todas.find(x=>x.id!==f.id&&A.ctrDe(x)===ctr&&+x.numero===nNovo);
   let troca=null;
@@ -660,6 +667,7 @@ async function renumerar(f,nNovo){
     if(outra&&outra.lacuna)await A.store.excluir(outra.id);
     if(troca)await A.store.salvar(A.registrar({...troca,numero:nVelho||null},"numero_alterado",{por:"Qualidade",de:troca.numero,para:nVelho}));
     await A.store.salvar(A.registrar({...f,numero:nNovo},"numero_alterado",{por:"Qualidade",de:nVelho,para:nNovo}));
+    await seguirSequencia(f,nNovo);
     toast(`Ficha Nº ${nVelho} agora é Nº ${nNovo}${troca?" (a outra ficha ficou com o Nº "+nVelho+")":""}`);return true;
   }catch(e){toast(e.message||"Não foi possível alterar o número.",true);return false}
 }
@@ -877,7 +885,7 @@ $("btnSalvar").onclick=async()=>{
   try{
     if(lacunaOcupando)await A.store.excluir(lacunaOcupando.id);
     if(troca){await A.store.salvar(A.registrar({...troca,numero:nVelho||null},"numero_alterado",{por:"Qualidade",de:troca.numero,para:nVelho}))}
-    await A.store.salvar(g);toast(f.numero!==nVelho?`Ficha salva com o Nº ${f.numero}${troca?" (a outra ficha ficou com o Nº "+nVelho+")":""}`:"Ficha "+f.numero+" salva");fechar()
+    await A.store.salvar(g);if(f.numero!==nVelho)await seguirSequencia(ed,f.numero);toast(f.numero!==nVelho?`Ficha salva com o Nº ${f.numero}${troca?" (a outra ficha ficou com o Nº "+nVelho+")":""}`:"Ficha "+f.numero+" salva");fechar()
   }catch(e){toast(e.message||"Não foi possível salvar.",true)}
 };
 /* cobrança de certificados (ponto 5) */
@@ -1008,7 +1016,7 @@ function renderCad(){
   if(document.activeElement!==$("cfgProj"))$("cfgProj").value=cad.projetoCliente||"";
   $("cmcLista").innerHTML=A.CMC.map(g=>`<div style="display:grid;gap:2px;border-top:1px solid var(--line);padding-top:8px"><strong style="font-size:.9rem">${esc(g.rotulo)} <span class="code">${esc(g.doc)}</span></strong><span class="hint">${esc(g.tipo)} · Setor ${esc(g.setor)} · CQ ${esc(g.cq)} · Cliente ${esc(g.cliente)}</span>${g.evidencia?`<span class="hint">Evidência: ${esc(g.evidencia)}</span>`:""}</div>`).join("")+'<p class="hint" style="margin-top:6px">C inspeção de produto · R verificação da documentação · V exame visual · M amostragem · W testemunho opcional</p>';
   $("fichaIni").value=cad.fichaInicial;
-  $("proxFicha").textContent="Próxima ficha: Nº "+A.proximoNumero(todas,cad.fichaInicial,"recleaner")+" (Flotação Recleaner)";
+  $("proxFicha").textContent="Próxima ficha: Nº "+A.proximoNumero(todas,cad.fichaInicial,"recleaner",window.NXNUVEM&&NXNUVEM.proximo&&NXNUVEM.proximo("recleaner"))+" (Flotação Recleaner)";
   $("grupos").innerHTML=Object.entries(A.GRUPOS).map(([k,l])=>`<div class="f"><label for="g_${k}">${l} <span class="code">(${cad.grupos[k].length})</span></label><textarea id="g_${k}" rows="2" placeholder="nome@milplan.com.br">${esc(cad.grupos[k].join("\n"))}</textarea></div>`).join("")+`<div><button class="btn small" type="button" id="btnGrupos">Salvar grupos</button></div>`;
   $("btnGrupos").onclick=async()=>{const v=Object.fromEntries(Object.keys(A.GRUPOS).map(k=>[k,$("g_"+k).value.split(/[\n,;]+/)]));try{for(const k of Object.keys(v)){const bad=v[k].map(x=>x.trim()).filter(Boolean).find(x=>!A.emailOk(x));if(bad)throw new Error("E-mail inválido em "+A.GRUPOS[k]+": "+bad)}for(const k of Object.keys(v))await A.cadastros.salvarGrupo(k,v[k]);toast("Grupos salvos")}catch(e){toast(e.message,true)}};
   const q=A.norm($("qForn").value);
@@ -1022,7 +1030,10 @@ $("btnCancForn").onclick=()=>{$("fornForm").hidden=true};
 $("btnSalvForn").onclick=async()=>{try{await A.cadastros.salvarFornecedor({id:foEd?.id,nome:$("foNome").value,cnpj:$("foCnpj").value.trim(),codigoErp:$("foCod").value.trim(),emails:$("foEmails").value.split(/[\n,;]+/)});$("fornForm").hidden=true;toast("Fornecedor salvo")}catch(e){toast(e.message,true)}};
 $("btnExcForn").onclick=async()=>{const b=$("btnExcForn");if(!b.dataset.armed){b.dataset.armed="1";b.textContent="Toque de novo";return}await A.cadastros.excluirFornecedor(foEd.id);$("fornForm").hidden=true;toast("Fornecedor excluído")};
 $("qForn").oninput=renderCad;
-$("btnFichaIni").onclick=async()=>{await A.cadastros.salvarFichaInicial($("fichaIni").value);toast("Numeração salva")};
+$("btnFichaIni").onclick=async()=>{const n=parseInt($("fichaIni").value,10);if(!(n>0)){toast("Informe o número da próxima ficha.",true);return}
+  try{await definirSequencia(n);toast("Numeração salva: a próxima ficha será a Nº "+A.proximoNumero(todas,n,"recleaner",n))}catch(e){toast(e.message||"Não foi possível salvar.",true)}};
+async function definirSequencia(n){await A.cadastros.salvarFichaInicial(n);if(window.NXNUVEM&&NXNUVEM.definirSequencia)await NXNUVEM.definirSequencia("recleaner",n)}
+window.addEventListener("nx-numeracao",()=>{try{renderCad()}catch(e){}});
 
 /* ponte da planilha de Diligenciamento pela pasta do OneDrive */
 const DL=window.DILIG;

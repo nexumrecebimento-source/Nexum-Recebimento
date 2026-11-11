@@ -49,6 +49,7 @@
       paradas.push(FICHAS.onSnapshot(s => { lista = s.docs.map(d => d.data()); ok(); }, erro));
     }
     paradas.push(CONFIG.doc("cadastros").onSnapshot(d => { if (d.exists && A.cadastros._substituir) A.cadastros._substituir(d.data()); }, () => { }));
+    ouvirNumeracao();
   }
   /* o celular troca de dia sem fechar o app */
   let diaAssinado = A.hoje();
@@ -56,15 +57,21 @@
 
   /* ---------- numeração única entre todos os aparelhos ---------- */
   function maxLocal(ctr) { return lista.filter(f => A.ctrDe(f) === ctr && +f.numero).reduce((m, f) => Math.max(m, +f.numero), 0); }
+  /* contador na nuvem = próxima ficha. Segue a última sequência definida (Cadastros ou renumeração) e pula números já usados */
+  const usadosCtr = ctr => new Set(lista.filter(f => A.ctrDe(f) === ctr && +f.numero).map(f => +f.numero));
   function reservarNumero(ctr) {
     const ref = CONFIG.doc("numeracao_" + ctr);
-    const ini = ctr === "recleaner" ? (+A.cadastros.fichaInicial() || A.FICHA_INICIAL) : 1;
     return db.runTransaction(async t => {
-      const d = await t.get(ref);
-      const n = Math.max(d.exists ? +d.data().proximo || 0 : 0, ini, maxLocal(ctr) + 1);
+      const d = await t.get(ref), us = usadosCtr(ctr);
+      let n = d.exists && +d.data().proximo ? +d.data().proximo : (ctr === "recleaner" ? +A.cadastros.fichaInicial() || A.FICHA_INICIAL : maxLocal(ctr) + 1);
+      while (us.has(n)) n++;
       t.set(ref, { proximo: n + 1, em: new Date().toISOString() }, { merge: true });
       return n;
     });
+  }
+  const proxNuvem = {};
+  function ouvirNumeracao() {
+    paradas.push(CONFIG.doc("numeracao_recleaner").onSnapshot(d => { proxNuvem.recleaner = d.exists ? +d.data().proximo || 0 : 0; window.dispatchEvent(new CustomEvent("nx-numeracao")); }, () => { }));
   }
   let atribuindo = false;
   async function atribuirPendentes() {
@@ -163,7 +170,7 @@
         await b.commit();
       }
       const max = l.reduce((m, f) => Math.max(m, +f.numero || 0), 0);
-      await db.runTransaction(async t => { const ref = CONFIG.doc("numeracao_" + ctr), d = await t.get(ref); t.set(ref, { proximo: Math.max(d.exists ? +d.data().proximo || 0 : 0, max + 1) }, { merge: true }); });
+      await db.runTransaction(async t => { const ref = CONFIG.doc("numeracao_" + ctr), d = await t.get(ref); if (!d.exists || !+d.data().proximo) t.set(ref, { proximo: max + 1 }, { merge: true }); });
       return l.length;
     },
     async excluir(id) {
@@ -178,6 +185,10 @@
 
   /* cadastros (fornecedores, e-mails, numeração inicial…) também vão para o banco */
   window.NXNUVEM = {
+    /* próxima ficha segundo o contador da nuvem (0 = ainda não carregado) */
+    proximo(ctr) { return proxNuvem[ctr || "recleaner"] || 0; },
+    /* define a sequência: a próxima ficha passa a ser n (pulando números já usados) */
+    async definirSequencia(ctr, n) { if (!usuario) return; await CONFIG.doc("numeracao_" + (ctr || "recleaner")).set({ proximo: +n, em: new Date().toISOString(), por: usuario.email }, { merge: true }); },
     salvarCad(c) { if (!usuario || APP !== "escritorio" || !(perfil === "admin" || perfil === "escritorio")) return; CONFIG.doc("cadastros").set(limpo(c)).catch(e => toastN("Cadastro não foi para o servidor: " + e.message, true)); },
     sair() { auth.signOut().then(() => location.reload()); },
     trocarSenha() { if (!usuario) return; auth.sendPasswordResetEmail(usuario.email).then(() => toastN("Enviamos um link para " + usuario.email + " criar uma nova senha (veja também o lixo eletrônico).")).catch(e => toastN("Não consegui enviar: " + e.message, true)); },

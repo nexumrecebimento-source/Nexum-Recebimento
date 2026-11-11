@@ -404,11 +404,12 @@ let dlRes=null, dlSel=new Set(), chaveNF=null, editando=null, fichas=[], tipo="N
 function toast(t,bad){const e=$("toast");e.textContent=t;e.className="toast"+(bad?" bad":"");e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200)}
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
+window.addEventListener("nx-numeracao",()=>{const h=$("hSub");if(h&&/^PRÓXIMA FICHA/.test(h.textContent))h.textContent="PRÓXIMA FICHA Nº "+A.proximoNumero(fichas,A.cadastros.fichaInicial(),"recleaner",window.NXNUVEM&&NXNUVEM.proximo&&NXNUVEM.proximo("recleaner"))});
 function show(v){
   view=v;["inicio","lancar","ok","cert"].forEach(x=>$("v-"+x).hidden=x!==v);
   if(v==="cert")renderPendCert();
   $("bar").hidden=v!=="lancar"; $("btnVoltar").hidden=v==="inicio";
-  $("hSub").textContent=v==="lancar"?(editando?"FICHA Nº "+editando.numero+" · CORREÇÃO":"PRÓXIMA FICHA Nº "+A.proximoNumero(fichas,A.cadastros.fichaInicial())):"Recebimento inteligente · Campo";
+  $("hSub").textContent=v==="lancar"?(editando?"FICHA Nº "+editando.numero+" · CORREÇÃO":"PRÓXIMA FICHA Nº "+A.proximoNumero(fichas,A.cadastros.fichaInicial(),"recleaner",window.NXNUVEM&&NXNUVEM.proximo&&NXNUVEM.proximo("recleaner"))):"Recebimento inteligente · Campo";
   if(v==="cert"){$("hTitulo").textContent="Certificados pendentes";$("hTitulo").classList.remove("wm");$("hSub").textContent="Anexe quando o certificado chegar"}
   else if(v==="lancar"){$("hTitulo").textContent=editando?"Corrigir recebimento":"Novo recebimento";$("hTitulo").classList.remove("wm")}else{$("hTitulo").textContent="Nexum";$("hTitulo").classList.add("wm")}
   $("hIcone").hidden=v==="lancar"||v==="cert";
