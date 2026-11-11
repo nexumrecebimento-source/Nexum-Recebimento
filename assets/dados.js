@@ -169,7 +169,7 @@
   function montarEmailCobranca(f, lista) {
     const para = destinatariosCertPendente(f);
     const assunto = `Certificado de qualidade pendente - NF ${f.nf} - ${f.fornecedor} - Ficha ${f.numero}`;
-    const linhas = lista.map(({ i, n }) => `- Item ${n + 1}: ${i.tag || "(sem código)"} - ${i.descricao}\n  Quantidade: ${fmtQtd(i.qtd)} ${i.und}${i.pc ? `  |  Pedido ${i.pc}/${i.itemPc}` : ""}\n  Pendência: certificado de qualidade não enviado`);
+    const linhas = lista.map(({ i, n }) => `- ${i.descricao || i.tag}${i.tag && i.descricao ? " (" + i.tag + ")" : ""}\n  Quantidade: ${fmtQtd(i.qtd)} ${i.und}${i.pc ? `  |  Pedido ${i.pc}/${i.itemPc}` : ""}\n  Pendência: certificado de qualidade não enviado`);
     const corpo = `Prezados,\n\nNo recebimento de materiais do Projeto Flotação Recleaner (contrato ${CONTRATO}), os itens abaixo chegaram sem o certificado de qualidade.\n\nNota fiscal: ${f.nf}${f.serie ? " (série " + f.serie + ")" : ""}\nFornecedor: ${f.fornecedor}\nData do recebimento: ${fmtData(f.dataRecebimento)}\nFicha de recebimento: ${f.numero}\n\nItens pendentes:\n${linhas.join("\n")}\n\nSolicitamos o envio dos certificados de qualidade pendentes, identificando o número da NF e o item a que cada um se refere.\n\nAtenciosamente,\nQualidade - Milplan Engenharia\nProjeto AMR / Flotação Recleaner\n(mensagem gerada pelo Nexum – Recebimento inteligente)`;
     return { para, assunto, corpo, itens: lista.map(x => x.k) };
   }
@@ -199,7 +199,7 @@
     const blocos = gr.fichas.slice().sort((a, b) => String(a.f.dataRecebimento).localeCompare(String(b.f.dataRecebimento))).map(({ f, lista }) =>
       `NF ${f.nf}${f.serie ? " (série " + f.serie + ")" : ""} · recebida em ${fmtData(f.dataRecebimento)} · ficha ${f.numero}
 ` +
-      lista.map(({ i, n, cobradoEm }) => `  - Item ${n + 1}: ${i.tag || "(sem código)"} - ${i.descricao}
+      lista.map(({ i, n, cobradoEm }) => `  - ${i.descricao || i.tag}${i.tag && i.descricao ? " (" + i.tag + ")" : ""}
     Quantidade: ${fmtQtd(i.qtd)} ${i.und}${i.pc ? `  |  Pedido ${i.pc}/${i.itemPc}` : ""}${cobradoEm ? `  |  já solicitado em ${fmtData(cobradoEm)}` : ""}`).join("\n"));
     const reforco = gr.reforco ? `\n\nAlguns destes itens já foram solicitados anteriormente e seguem sem retorno.` : "";
     const corpo = `Prezados,\n\nNo recebimento de materiais do Projeto Flotação Recleaner (contrato ${CONTRATO}), os itens abaixo, fornecidos por ${gr.fornecedor}, estão sem o certificado de qualidade.${reforco}\n\n${blocos.join("\n\n")}\n\nSolicitamos o envio dos certificados de qualidade pendentes, identificando o número da NF e o item a que cada um se refere.\n\nAtenciosamente,\nQualidade - Milplan Engenharia\nProjeto AMR / Flotação Recleaner\n(mensagem gerada pelo Nexum – Recebimento inteligente)`;
@@ -256,7 +256,7 @@
     const novos = (d.anexos || []).map((a, k) => ({ ...a, item: idx, nome: `${it.certificado ? "Certificado " + it.certificado : "Certificado"} · ${String(it.descricao || it.tag || "item " + (idx + 1)).slice(0, 60)}${(d.anexos || []).length > 1 ? " (" + (k + 1) + ")" : ""}` }));
     if (novos.length) { it.temCertAnexo = true; g.anexos = g.anexos || {}; g.anexos.cert = [...(g.anexos.cert || []), ...novos]; }
     it.certStatus = "recebido"; it.certValidado = false;
-    let h = marcarConferencia(g, "cert_recebido", { por: por || "", itensTxt: String(idx + 1) + (it.certificado ? " (" + it.certificado + ")" : "") });
+    let h = marcarConferencia(g, "cert_recebido", { por: por || "", itensTxt: String(it.descricao || it.tag || "item sem descrição").slice(0, 60) + (it.certificado ? " (" + it.certificado + ")" : "") });
     return autoStatus(h);
   }
   function linhasMapa(fichas) {

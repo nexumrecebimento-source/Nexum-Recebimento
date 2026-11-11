@@ -451,7 +451,7 @@ function renderPendCert(){
   el.innerHTML=l.map((x,k)=>{const dias=Math.max(0,Math.round((Date.now()-new Date((x.f.dataRecebimento||A.hoje())+"T12:00:00"))/864e5));
     return `<div class="pc-item" data-k="${k}">
       <div class="pc-m"><span class="pill cert_pendente">Pendente – Certificado</span><span>Ficha ${x.f.numero}</span><span>NF ${esc(x.f.nf)}</span><span>${dias===0?"recebido hoje":"há "+dias+(dias===1?" dia":" dias")}</span></div>
-      <div class="pc-t">Item ${x.idx+1} · ${esc(x.it.descricao)}</div>
+      <div class="pc-t">${esc(x.it.descricao||x.it.tag||"(sem descrição)")}</div>
       <div class="pc-m"><span>${esc(x.f.fornecedor)}</span><span>${esc(x.it.tag||"")}</span><span>${A.fmtQtd(x.it.qtd)} ${esc(x.it.und)}</span></div>
       <div class="pc-a"><input placeholder="Nº (opcional)" data-num autocomplete="off"><button class="btn primary" type="button" data-foto>Fotografar</button><button class="btn" type="button" data-arq>Anexar</button></div>
     </div>`}).join("");
@@ -936,8 +936,8 @@ async function enviar(status){
   if(semCert)f.status="cert_pendente";
   let fc=A.marcarConferencia(f,editando?"reenviada":"enviada",{por:"Campo"});
   const nd=(f.anexos?.doc||[]).length-((editando?.anexos?.doc)||[]).length,nc=(f.anexos?.cert||[]).length-((editando?.anexos?.cert)||[]).length;
-  const nrec=A.itensValidos(f).map((it,n)=>it.certStatus==="nao_recebido"?n+1:0).filter(Boolean);
-  if(nrec.length)fc=A.registrar(fc,"cert_nao_recebido",{por:"Campo",itensTxt:nrec.join(", ")});
+  const nrec=A.itensValidos(f).filter(it=>it.certStatus==="nao_recebido").map(it=>String(it.descricao||it.tag).slice(0,60));
+  if(nrec.length)fc=A.registrar(fc,"cert_nao_recebido",{por:"Campo",itensTxt:nrec.join("; ")});
   if(nd>0||nc>0)fc=A.registrar(fc,"anexos",{por:"Campo",txt:[nd>0?`${nd} foto(s) do documento`:"",nc>0?`${nc} certificado(s)`:""].filter(Boolean).join(" · ")});
   lembrarLocal($("localPadrao").value.trim().toUpperCase());
   try{const s=await A.store.salvar(fc);$("okNum").textContent=s.numero;$("okMsg").textContent=editando?"Correção reenviada para conferência do escritório":status==="sem_acao"?"Chegada registrada. Faça o recebimento quando puder.":semCert?"Enviado com certificado pendente. O escritório vai cobrar o fornecedor.":"Recebimento enviado para o escritório";$("okDoc").textContent=(tipo==="ROM"?"Romaneio ":"NF ")+(f.tipo==="ROM"?f.romaneio:f.nf)+" · "+A.itensValidos(f).length+" itens na ficha";editando=null;show("ok")}

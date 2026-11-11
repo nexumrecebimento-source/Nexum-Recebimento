@@ -869,10 +869,10 @@ $("btnSalvar").onclick=async()=>{
   }
   const orig=fichas.find(x=>x.id===f.id),oi=orig?.itens||[];let g=f;
   if(f.numero!==nVelho)g=A.registrar(g,"numero_alterado",{por:"Qualidade",de:nVelho,para:f.numero});
-  const vinc=edItens.map((it,n)=>it.certificado&&it.certificado!==oi[n]?.certificado?n+1:0).filter(Boolean);
-  const vali=edItens.map((it,n)=>it.certValidado&&!oi[n]?.certValidado?n+1:0).filter(Boolean);
-  if(vinc.length)g=A.registrar(g,"cert_vinculado",{por:"Qualidade",itensTxt:vinc.join(", ")});
-  if(vali.length)g=A.registrar(g,"cert_validado",{por:"Qualidade",itensTxt:vali.join(", ")});
+  const vinc=edItens.map((it,n)=>it.certificado&&it.certificado!==oi[n]?.certificado?(it.descricao||it.tag||"item sem descrição"):"").filter(Boolean);
+  const vali=edItens.map((it,n)=>it.certValidado&&!oi[n]?.certValidado?(it.descricao||it.tag||"item sem descrição"):"").filter(Boolean);
+  if(vinc.length)g=A.registrar(g,"cert_vinculado",{por:"Qualidade",itensTxt:vinc.join("; ")});
+  if(vali.length)g=A.registrar(g,"cert_validado",{por:"Qualidade",itensTxt:vali.join("; ")});
   try{
     if(lacunaOcupando)await A.store.excluir(lacunaOcupando.id);
     if(troca){await A.store.salvar(A.registrar({...troca,numero:nVelho||null},"numero_alterado",{por:"Qualidade",de:troca.numero,para:nVelho}))}
@@ -888,7 +888,7 @@ function renderCobranca(f){
   const ult=(f.cobrancas||[]).at(-1);
   $("cobPill").className="pill "+(pend.length?"cert_pendente":"finalizado");
   $("cobPill").textContent=pend.length?`${pend.length} a cobrar`:sem.length?"Todos já cobrados":"Sem pendências";
-  $("cobLista").innerHTML=sem.length?sem.map(x=>`<li><span class="code">Item ${x.n+1}</span><span>${esc(x.i.tag)} · ${esc(x.i.descricao)}</span><span class="code">${A.fmtQtd(x.i.qtd)} ${esc(x.i.und)}</span>${ja.has(x.k)?`<span class="pill finalizado">Cobrado${ult?" em "+A.fmtData(ult.em):""}</span>`:'<span class="pill cert_pendente">A cobrar</span>'}</li>`).join(""):'<li class="hint">Nenhum item sem certificado.</li>';
+  $("cobLista").innerHTML=sem.length?sem.map(x=>`<li><span>${esc(x.i.descricao||x.i.tag)}${x.i.tag&&x.i.descricao?" · "+esc(x.i.tag):""}</span><span class="code">${A.fmtQtd(x.i.qtd)} ${esc(x.i.und)}</span>${ja.has(x.k)?`<span class="pill finalizado">Cobrado${ult?" em "+A.fmtData(ult.em):""}</span>`:'<span class="pill cert_pendente">A cobrar</span>'}</li>`).join(""):'<li class="hint">Nenhum item sem certificado.</li>';
   const dest=A.destinatariosCertPendente(f);
   $("cobDest").textContent=dest.length?`Destinatários: ${dest.length} (fornecedor + Suprimentos, Logística, Qualidade e Planejamento, conforme Cadastros).`:"Nenhum destinatário cadastrado. Cadastre os e-mails do fornecedor e dos grupos em Cadastros.";
   $("btnCobVer").disabled=!pend.length;$("btnCobVer").textContent=pend.length?"Ver e-mail de cobrança":"Nada novo a cobrar";
@@ -951,6 +951,9 @@ $("lbClose").onclick=()=>$("lb").hidden=true;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("lb").hidden){$("lb").hidden=true;e.stopImmediatePropagation()}},true);
 
 /* conferência */
+/* item sempre pela descrição (ou TAG), nunca "item 1, 2, 3" */
+const nomeIt=(f,n)=>{const it=((f&&f.itens)||[])[n];return String((it&&(it.descricao||it.tag))||"item sem descrição").slice(0,60)};
+const itensDesc=(f,txt)=>{const t=String(txt||"");return /^\s*\d+(\s*,\s*\d+)*\s*$/.test(t)?t.split(",").map(x=>nomeIt(f,+x-1)).join("; "):t.replace(/^(\d+)(\s*\()/,(m,d,r)=>nomeIt(f,+d-1)+r)};
 const ACOES={numero_alterado:"Número da ficha alterado",enviada:"Enviada pelo campo",reenviada:"Reenviada corrigida pelo campo",aprovada:"Conferência aprovada",devolvida:"Devolvida ao campo como inconforme",anexos:"Documentos anexados",cert_vinculado:"Certificado vinculado",cert_validado:"Certificado validado",cert_nao_recebido:"Sem certificado (informado pelo campo)",cert_recebido:"Certificado recebido (anexado depois)",dilig_completado:"Completada com o Diligenciamento",rm_completado:"Itens preenchidos pela Lista de materiais (RM)",rm_nao_encontrada:"RM não encontrada na Lista de materiais",email:"Cobrança de certificado enviada"};
 function renderConf(){
   const c=A.conf(ed);
@@ -958,9 +961,9 @@ function renderConf(){
   $("dConf").textContent=A.CONFER[c.situacao];
   $("btnAprovar").hidden=c.situacao==="aprovada";$("btnDevolver").hidden=true;/* nada volta para o campo: o escritório corrige */
   $("dDevolInfo").hidden=c.situacao!=="devolvida";
-  if(c.situacao==="devolvida")$("dDevolInfo").innerHTML=`<strong>Aguardando correção do campo.</strong> ${(c.motivos||[]).map(m=>esc(A.MOTIVOS[m]||m)).join(" · ")}${(c.itens||[]).length?` · itens ${c.itens.map(i=>i+1).join(", ")}`:""}${c.comentario?`<br>“${esc(c.comentario)}”`:""}`;
+  if(c.situacao==="devolvida")$("dDevolInfo").innerHTML=`<strong>Aguardando correção do campo.</strong> ${(c.motivos||[]).map(m=>esc(A.MOTIVOS[m]||m)).join(" · ")}${(c.itens||[]).length?` · ${c.itens.map(i=>esc(nomeIt(ed,i))).join("; ")}`:""}${c.comentario?`<br>“${esc(c.comentario)}”`:""}`;
   const h=(c.historico||[]).slice().reverse();
-  $("dHist").innerHTML=h.length?h.map(ev=>`<li><span class="when">${A.fmtData(ev.em)}</span><span><strong>${ACOES[ev.acao]||ev.acao}</strong>${ev.por?" · "+esc(ev.por):""}${ev.motivos&&ev.motivos.length?"<br>"+ev.motivos.map(m=>esc(A.MOTIVOS[m]||m)).join(" · "):""}${ev.comentario?"<br>“"+esc(ev.comentario)+"”":""}${ev.itensTxt?"<br>Itens "+esc(ev.itensTxt):""}${ev.acao==="email"?`<br>${ev.qtd} item(ns) · ${ev.para} destinatário(s)`:""}${ev.acao==="anexos"?`<br>${esc(ev.txt||"")}`:""}${ev.acao==="numero_alterado"?`<br>Nº ${esc(ev.de??"-")} → Nº ${esc(ev.para??"-")}`:""}</span></li>`).join(""):'<li class="hint">Sem registros.</li>';
+  $("dHist").innerHTML=h.length?h.map(ev=>`<li><span class="when">${A.fmtData(ev.em)}</span><span><strong>${ACOES[ev.acao]||ev.acao}</strong>${ev.por?" · "+esc(ev.por):""}${ev.motivos&&ev.motivos.length?"<br>"+ev.motivos.map(m=>esc(A.MOTIVOS[m]||m)).join(" · "):""}${ev.comentario?"<br>“"+esc(ev.comentario)+"”":""}${ev.itensTxt?"<br>"+esc(itensDesc(ed,ev.itensTxt)):""}${ev.acao==="email"?`<br>${ev.qtd} item(ns) · ${ev.para} destinatário(s)`:""}${ev.acao==="anexos"?`<br>${esc(ev.txt||"")}`:""}${ev.acao==="numero_alterado"?`<br>Nº ${esc(ev.de??"-")} → Nº ${esc(ev.para??"-")}`:""}</span></li>`).join(""):'<li class="hint">Sem registros.</li>';
 }
 $("btnAprovar").onclick=async()=>{
   const f=A.marcarConferencia(coletar(),"aprovada",{por:"Qualidade"});
@@ -1092,14 +1095,14 @@ function renderCerts(){
   const ls=todas.filter(x=>(fCert==="todos"||x.sit===fCert)&&(!q||A.norm([x.f.numero,x.f.nf,x.f.fornecedor,x.it.descricao,x.it.tag,x.it.codigo,x.it.certificado].join(" ")).includes(q)));
   const totalC=ls.length;ls.splice(lim.cert);setTimeout(()=>maisBtn("certMais",totalC,"cert",renderCerts));
   const vazio={pendente:"Nenhum certificado pendente. Tudo em dia.",recebido:"Nenhum certificado aguardando validação.",validado:"Nenhum certificado validado ainda.",todos:"Nenhum item que exija certificado."}[fCert];
-  $("tCert").innerHTML=`<thead><tr><th>Ficha</th><th>NF · Fornecedor</th><th>Item</th><th>Certificado</th><th>Situação</th><th style="text-align:right">Ações</th></tr></thead><tbody>${ls.length?ls.map(x=>{
+  $("tCert").innerHTML=`<thead><tr><th>Ficha</th><th>NF · Fornecedor</th><th>Material</th><th>Certificado</th><th>Situação</th><th style="text-align:right">Ações</th></tr></thead><tbody>${ls.length?ls.map(x=>{
     const anx=(x.f.anexos?.cert||[]).map((a,k)=>({a,k})).filter(y=>y.a.item===x.idx||(y.a.itens||[]).includes(x.idx));
     const [rot,cls]=SIT_CERT[x.sit],key=x.f.id+"|"+x.idx;
     const sem=x.it.certStatus==="nao_recebido"&&x.sit==="pendente";
     return `<tr data-key="${esc(key)}">
       <td><span class="n">${x.f.numero}</span><div class="s">${A.fmtData(x.f.dataRecebimento)}</div></td>
       <td>NF ${esc(x.f.nf||"—")}<div class="s">${esc(x.f.fornecedor||"—")}</div></td>
-      <td class="it"><b>Item ${x.idx+1}</b> · ${esc(x.it.descricao)}<div class="s">${[x.it.tag,x.it.codigo,A.fmtQtd(x.it.qtd)+" "+(x.it.und||"")].filter(Boolean).map(esc).join(" · ")}</div></td>
+      <td class="it"><b>${esc(x.it.descricao||x.it.tag||"(sem descrição)")}</b><div class="s">${[x.it.tag,x.it.codigo,A.fmtQtd(x.it.qtd)+" "+(x.it.und||"")].filter(Boolean).map(esc).join(" · ")}</div></td>
       <td>${x.sit==="pendente"?`<div class="cn"><input data-num placeholder="Nº (opcional)" aria-label="Número do certificado"></div>${sem?'<div class="s">Campo marcou “Sem certificado”</div>':""}`:`<b>${esc(x.it.certificado||"RECEBIDO")}</b>${anx.length?`<div class="s">${anx.length} arquivo(s)</div>`:""}`}</td>
       <td><span class="pill ${cls}">${rot}</span></td>
       <td><div class="acts">${x.sit==="pendente"?`<button class="btn small primary" type="button" data-anexar>Anexar arquivo</button><button class="btn small" type="button" data-reg title="Registrar só o número, sem arquivo">Só o nº</button>`:""}${anx.length?`<button class="btn small" type="button" data-ver="${anx[0].k}">Ver</button>`:""}${x.sit==="recebido"?`<button class="btn small" type="button" data-validar>Validar</button>`:""}<button class="btn small ghost" type="button" data-ficha>Ficha</button></div></td></tr>`}).join(""):`<tr><td colspan="6" class="hint" style="padding:22px 12px">${vazio}</td></tr>`}</tbody>`;
@@ -1109,7 +1112,7 @@ function renderCerts(){
     tr.querySelector("[data-anexar]")?.addEventListener("click",()=>{certAlvo={id,idx,numero:num()};$("certFile").click()});
     tr.querySelector("[data-reg]")?.addEventListener("click",async()=>{const n=num();if(!n){toast("Digite o número do certificado ou use Anexar arquivo.",true);tr.querySelector("[data-num]").focus();return}await salvarCert(f,idx,{numero:n,anexos:[]})});
     tr.querySelector("[data-ver]")?.addEventListener("click",e=>abrirArquivo(f.anexos.cert[+e.currentTarget.dataset.ver]));
-    tr.querySelector("[data-validar]")?.addEventListener("click",async()=>{const g=JSON.parse(JSON.stringify(f));g.itens[idx].certValidado=true;try{await A.store.salvar(A.registrar(g,"cert_validado",{por:"Qualidade",itensTxt:String(idx+1)}));toast(`Certificado do item ${idx+1} (ficha ${f.numero}) validado`)}catch(e){toast(e.message,true)}});
+    tr.querySelector("[data-validar]")?.addEventListener("click",async()=>{const g=JSON.parse(JSON.stringify(f));g.itens[idx].certValidado=true;try{await A.store.salvar(A.registrar(g,"cert_validado",{por:"Qualidade",itensTxt:nomeIt(f,idx)}));toast(`Certificado de ${nomeIt(f,idx)} (ficha ${f.numero}) validado`)}catch(e){toast(e.message,true)}});
     tr.querySelector("[data-ficha]").addEventListener("click",()=>abrir(f));
   });
 }
@@ -1161,7 +1164,7 @@ function renderPend(){
   $("tPend").innerHTML=`<thead><tr><th>Ficha</th><th>Documento</th><th>Informação</th><th>Situação</th><th>Valor / regra</th><th style="text-align:right">Ações</th></tr></thead><tbody>${ls.length?ls.map((x,j)=>{
     const f=x.f,p=x.p,it=p.item!==undefined?f.itens[p.item]:null;
     const doc=f.lacuna?"—":f.tipo==="ROM"?"Romaneio "+esc(f.romaneio||"—"):"NF "+esc(f.nf||"—")+" · "+esc(f.fornecedor||"—");
-    const inf=(NXIMP.ROT[p.campo]||p.campo)+(it?`<div class="s">Item ${p.item+1} · ${esc((it.descricao||it.tag||"").slice(0,70))}</div>`:"");
+    const inf=(NXIMP.ROT[p.campo]||p.campo)+(it?`<div class="s">${esc((it.descricao||it.tag||"item sem descrição").slice(0,70))}</div>`:"");
     const sit=p.tipo==="auto"?'<span class="tagauto">Preenchido automaticamente</span>':'<span class="tagfalta">Faltando</span>';
     const val=p.campo==="lacuna"?"Número pulado na sequência do mapa. Abra para lançar a ficha ou marque como cancelado.":p.tipo==="auto"?`<b>${esc(p.campo==="dataRecebimento"?A.fmtData(p.valor):p.campo==="status"?(A.STATUS[p.valor]?.rotulo||p.valor):p.valor)}</b><div class="s">${esc(p.regra)}</div>`:'<span class="s">Não dá para deduzir dos outros registros. Complete na ficha.</span>';
     return `<tr data-j="${j}"><td><span class="n">${f.numero}</span></td><td>${doc}</td><td>${inf}</td><td>${sit}</td><td>${val}</td><td><div class="acts">${p.tipo==="auto"?'<button class="btn small" type="button" data-conf-auto>Confirmar</button>':""}${p.campo==="lacuna"?'<button class="btn small" type="button" data-cancelar>Cancelado</button>':""}<button class="btn small ghost" type="button" data-ficha>${p.campo==="lacuna"?"Lançar":"Ficha"}</button></div></td></tr>`}).join(""):'<tr><td colspan="6" class="hint" style="padding:22px 12px">Nenhuma pendência de dados aqui.</td></tr>'}</tbody>`;
