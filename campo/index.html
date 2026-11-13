@@ -87,6 +87,9 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
 .cg-c .meta{font-size:.78rem;color:var(--muted)}
 .cg-chips{display:flex;flex-wrap:wrap;gap:6px}
 .cg-chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 11px;font:600 .78rem var(--f-body,inherit);cursor:pointer;max-width:100%;text-align:left;color:var(--ink)}
+.cg-chips button.sug{border:1.5px dashed var(--warn);background:var(--warn-bg);color:var(--ink)}
+.cg-falta{display:grid;gap:6px;padding:10px;border-radius:8px;background:var(--warn-bg);border:1px solid var(--warn);font-size:.82rem}
+.cg-falta b{color:var(--warn)}.cg-falta .cg-chips button{background:var(--surface)}
 .cg-chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .cg-acoes{display:flex;gap:14px;flex-wrap:wrap}
 .lnk{background:none;border:0;padding:4px 0;color:var(--accent);font-weight:600;cursor:pointer;font-size:.86rem}
@@ -660,7 +663,7 @@ function renderCG(){
       ${c.semNumero?`<div class="meta" style="color:var(--accent);font-weight:600">Documento sem número de certificado: os itens ficam como “EM ANEXO”.</div>`:""}
       ${c.evidencia?`<div class="meta">Por que: ${esc(c.evidencia)}</div>`:""}
       ${c.fonte==="ia"&&c.confianca&&c.confianca<0.6?`<div class="meta" style="color:var(--warn);font-weight:700">⚠ A IA não tem certeza: confira os itens marcados.</div>`:""}
-      <div class="f"><label>Vale para os itens (toque para marcar)</label><div class="cg-chips">${vis.map(({it,n})=>`<button type="button" data-cgi="${n}" aria-pressed="${c.itens.includes(n)}">${esc(itemRot(it,n))}</button>`).join("")||'<span class="meta">Adicione os itens abaixo primeiro.</span>'}${vis.length>1?`<button type="button" data-cgtodos>${c.itens.length===vis.length?"Desmarcar todos":"Todos os itens"}</button>`:""}</div></div>
+      <div class="f"><label>Vale para os itens (toque para marcar)</label><div class="cg-chips">${vis.map(({it,n})=>`<button type="button" data-cgi="${n}" aria-pressed="${c.itens.includes(n)}" class="${!c.itens.includes(n)&&(c.sugeridos||[]).includes(n)?"sug":""}" title="${!c.itens.includes(n)&&(c.sugeridos||[]).includes(n)?"A IA acha que este item também é deste certificado: toque para confirmar":""}">${!c.itens.includes(n)&&(c.sugeridos||[]).includes(n)?"? ":""}${esc(itemRot(it,n))}</button>`).join("")||'<span class="meta">Adicione os itens abaixo primeiro.</span>'}${vis.length>1?`<button type="button" data-cgtodos>${c.itens.length===vis.length?"Desmarcar todos":"Todos os itens"}</button>`:""}</div></div>
     </div>`).join("");
   $("cgCerts").querySelectorAll("[data-cg]").forEach(el=>{const c=cgCerts[+el.dataset.cg];
     el.querySelectorAll("[data-cgk]").forEach(inp=>inp.addEventListener("change",()=>{c[inp.dataset.cgk]=inp.value.trim().toUpperCase();inp.value=c[inp.dataset.cgk];aplicarCG();renderItens()}));
@@ -669,6 +672,13 @@ function renderCG(){
     const td=el.querySelector("[data-cgtodos]");if(td)td.onclick=()=>{c.itens=c.itens.length===vis.length?[]:vis.map(x=>x.n);aplicarCG();renderItens()};
     el.querySelector("[data-cgdel]").onclick=()=>{cgCerts.splice(+el.dataset.cg,1);aplicarCG();renderItens()};
   });
+  /* rede de segurança: itens que exigem certificado e ficaram sem nenhum depois da leitura */
+  if(cgCerts.length){const cobertos=new Set(cgCerts.flatMap(c=>c.itens));
+    const falta=itens.map((it,n)=>({it,n})).filter(({it,n})=>(it.descricao||it.tag)&&it.exigeCertificado&&!cobertos.has(n)&&!(it.certificado&&!it.certDeGeral)&&it.certStatus!=="nao_recebido");
+    if(falta.length){const box=document.createElement("div");box.className="cg-falta";
+      box.innerHTML=`<span><b>⚠ ${falta.length} ${falta.length===1?"item exige certificado e ficou":"itens exigem certificado e ficaram"} sem nenhum.</b> Se ${falta.length===1?"ele está":"estão"} no certificado lido, toque para incluir${cgCerts.length>1?" no 1º certificado":""}; se não, marque “Sem certificado” no item.</span><div class="cg-chips">${falta.map(({it,n})=>`<button type="button" data-cgadd="${n}">+ ${esc(itemRot(it,n))}</button>`).join("")}</div>`;
+      $("cgCerts").appendChild(box);
+      box.querySelectorAll("[data-cgadd]").forEach(b=>b.onclick=()=>{const n=+b.dataset.cgadd,c=cgCerts.find(x=>(x.sugeridos||[]).includes(n))||cgCerts[0];c.itens=[...c.itens,n].sort((a,b)=>a-b);aplicarCG();renderItens()})}}
   $("cgAcoes").hidden=!cgFotos.length&&!cgCerts.length;
   $("cgReler").hidden=!cgFotos.length||!(window.NXIA&&NXIA.disponivel());
   if(cgEstado){const e=$("cgSt");e.hidden=!cgEstado.html;e.className="cg-st "+(cgEstado.tom||"");e.innerHTML=cgEstado.html||""}else $("cgSt").hidden=true;
@@ -694,10 +704,12 @@ async function lerCG(){
       if(extra.length){c.itens=[...c.itens,...extra].sort((x,y)=>x-y);c.evidencia=(c.evidencia?c.evidencia+" · ":"")+"vale também para o outro componente do mesmo produto (kit)"}});
     /* certificado sem número próprio: o item fica como "EM ANEXO" (o documento está anexado para consulta) */
     r.forEach(c=>{if(!c.numero&&c.itens.length){c.numero="EM ANEXO";c.semNumero=true}});
-    r.forEach(c=>{const ja=cgCerts.find(x=>x.numero&&x.numero===c.numero&&!c.semNumero);if(ja){ja.itens=[...new Set([...ja.itens,...c.itens])];return}
+    r.forEach(c=>{const ja=cgCerts.find(x=>x.numero&&x.numero===c.numero&&!c.semNumero);if(ja){ja.itens=[...new Set([...ja.itens,...c.itens])];ja.sugeridos=[...new Set([...(ja.sugeridos||[]),...(c.sugeridos||[])])];return}
       cgCerts.push({...c,imagens:(c.imagens||[]).length?c.imagens:cgFotos.map((_,k)=>k),fonte:"ia"})});
     const cob=new Set(cgCerts.flatMap(c=>c.itens)).size;
     cgStatus("ok",`✓ ${r.length} ${r.length===1?"certificado lido":"certificados lidos"} · ${cob} ${cob===1?"item preenchido":"itens preenchidos"}. Confira os itens marcados.`);
+    const nSug=new Set(cgCerts.flatMap(c=>(c.sugeridos||[]).filter(n=>!c.itens.includes(n)))).size;
+    if(nSug)toast(`A IA sugeriu ${nSug} ${nSug===1?"item":"itens"} com dúvida (marcados com “?”). Toque para confirmar.`);
     aplicarCG();renderItens();
   }catch(e){cgStatus("warn",esc(e.message));manual()}
   finally{btns.forEach(b=>b.disabled=false)}

@@ -48,20 +48,38 @@ REGRAS IMPORTANTES para ligar o certificado aos itens:
 3. O código do fornecedor no certificado normalmente é diferente do código/TAG do item: compare principalmente pelo produto (marca, linha, cor/RAL, bitola, classe, norma).
 4. Na dúvida entre incluir ou não um item claramente do mesmo produto, inclua e baixe a "confianca".
 
+Depois, faça a CONFERÊNCIA ITEM POR ITEM: para CADA item da lista (todos os índices, sem pular nenhum), diga se algum certificado lido cobre aquele item:
+- "coberto": o certificado claramente é desse item (cert = índice do certificado no array "certificados");
+- "provavel": parece ser do item, mas há dúvida (ex.: mesmo produto, descrição incompleta) — informe o cert;
+- "nao": nenhum certificado lido é desse item (cert = -1).
+O que estiver "coberto" também deve aparecer em "itens" do certificado correspondente.
+
 Responda SOMENTE com JSON no formato:
-{"certificados":[{"numero":"","lote":"","material":"","norma":"","fabricante":"","data":"","tipo":"","evidencia":"","itens":[0],"imagens":[0],"confianca":0.9}]}
-Se não conseguir ler nenhum certificado, responda {"certificados":[]}.`;
+{"certificados":[{"numero":"","lote":"","material":"","norma":"","fabricante":"","data":"","tipo":"","evidencia":"","itens":[0],"imagens":[0],"confianca":0.9}],
+ "cobertura":[{"item":0,"cert":0,"situacao":"coberto","motivo":"até 12 palavras"}]}
+Se não conseguir ler nenhum certificado, responda {"certificados":[],"cobertura":[]}.`;
   }
   function interpretar(txt, n, ni) {
     let j; try { j = JSON.parse(txt); } catch (e) { const m = String(txt).match(/\{[\s\S]*\}/); j = m ? JSON.parse(m[0]) : { certificados: [] }; }
-    return (j.certificados || []).map(c => ({
+    const certs = (j.certificados || []).map(c => ({
       numero: String(c.numero || "").trim().toUpperCase(), tipo: String(c.tipo || "").trim(), evidencia: String(c.evidencia || "").trim().slice(0, 160),
       lote: String(c.lote || "").trim().toUpperCase(), material: String(c.material || "").trim(),
       norma: String(c.norma || "").trim(), fabricante: String(c.fabricante || "").trim(), data: String(c.data || "").trim(),
       itens: [...new Set((c.itens || []).map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < n))],
       imagens: [...new Set((c.imagens || []).map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < ni))],
-      confianca: Math.max(0, Math.min(1, Number(c.confianca) || 0))
-    })).filter(c => c.numero || c.material || (c.itens || []).length);
+      confianca: Math.max(0, Math.min(1, Number(c.confianca) || 0)),
+      sugeridos: []
+    }));
+    /* conferência item a item: o que a IA marcou como "coberto" entra no certificado; "provavel" vira sugestão para confirmar */
+    const cob = (j.cobertura || []).map(x => ({ item: Number(x.item), cert: Number(x.cert), situacao: String(x.situacao || "").toLowerCase(), motivo: String(x.motivo || "").slice(0, 120) }))
+      .filter(x => Number.isInteger(x.item) && x.item >= 0 && x.item < n);
+    cob.forEach(x => { const c = certs[x.cert]; if (!c) return;
+      if (x.situacao.startsWith("cob") && !c.itens.includes(x.item)) c.itens.push(x.item);
+      else if (x.situacao.startsWith("prov") && !c.itens.includes(x.item) && !c.sugeridos.includes(x.item)) c.sugeridos.push(x.item); });
+    certs.forEach(c => c.itens.sort((a, b) => a - b));
+    const out = certs.filter(c => c.numero || c.material || c.itens.length || c.sugeridos.length);
+    out.cobertura = cob;
+    return out;
   }
   function traduzErro(e) {
     const m = String((e && (e.message || e.code)) || e);
