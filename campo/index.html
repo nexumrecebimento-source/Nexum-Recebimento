@@ -511,7 +511,7 @@ function abrirNovo(t){
   editando=null;setChave(null);resetDilig();$("segTipo").hidden=false;$("devolMsg").hidden=true;$("btnChegada").hidden=false;$("btnEnviar").textContent="Enviar recebimento";
   itens=[novoItem()]; fotosDoc=[]; fotosPC=[]; fotosCert=[]; cgFotos=[]; cgCerts=[]; cgEstado=null;
   ["nf","fornecedor","romaneio","romaneioA","obs","localPadrao"].forEach(id=>$(id).value="");
-  $("data").value="";marcarData();$("localPadrao").value=localLembrado();
+  $("data").value="";marcarData();$("localPadrao").value="";/* local é sempre informado pelo inspetor (não vem preenchido) */
   setTipo(t); itens=[novoItem()]; renderItens(); renderThumbs(); show("lancar");
 }
 function abrirEdicao(f){
@@ -929,7 +929,7 @@ function lembrarCodigo(cod){
 function usarDilig(){
   const sel=[...dlSel].sort((a,b)=>a-b).map(i=>dlRes.itens[i]);
   if(!sel.length){toast("Marque pelo menos um item.",true);return}
-  const enc=dlRes.situacao==="encontrada",local=$("localPadrao").value.trim().toUpperCase()||localLembrado();
+  const enc=dlRes.situacao==="encontrada",local=$("localPadrao").value.trim().toUpperCase();
   const idxSel=[...dlSel].sort((a,b)=>a-b),difs=[];
   const qtdDig=i=>{const q=$("dl").querySelector(`[data-dlq="${i}"]`);if(!q||q.value==="")return null;const v=parseFloat(String(q.value).replace(",","."));return isNaN(v)?null:v};
   const novos=sel.map((it,k)=>{const qn=enc?+(it.qtdReceb||it.qtd)||"":"",qd=qtdDig(idxSel[k]),q=qd!=null?qd:qn,dif=enc&&qd!=null&&qn!==""&&qd!==qn;
@@ -965,7 +965,7 @@ $("dlArquivo").onchange=async e=>{const f=e.target.files[0];e.target.value="";if
 /* duplicidade */
 function montar(){
   const base=editando?JSON.parse(JSON.stringify(editando)):{origem:"campo",assinaturas:{},criadoPor:"Campo"};
-  const f={...base,tipo,dataRecebimento:$("data").value,observacao:$("obs").value.trim(),itens:itens.map((x,n)=>{const y={...x,qtd:x.qtd===""?"":Number(x.qtd),temCertAnexo:!!(x.certAnexos||[]).length||(x.certDeGeral&&cgCerts.some(c=>c.itens.includes(n)&&c.imagens.length))};delete y.certAnexos;return y}),
+  const f={...base,tipo,localPadrao:$("localPadrao").value.trim().toUpperCase()||undefined,dataRecebimento:$("data").value,observacao:$("obs").value.trim(),itens:itens.map((x,n)=>{const y={...x,qtd:x.qtd===""?"":Number(x.qtd),temCertAnexo:!!(x.certAnexos||[]).length||(x.certDeGeral&&cgCerts.some(c=>c.itens.includes(n)&&c.imagens.length))};delete y.certAnexos;return y}),
     anexos:{doc:[...fotosDoc,...(tipo==="NF"?fotosPC.map((a,k)=>({...a,pc:true,nome:"Pedido de compra"+(fotosPC.length>1?" ("+(k+1)+")":"")})):[])],cert:[...itens.flatMap((x,n)=>(x.certAnexos||[]).map((a,k)=>({...a,item:n,nome:`${x.certificado?"Certificado "+x.certificado:"Certificado"} · ${nomeItem(x,n,60)}${(x.certAnexos||[]).length>1?" ("+(k+1)+")":""}`}))),...anexosCG(),...fotosCert]}};
   if(tipo==="NF"){Object.assign(f,{chaveNFe:chaveNF&&chaveNF.valida&&chaveNF.nf===$("nf").value.trim()?chaveNF.chave:"",serie:chaveNF?.serie||f.serie||"",cnpjFornecedor:chaveNF?.cnpj||f.cnpjFornecedor||"",nf:$("nf").value.trim(),fornecedor:A.norm($("fornecedor").value),romaneio:A.norm($("romaneio").value),fornecimento:"MILPLAN ENGENHARIA"})}
   else{Object.assign(f,{nf:"",romaneio:A.norm($("romaneioA").value),fornecedor:"ANGLO AMERICAN",fornecimento:"ANGLO AMERICAN",observacao:[A.OBS_ANGLO,$("obs").value.trim()].filter(Boolean).join("\n")})}

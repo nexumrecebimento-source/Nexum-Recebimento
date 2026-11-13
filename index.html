@@ -1291,9 +1291,9 @@ async function completarRM(){
       const j=doCampo.findIndex((i,jj)=>!usados.has(jj)&&((x.tag&&k(i.tag)===k(x.tag))||(x.descricao&&k(i.descricao)===k(x.descricao))));
       const q=x.qtd&&!isNaN(+String(x.qtd).replace(",","."))?+String(x.qtd).replace(",","."):"";
       if(j>=0){usados.add(j);const i=doCampo[j];
-        if(!i.descricao)i.descricao=x.descricao;if(!i.tag)i.tag=x.tag;if(!i.und)i.und=A.normUnd(x.und);if(i.qtd===""||i.qtd==null)i.qtd=q;if(!i.local)i.local=x.local||f.localPadrao||"";
+        if(!i.descricao)i.descricao=x.descricao;if(!i.tag)i.tag=x.tag;if(!i.und)i.und=A.normUnd(x.und);if(i.qtd===""||i.qtd==null)i.qtd=q;if(!i.local)i.local=f.localPadrao||"";
         if(!i.conf)i.conf="C";i.docRef=i.docRef||x.desenho||undefined;i.origem=i.origem||"lista_materiais";novos.push(i);return}
-      novos.push({descricao:x.descricao,tag:x.tag,und:A.normUnd(x.und)||"PÇ",qtd:q,local:x.local||(doCampo[0]&&doCampo[0].local)||"",conf:"C",certificado:"",docRef:x.desenho||undefined,origem:"lista_materiais"});
+      novos.push({descricao:x.descricao,tag:x.tag,und:A.normUnd(x.und)||"PÇ",qtd:q,local:f.localPadrao||(doCampo[0]&&doCampo[0].local)||"",conf:"C",certificado:"",docRef:x.desenho||undefined,origem:"lista_materiais"});
     });
     doCampo.forEach((i,jj)=>{if(!usados.has(jj))novos.push(i)});
     f.itens=novos;novos.forEach((it,n)=>{if(it.origem==="lista_materiais")auto.push({campo:"itens",item:n,valor:(it.tag||it.descricao)+" · "+it.qtd+" "+it.und,regra})});
