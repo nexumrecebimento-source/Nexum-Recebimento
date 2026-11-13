@@ -300,6 +300,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
           <div class="f" data-tipo="NF"><label for="nf">Nº da NF</label><input id="nf" inputmode="numeric" autocomplete="off"></div>
           <div class="f" data-tipo="NF"><label for="fornecedor">Fornecedor</label><input id="fornecedor" autocomplete="off" list="listaForn"></div>
           <div class="f" data-tipo="NF"><label for="romaneio">Romaneio (PC-REV)</label><input id="romaneio" placeholder="Ex.: 4166-REV-00" autocomplete="off"></div>
+          <div class="f"><label for="localPadrao">Local de armazenamento</label><input id="localPadrao" placeholder="Ex.: KM 188, PLATÔ-13" title="Vale para todos os itens"></div>
           <div class="f full" data-tipo="ROM"><label for="romaneioA">Nº da RM (Romaneio de Materiais)</label><input id="romaneioA" placeholder="Ex.: 1684-FLT-2026" autocomplete="off"><small class="rm-hint">Os itens desta RM são buscados e preenchidos <b>automaticamente no escritório</b>. Só adicione item abaixo se algo chegou com problema (NC) ou faltando.</small></div>
         </div>
         <datalist id="listaForn"></datalist>
@@ -321,9 +322,6 @@ header.top{border-bottom:0!important;box-shadow:none!important}
 
       <div class="block">
         <h3><span class="n">2</span>Itens recebidos</h3>
-        <div class="grid2">
-          <div class="f full"><label for="localPadrao">Local de armazenamento (todos os itens)</label><input id="localPadrao" placeholder="Ex.: ALMOXARIFADO, PLATÔ-13, KM 188"></div>
-        </div>
         <div class="cg" id="certGeral" data-tipo="NF">
           <div class="cg-h"><b>Certificados da NF</b><span>Fotografe todos os certificados de uma vez. A IA lê e preenche os itens sozinha. Um certificado pode valer para vários itens.</span></div>
           <div class="shot-btns"><button class="btn primary" type="button" id="cgFoto">📷 Fotografar certificados</button><button class="btn" type="button" id="cgArq">Galeria / PDF</button></div>
