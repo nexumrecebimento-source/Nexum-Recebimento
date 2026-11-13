@@ -3,7 +3,7 @@
    Se o AI Logic não estiver ativado no Firebase, lança erro com code "ia_desligada". */
 (function () {
   const cfg = () => { const t = window.NEXUM_NUVEM_TESTE, n = window.NEXUM_NUVEM; return (t && t.FIREBASE) ? t : (n || t || {}); };
-  const modelos = () => [cfg().IA_MODELO, "gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash"].filter(Boolean);
+  const modelos = () => [cfg().IA_MODELO, "gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-flash-lite-latest", "gemini-2.0-flash"].filter(Boolean);
   let ai = null, modeloOk = null;
   function iniciar() {
     if (ai) return ai;
@@ -58,7 +58,8 @@ Se não conseguir ler nenhum certificado, responda {"certificados":[]}.`;
     const m = String((e && (e.message || e.code)) || e);
     const x = new Error("Não consegui ler o certificado agora. Marque os itens manualmente.");
     if (/App Check/i.test(m)) { x.code = "ia_appcheck"; x.message = "A leitura automática está bloqueada pelo App Check do Firebase (precisa desligar a exigência do App Check para o AI Logic). Marque os itens manualmente por enquanto."; }
-    else if (/not been used|disabled|PERMISSION_DENIED|403|API has not|firebasevertexai|AI Logic|enable/i.test(m)) { x.code = "ia_desligada"; x.message = "A leitura automática ainda não está ativada no Firebase (AI Logic). Marque os itens manualmente por enquanto."; }
+    else if (/high demand|overloaded|UNAVAILABLE|\[50[03]\s*\]|\b50[03]\b|try again later/i.test(m)) { x.code = "ia_ocupada"; x.message = "Os servidores da IA do Google estão sobrecarregados agora. Toque em “↻ Ler de novo com IA” em alguns minutos, ou marque os itens manualmente."; }
+    else if (/has not been used|is disabled|SERVICE_DISABLED|API has not been|PERMISSION_DENIED|\[403\s*\]/i.test(m)) { x.code = "ia_desligada"; x.message = "A leitura automática ainda não está ativada no Firebase (AI Logic). Marque os itens manualmente por enquanto."; }
     else if (/quota|RESOURCE_EXHAUSTED|429/i.test(m)) { x.code = "ia_cota"; x.message = "A cota gratuita de leitura automática do dia acabou. Marque os itens manualmente."; }
     else if (/network|Failed to fetch|offline/i.test(m) || !navigator.onLine) { x.code = "ia_offline"; x.message = "Sem internet para a leitura automática. Marque os itens manualmente ou tente de novo com sinal."; }
     x.original = m;
@@ -85,6 +86,8 @@ Se não conseguir ler nenhum certificado, responda {"certificados":[]}.`;
         /* modelo inexistente ou cota do dia esgotada nesse modelo: cada modelo tem a sua cota, tenta o próximo */
         if (/not found|404|is not supported|unknown model/i.test(m)) continue;
         if (/quota|RESOURCE_EXHAUSTED|429/i.test(m)) { if (modeloOk === nome) modeloOk = null; continue; }
+        /* modelo sobrecarregado (erro 500/503 do Google): espera um pouco e tenta o próximo modelo */
+        if (/high demand|overloaded|UNAVAILABLE|\[50[03]\s*\]|\b50[03]\b|try again later/i.test(m)) { if (modeloOk === nome) modeloOk = null; await new Promise(z => setTimeout(z, 1500)); continue; }
         throw traduzErro(e);
       }
     }
