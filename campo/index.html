@@ -545,7 +545,17 @@ function certSecao(it,i){
       ${st}
     </div>`;
 }
-function escolherArquivo(camera,cb){const inp=document.createElement("input");inp.type="file";inp.accept=camera?"image/*":"image/*,application/pdf";if(camera)inp.setAttribute("capture","environment");else inp.multiple=true;inp.onchange=()=>cb(inp.files);inp.click()}
+/* No iPhone o seletor de arquivo só devolve a foto se o campo estiver dentro da página (um campo "solto" é descartado
+   pelo navegador enquanto a câmera está aberta). Por isso o campo fica na página até a escolha terminar. */
+let arqAtual=null;
+function escolherArquivo(camera,cb){
+  if(arqAtual)arqAtual.remove();
+  const inp=document.createElement("input");inp.type="file";inp.accept=camera?"image/*":"image/*,application/pdf";
+  if(camera)inp.setAttribute("capture","environment");else inp.multiple=true;
+  inp.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+  inp.onchange=()=>{const fs=[...inp.files];setTimeout(()=>{inp.remove();if(arqAtual===inp)arqAtual=null},500);if(fs.length)cb(fs)};
+  document.body.appendChild(inp);arqAtual=inp;inp.click();
+}
 function renderItens(){
   const und=A.UNIDADES.map(u=>`<option>${u}</option>`).join("");
   $("itens").innerHTML=itens.map((it,i)=>{
@@ -606,6 +616,7 @@ function lerFotos(files,arr,depois,op){
     if(file.type==="application/pdf"){if(file.size>2.5e6){toast("PDF muito grande ("+(file.size/1e6).toFixed(1)+" MB). Use até 2,5 MB ou fotografe o certificado.",true);return}const fr=new FileReader();fr.onload=()=>{arr.push({nome:file.name,pdf:true,data:fr.result});fim()};fr.readAsDataURL(file);return}
     const img=new Image(),url=URL.createObjectURL(file);
     img.onload=()=>{const s=Math.min(1,MAX/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);arr.push({nome:file.name,img:c.toDataURL("image/jpeg",Q)});URL.revokeObjectURL(url);fim()};
+    img.onerror=()=>{URL.revokeObjectURL(url);toast("Não consegui abrir a imagem "+(file.name||"")+". Tente fotografar de novo ou escolha outro arquivo.",true);fim()};
     img.src=url;
   });
 }
@@ -881,8 +892,9 @@ function usarDilig(){
   const sel=[...dlSel].sort((a,b)=>a-b).map(i=>dlRes.itens[i]);
   if(!sel.length){toast("Marque pelo menos um item.",true);return}
   const enc=dlRes.situacao==="encontrada",local=$("localPadrao").value.trim().toUpperCase()||localLembrado();
-  const novos=sel.map(it=>({descricao:A.norm(it.descricao+(it.descComp?" - "+it.descComp:"")),tag:it.codigo,und:A.normUnd(it.un),qtd:enc?(it.qtdReceb||it.qtd):"",certificado:"",local,conf:"C",
-    pc:it.pc,itemPc:it.itemPc,conferirNF:true,pedidoPedeCertificado:!!it.pedidoPedeCertificado,exigeCertificado:!!it.pedeCertificado,origem:"diligenciamento",qtdPedido:it.qtd,undPedido:A.norm(it.un)}));
+  const novos=sel.map(it=>{const qn=enc?+(it.qtdReceb||it.qtd)||"":"";
+    return {descricao:A.norm(it.descricao+(it.descComp?" - "+it.descComp:"")),tag:it.codigo,und:A.normUnd(it.un),qtd:qn===""?"":String(qn),certificado:"",local,conf:"C",
+    pc:it.pc,itemPc:it.itemPc,conferirNF:true,pedidoPedeCertificado:!!it.pedidoPedeCertificado,exigeCertificado:!!it.pedeCertificado,origem:"diligenciamento",qtdPedido:it.qtd,undPedido:A.norm(it.un)}});
   const vazios=itens.every(x=>!x.descricao&&!x.tag);
   itens=vazios?novos:[...itens,...novos];
   if(dlRes.itens[0]&&!$("romaneio").value)$("romaneio").value=String(+dlRes.itens[0].pc)+"-REV-00";
