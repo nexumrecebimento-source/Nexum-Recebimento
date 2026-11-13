@@ -282,7 +282,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
           <button class="btn scanbtn" type="button" id="btnScanDoc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg><span id="scanDocTxt">Escanear código de barras da NF</span></button>
           <div class="chave" id="chaveBox" hidden></div>
           <div class="shot-btns">
-            <label class="btn primary" for="fotoDoc">Fotografar documento</label>
+            <button class="btn primary" type="button" id="scanDoc">📄 Escanear documento</button>
             <label class="btn" for="fotoDocGal">Galeria / PDF</label>
           </div>
           <input id="fotoDoc" type="file" accept="image/*" capture="environment" hidden>
@@ -292,7 +292,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
         <div class="pcbox" data-tipo="NF">
           <div class="cg-h"><b>Pedido de compra (PC)</b><span>Foto ou PDF do pedido. Fica junto com esta NF para consulta.</span></div>
           <div class="shot-btns">
-            <label class="btn" for="fotoPC">Fotografar pedido</label>
+            <button class="btn" type="button" id="scanPC">📄 Escanear pedido</button>
             <label class="btn" for="fotoPCGal">Galeria / PDF</label>
           </div>
           <input id="fotoPC" type="file" accept="image/*" capture="environment" hidden>
@@ -460,14 +460,14 @@ function renderPendCert(){
       <div class="pc-m"><span class="pill cert_pendente">Pendente – Certificado</span><span>Ficha ${x.f.numero}</span><span>NF ${esc(x.f.nf)}</span><span>${dias===0?"recebido hoje":"há "+dias+(dias===1?" dia":" dias")}</span></div>
       <div class="pc-t">${esc(x.it.descricao||x.it.tag||"(sem descrição)")}</div>
       <div class="pc-m"><span>${esc(x.f.fornecedor)}</span><span>${esc(x.it.tag||"")}</span><span>${A.fmtQtd(x.it.qtd)} ${esc(x.it.und)}</span></div>
-      <div class="pc-a"><input placeholder="Nº (opcional)" data-num autocomplete="off"><button class="btn primary" type="button" data-foto>Fotografar</button><button class="btn" type="button" data-arq>Anexar</button></div>
+      <div class="pc-a"><input placeholder="Nº (opcional)" data-num autocomplete="off"><button class="btn primary" type="button" data-foto>📄 Escanear</button><button class="btn" type="button" data-arq>Anexar</button></div>
     </div>`}).join("");
   el.querySelectorAll(".pc-item").forEach(row=>{
     const x=l[+row.dataset.k];
     const salvar=files=>{const tmp=[];lerFotos(files,tmp,async()=>{if(tmp.length<files.length)return;
       const g=A.anexarCertificado(x.f,x.idx,{numero:row.querySelector("[data-num]").value,anexos:tmp},"Campo");
       try{await A.store.salvar(g);toast(`Certificado anexado ao item ${x.idx+1} da ficha ${x.f.numero} · pendência resolvida`);renderPendCert()}catch(e){toast("Não foi possível salvar.",true)}})};
-    row.querySelector("[data-foto]").onclick=()=>escolherArquivo(true,salvar);
+    row.querySelector("[data-foto]").onclick=()=>escanearOuFoto(salvar,"Escanear certificado");
     row.querySelector("[data-arq]").onclick=()=>escolherArquivo(false,salvar);
   });
 }
@@ -721,6 +721,9 @@ $("cgFoto").onclick=()=>escanearOuFoto(addCG,"Escanear certificados");
 $("cgArq").onclick=()=>escolherArquivo(false,addCG);
 $("cgReler").onclick=lerCG;
 $("cgManual").onclick=()=>{cgCerts.push({numero:"",lote:"",material:"",itens:[],imagens:[],fonte:"manual"});renderCG();const l=$("cgCerts").lastElementChild;l&&l.querySelector("input").focus()};
+/* documento da NF / romaneio e pedido de compra: também pelo scanner (recorte e realce automáticos) */
+$("scanDoc").onclick=()=>escanearOuFoto(fs=>lerFotos(fs,fotosDoc,null,{max:1600,q:.8}),tipo==="ROM"?"Escanear romaneio":"Escanear nota fiscal");
+$("scanPC").onclick=()=>escanearOuFoto(fs=>lerFotos(fs,fotosPC,null,{max:1600,q:.8}),"Escanear pedido de compra");
 [["fotoDoc",()=>fotosDoc],["fotoDocGal",()=>fotosDoc],["fotoPC",()=>fotosPC],["fotoPCGal",()=>fotosPC]].forEach(([id,arr])=>$(id).onchange=e=>{lerFotos(e.target.files,arr());e.target.value=""});
 
 /* ---------- scanner de código de barras / QR ---------- */
