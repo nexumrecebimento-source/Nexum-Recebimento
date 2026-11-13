@@ -42,6 +42,12 @@ Para CADA certificado distinto que aparecer nas imagens (um certificado pode ter
 - confianca: de 0 a 1, o quanto você tem certeza da associação com os itens.
 Mesmo sem número, se o documento for um certificado/laudo de um material da lista, inclua-o e informe os itens.
 
+REGRAS IMPORTANTES para ligar o certificado aos itens:
+1. Produtos de mais de um componente (tinta bicomponente/epóxi/poliuretano, resina, adesivo, argamassa, selante): um único certificado costuma listar "COMP. A" e "COMP. B" (ou base + endurecedor/catalisador/agente de cura/diluente). Ele vale para TODOS os componentes: inclua em "itens" o item de cada componente que estiver na lista (ex.: "TINTA ... COMP A" e "TINTA ... COMP B"), mesmo que o título cite só um.
+2. Se o certificado tiver uma tabela com vários códigos, lotes, bitolas ou componentes, cada linha pode corresponder a um item diferente: ligue todos os itens correspondentes.
+3. O código do fornecedor no certificado normalmente é diferente do código/TAG do item: compare principalmente pelo produto (marca, linha, cor/RAL, bitola, classe, norma).
+4. Na dúvida entre incluir ou não um item claramente do mesmo produto, inclua e baixe a "confianca".
+
 Responda SOMENTE com JSON no formato:
 {"certificados":[{"numero":"","lote":"","material":"","norma":"","fabricante":"","data":"","tipo":"","evidencia":"","itens":[0],"imagens":[0],"confianca":0.9}]}
 Se não conseguir ler nenhum certificado, responda {"certificados":[]}.`;
