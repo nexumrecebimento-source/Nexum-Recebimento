@@ -568,7 +568,7 @@ function renderItens(){
     return `<div class="item${zero?" zero":""}${flag?" flag":""}" data-i="${i}">
       ${it.pc?`<div class="item-ref">${it.origem==="diligenciamento"?'<span class="dl">Diligenciamento</span>':""}<span>PC ${esc(it.pc)}/${esc(it.itemPc)}</span>${it.qtdPedido!==undefined&&it.qtdPedido!==""?`<span>pedido ${A.fmtQtd(it.qtdPedido)} ${esc(it.undPedido||"")}</span>`:""}${it.undPedido&&A.norm(it.undPedido)!==A.norm(it.und)?'<span class="div">unidade diferente do pedido</span>':""}</div>`:""}
       <div class="item-head"><b title="Item ${i+1}">${esc(nomeItem(it,i,46))}</b>${flag?'<span class="pill bad">Corrigir</span>':""}${zero?'<span class="zero-note">0 entregue · fora da ficha</span>':""}${itens.length>1?`<button type="button" class="x" data-del="${i}">Remover</button>`:""}</div>
-      ${it.conferirNF?`<div class="confnf"><span>Quantidade e unidade vieram do <b>pedido</b>. Confira com a NF e ajuste se for diferente.</span><button type="button" data-okNF>Confere com a NF</button></div>`:""}
+      ${false&&it.conferirNF?`<div class="confnf"><span>Quantidade e unidade vieram do <b>pedido</b>. Confira com a NF e ajuste se for diferente.</span><button type="button" data-okNF>Confere com a NF</button></div>`:""}
       <div class="f"><label>Descrição</label><input data-k="descricao" value="${esc(it.descricao)}" autocomplete="off"></div>
       <div class="grid2">
         <div class="f"><label>TAG / código</label><div class="tagwrap"><input data-k="tag" value="${esc(it.tag)}" autocomplete="off"><button type="button" data-scantag="${i}" aria-label="Escanear TAG do item ${i+1}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg></button></div></div>
@@ -914,7 +914,7 @@ function usarDilig(){
   const novos=sel.map((it,k)=>{const qn=enc?+(it.qtdReceb||it.qtd)||"":"",qd=qtdDig(idxSel[k]),q=qd!=null?qd:qn,dif=enc&&qd!=null&&qn!==""&&qd!==qn;
     if(dif)difs.push(`${A.norm(it.descricao).slice(0,45)}: chegou ${fmtQ(qd)} de ${fmtQ(qn)} ${it.un} da nota`);
     return {descricao:A.norm(it.descricao+(it.descComp?" - "+it.descComp:"")),tag:it.codigo,und:A.normUnd(it.un),qtd:q===""?"":String(q),qtdNF:dif?qn:undefined,divergenciaQtd:dif||undefined,certificado:"",local,conf:"C",
-    pc:it.pc,itemPc:it.itemPc,conferirNF:true,pedidoPedeCertificado:!!it.pedidoPedeCertificado,exigeCertificado:!!it.pedeCertificado,origem:"diligenciamento",qtdPedido:it.qtd,undPedido:A.norm(it.un)}});
+    pc:it.pc,itemPc:it.itemPc,pedidoPedeCertificado:!!it.pedidoPedeCertificado,exigeCertificado:!!it.pedeCertificado,origem:"diligenciamento",qtdPedido:it.qtd,undPedido:A.norm(it.un)}});
   /* diferença entre o que chegou e a nota vai para a Observação, para o escritório tratar */
   if(difs.length){const o=$("obs");if(o){const txt="Quantidade diferente da NF: "+difs.join("; ")+".";o.value=(o.value.replace(/Quantidade diferente da NF:[^\n]*\n?/,"").trim()+"\n"+txt).trim()}}
   const vazios=itens.every(x=>!x.descricao&&!x.tag);
@@ -970,7 +970,7 @@ async function enviar(status){
     const indef=f.itens.map((it,n)=>({it,n})).filter(({it})=>(it.descricao||it.tag)&&A.exigeCert(f,it)&&!A.temCert(it)&&it.certStatus!=="nao_recebido");
     if(indef.length){toast(`${indef.map(x=>nomeItem(x.it,x.n,30)).join("; ")}: anexe o certificado ou marque "Sem certificado".`,true);$("itens").querySelector(`[data-i="${indef[0].n}"] .certsec`)?.scrollIntoView({behavior:"smooth",block:"center"});return}
   }
-  const naoConf=A.itensValidos(f).filter(i=>i.conferirNF).length;
+  const naoConf=0;/* conferência com a NF agora é feita no campo "Chegou" da busca do diligenciamento */
   if(naoConf&&!enviar.avisado){enviar.avisado=true;toast(`${naoConf} item(ns) ainda não conferidos com a NF (quantidade e unidade). Confira ou toque em Enviar de novo.`,true);setTimeout(()=>enviar.avisado=false,8000);return}
   enviar.avisado=false;
   f.status=status;
