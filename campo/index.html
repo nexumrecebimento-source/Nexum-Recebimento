@@ -324,7 +324,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
         <h3><span class="n">2</span>Itens recebidos</h3>
         <div class="cg" id="certGeral" data-tipo="NF">
           <div class="cg-h"><b>Certificados da NF</b><span>Fotografe todos os certificados de uma vez. A IA lê e preenche os itens sozinha. Um certificado pode valer para vários itens.</span></div>
-          <div class="shot-btns"><button class="btn primary" type="button" id="cgFoto">📷 Fotografar certificados</button><button class="btn" type="button" id="cgArq">Galeria / PDF</button></div>
+          <div class="shot-btns"><button class="btn primary" type="button" id="cgFoto">📄 Escanear certificados</button><button class="btn" type="button" id="cgArq">Galeria / PDF</button></div>
           <div class="thumbs" id="cgThumbs"></div>
           <div class="cg-st" id="cgSt" hidden></div>
           <div id="cgCerts" class="cg-list"></div>
@@ -397,6 +397,7 @@ header.top{border-bottom:0!important;box-shadow:none!important}
 <script src="../assets/assistente.js"></script>
 <script src="../assets/vendor/firebase-ai-nexum.js"></script>
 <script src="../assets/ia.js"></script>
+<script src="../assets/scanner-doc.js"></script>
 <script src="../assets/atualizacao.js"></script>
 <script>
 (function(){
@@ -542,7 +543,7 @@ function certSecao(it,i){
       <label class="excert"><input type="checkbox" data-ex ${ex?"checked":""} ${nr?"disabled":""}><span>Exige certificado de qualidade${cr?`<br><span style="color:var(--warn);font-size:.78rem;font-weight:600">Material crítico (CMC): ${esc(cr.rotulo)} · CQ ${esc(cr.cq)}</span><br><span style="color:var(--muted);font-size:.76rem">${esc(cr.evidencia||"")}</span>`:""}${!cr&&it.pedidoPedeCertificado?`<br><span style="color:var(--muted);font-size:.78rem">O pedido de compra pede certificado</span>`:""}</span></label>
       <label class="semcert"><input type="checkbox" data-semcert ${nr?"checked":""}><span><b>Sem certificado</b><br><small>Material recebido sem o certificado</small></span></label>
       ${nr?"":`<div class="f"><label>Nº do certificado</label><input data-k="certificado" value="${esc(it.certificado)}" autocomplete="off" placeholder="${ex?"Ex.: 3023651":"Se houver"}"></div>
-      <div class="shot-btns"><button class="btn" type="button" data-certfoto>Fotografar certificado</button><button class="btn" type="button" data-certarq>Galeria / PDF</button></div>
+      <div class="shot-btns"><button class="btn" type="button" data-certfoto>📄 Escanear certificado</button><button class="btn" type="button" data-certarq>Galeria / PDF</button></div>
       ${fotos.length?`<div class="thumbs">${fotos.map((f,k)=>`<figure>${f.pdf?`<div style="width:76px;height:96px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font:600 .75rem var(--f-mono);color:var(--muted)">PDF</div>`:`<img src="${f.img||f.thumb}" alt="Certificado ${k+1} do item ${i+1}">`}<button type="button" aria-label="Remover arquivo" data-rc="${k}">×</button></figure>`).join("")}</div>`:""}`}
       ${st}
     </div>`;
@@ -598,7 +599,7 @@ function renderItens(){
       else itens[i].certStatus=undefined;
       renderItens()};
     const addCert=files=>{itens[i].certStatus="recebido";lerFotos(files,itens[i].certAnexos=itens[i].certAnexos||[],()=>renderItens())};
-    const cf=el.querySelector("[data-certfoto]");if(cf)cf.onclick=()=>escolherArquivo(true,addCert);
+    const cf=el.querySelector("[data-certfoto]");if(cf)cf.onclick=()=>escanearOuFoto(addCert,"Escanear certificado");
     const ca=el.querySelector("[data-certarq]");if(ca)ca.onclick=()=>escolherArquivo(false,addCert);
     el.querySelectorAll("[data-rc]").forEach(b=>b.onclick=()=>{itens[i].certAnexos.splice(+b.dataset.rc,1);renderItens()});
     const cinp=el.querySelector('[data-k="certificado"]');if(cinp)cinp.addEventListener("change",()=>{if(cinp.value.trim())itens[i].certStatus="recebido";renderItens()});
@@ -694,7 +695,9 @@ async function lerCG(){
   finally{btns.forEach(b=>b.disabled=false)}
 }
 const addCG=files=>{const n=[...files].filter(f=>!(f.type==="application/pdf"&&f.size>2.5e6)).length;if(!n)return;let c=0;lerFotos(files,cgFotos,()=>{if(++c<n)return;renderCG();lerCG()},{max:1600,q:.8})};
-$("cgFoto").onclick=()=>escolherArquivo(true,addCG);
+/* escanear: recorta a folha, corrige a perspectiva e realça o texto (várias páginas). Sem o scanner, cai na foto comum */
+function escanearOuFoto(cb,titulo){if(window.NXSCAN)NXSCAN.escanear({titulo}).then(fs=>{if(fs&&fs.length)cb(fs)});else escolherArquivo(true,cb)}
+$("cgFoto").onclick=()=>escanearOuFoto(addCG,"Escanear certificados");
 $("cgArq").onclick=()=>escolherArquivo(false,addCG);
 $("cgReler").onclick=lerCG;
 $("cgManual").onclick=()=>{cgCerts.push({numero:"",lote:"",material:"",itens:[],imagens:[],fonte:"manual"});renderCG();const l=$("cgCerts").lastElementChild;l&&l.querySelector("input").focus()};
