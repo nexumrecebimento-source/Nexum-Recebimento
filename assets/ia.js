@@ -29,7 +29,7 @@ Itens recebidos nesta nota (índice: descrição | código | quantidade):
 ${lista}
 
 Para CADA certificado distinto que aparecer nas imagens (um certificado pode ter várias páginas), extraia:
-- numero: número/identificação do certificado (ex.: "C-12345/26"). Se não houver número, use o lote/corrida.
+- numero: número/identificação do certificado (ex.: "C-12345/26"), exatamente como impresso. Se o documento NÃO tiver número próprio, deixe "" (vazio) — não invente e não use o lote no lugar.
 - lote: lote, corrida ou heat number (se houver).
 - material: material ou produto certificado, como está escrito.
 - norma: norma ou especificação citada (ex.: "ABNT NBR 7480", "ASTM A36"), se houver.
@@ -37,22 +37,25 @@ Para CADA certificado distinto que aparecer nas imagens (um certificado pode ter
 - data: data de emissão no formato dd/mm/aaaa, se houver.
 - itens: os ÍNDICES da lista acima que esse certificado cobre. Compare tipo de material, bitola, dimensão, classe e código. Um mesmo certificado pode valer para vários itens. Só inclua um item se houver boa correspondência.
 - imagens: os índices (começando em 0, na ordem enviada) das imagens/arquivos onde esse certificado aparece.
+- evidencia: em até 15 palavras, o que no documento comprova que ele é do(s) item(ns) (ex.: "Laudo de areia média lavada, granulometria NBR 7211, lote 0425").
+- tipo: tipo do documento (certificado de qualidade, laudo de ensaio, certificado de análise, declaração de conformidade, ficha técnica…).
 - confianca: de 0 a 1, o quanto você tem certeza da associação com os itens.
+Mesmo sem número, se o documento for um certificado/laudo de um material da lista, inclua-o e informe os itens.
 
 Responda SOMENTE com JSON no formato:
-{"certificados":[{"numero":"","lote":"","material":"","norma":"","fabricante":"","data":"","itens":[0],"imagens":[0],"confianca":0.9}]}
+{"certificados":[{"numero":"","lote":"","material":"","norma":"","fabricante":"","data":"","tipo":"","evidencia":"","itens":[0],"imagens":[0],"confianca":0.9}]}
 Se não conseguir ler nenhum certificado, responda {"certificados":[]}.`;
   }
   function interpretar(txt, n, ni) {
     let j; try { j = JSON.parse(txt); } catch (e) { const m = String(txt).match(/\{[\s\S]*\}/); j = m ? JSON.parse(m[0]) : { certificados: [] }; }
     return (j.certificados || []).map(c => ({
-      numero: String(c.numero || c.lote || "").trim().toUpperCase(),
+      numero: String(c.numero || "").trim().toUpperCase(), tipo: String(c.tipo || "").trim(), evidencia: String(c.evidencia || "").trim().slice(0, 160),
       lote: String(c.lote || "").trim().toUpperCase(), material: String(c.material || "").trim(),
       norma: String(c.norma || "").trim(), fabricante: String(c.fabricante || "").trim(), data: String(c.data || "").trim(),
       itens: [...new Set((c.itens || []).map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < n))],
       imagens: [...new Set((c.imagens || []).map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < ni))],
       confianca: Math.max(0, Math.min(1, Number(c.confianca) || 0))
-    })).filter(c => c.numero || c.material);
+    })).filter(c => c.numero || c.material || (c.itens || []).length);
   }
   function traduzErro(e) {
     const m = String((e && (e.message || e.code)) || e);

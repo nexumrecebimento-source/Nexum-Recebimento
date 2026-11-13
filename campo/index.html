@@ -634,8 +634,10 @@ const itemRot=(it,n)=>nomeItem(it,n,48);
 function aplicarCG(){
   itens.forEach((it,n)=>{
     const cs=cgCerts.filter(c=>c.itens.includes(n)&&(c.numero||"").trim());
-    if(cs.length){it.certificado=cs.map(c=>c.numero.trim()).join(" / ");it.certDeGeral=true;it.certStatus="recebido";it.certLote=cs.map(c=>c.lote).filter(Boolean).join(" / ")||undefined}
-    else if(it.certDeGeral){it.certDeGeral=false;it.certificado="";it.certStatus=undefined;delete it.certLote}
+    if(cs.length){it.certificado=[...new Set(cs.map(c=>c.numero.trim()))].join(" / ");it.certDeGeral=true;it.certStatus="recebido";it.certLote=cs.map(c=>c.lote).filter(Boolean).join(" / ")||undefined;
+      /* rastreabilidade: guarda por que a IA ligou o certificado a este item */
+      const ia=cs.filter(c=>c.fonte==="ia");it.certIA=ia.length?{evidencia:ia.map(c=>c.evidencia).filter(Boolean).join(" | ").slice(0,240),confianca:Math.min(...ia.map(c=>c.confianca||0)),tipo:ia.map(c=>c.tipo).filter(Boolean).join(" / ")}:undefined}
+    else if(it.certDeGeral){it.certDeGeral=false;it.certificado="";it.certStatus=undefined;delete it.certLote;delete it.certIA}
   });
 }
 function anexosCG(){
@@ -655,7 +657,10 @@ function renderCG(){
   $("cgCerts").innerHTML=cgCerts.map((c,k)=>`<div class="cg-c ${c.fonte==="ia"?"ia":""}" data-cg="${k}">
       <div class="cg-ch">${c.fonte==="ia"?'<span class="tag">✓ Lido pela IA</span>':"<span>Certificado "+(k+1)+"</span>"}<span>${c.imagens.length?"foto "+c.imagens.map(x=>x+1).join(", "):""}</span><button type="button" class="lnk x" data-cgdel>Remover</button></div>
       <div class="grid2"><div class="f"><label>Nº do certificado</label><input data-cgk="numero" value="${esc(c.numero||"")}" autocomplete="off" placeholder="Ex.: 3023651"></div><div class="f"><label>Lote / corrida</label><input data-cgk="lote" value="${esc(c.lote||"")}" autocomplete="off" placeholder="Se houver"></div></div>
-      ${c.material||c.fabricante?`<div class="meta">${esc([c.material,c.norma,c.fabricante].filter(Boolean).join(" · "))}</div>`:""}
+      ${c.material||c.fabricante?`<div class="meta">${esc([c.tipo,c.material,c.norma,c.fabricante,c.data].filter(Boolean).join(" · "))}</div>`:""}
+      ${c.semNumero?`<div class="meta" style="color:var(--accent);font-weight:600">Documento sem número de certificado: os itens ficam como “EM ANEXO”.</div>`:""}
+      ${c.evidencia?`<div class="meta">Por que: ${esc(c.evidencia)}</div>`:""}
+      ${c.fonte==="ia"&&c.confianca&&c.confianca<0.6?`<div class="meta" style="color:var(--warn);font-weight:700">⚠ A IA não tem certeza: confira os itens marcados.</div>`:""}
       <div class="f"><label>Vale para os itens (toque para marcar)</label><div class="cg-chips">${vis.map(({it,n})=>`<button type="button" data-cgi="${n}" aria-pressed="${c.itens.includes(n)}">${esc(itemRot(it,n))}</button>`).join("")||'<span class="meta">Adicione os itens abaixo primeiro.</span>'}${vis.length>1?`<button type="button" data-cgtodos>${c.itens.length===vis.length?"Desmarcar todos":"Todos os itens"}</button>`:""}</div></div>
     </div>`).join("");
   $("cgCerts").querySelectorAll("[data-cg]").forEach(el=>{const c=cgCerts[+el.dataset.cg];
@@ -680,7 +685,9 @@ async function lerCG(){
     const r=await NXIA.lerCertificados(cgFotos,lista);
     if(!r.length){cgStatus("warn","A IA não encontrou certificado legível. Tire outra foto mais de perto ou digite o nº.");manual();return}
     cgCerts=cgCerts.filter(c=>c.fonte!=="ia"&&(c.numero||c.itens.length));
-    r.forEach(c=>{const ja=cgCerts.find(x=>x.numero&&x.numero===c.numero);if(ja){ja.itens=[...new Set([...ja.itens,...c.itens])];return}
+    /* certificado sem número próprio: o item fica como "EM ANEXO" (o documento está anexado para consulta) */
+    r.forEach(c=>{if(!c.numero&&c.itens.length){c.numero="EM ANEXO";c.semNumero=true}});
+    r.forEach(c=>{const ja=cgCerts.find(x=>x.numero&&x.numero===c.numero&&!c.semNumero);if(ja){ja.itens=[...new Set([...ja.itens,...c.itens])];return}
       cgCerts.push({...c,imagens:(c.imagens||[]).length?c.imagens:cgFotos.map((_,k)=>k),fonte:"ia"})});
     const cob=new Set(cgCerts.flatMap(c=>c.itens)).size;
     cgStatus("ok",`✓ ${r.length} ${r.length===1?"certificado lido":"certificados lidos"} · ${cob} ${cob===1?"item preenchido":"itens preenchidos"}. Confira os itens marcados.`);
