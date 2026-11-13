@@ -942,7 +942,7 @@ async function enviar(status){
   if(nd>0||nc>0)fc=A.registrar(fc,"anexos",{por:"Campo",txt:[nd>0?`${nd} foto(s) do documento`:"",nc>0?`${nc} certificado(s)`:""].filter(Boolean).join(" · ")});
   lembrarLocal($("localPadrao").value.trim().toUpperCase());
   try{const s=await A.store.salvar(fc);$("okNum").textContent=s.numero;$("okMsg").textContent=editando?"Correção reenviada para conferência do escritório":status==="sem_acao"?"Chegada registrada. Faça o recebimento quando puder.":semCert?"Enviado com certificado pendente. O escritório vai cobrar o fornecedor.":"Recebimento enviado para o escritório";$("okDoc").textContent=(tipo==="ROM"?"Romaneio ":"NF ")+(f.tipo==="ROM"?f.romaneio:f.nf)+" · "+A.itensValidos(f).length+" itens na ficha";editando=null;show("ok")}
-  catch(e){toast(e.code==="duplicada"?e.message:"Não foi possível salvar. Tente de novo.",true)}
+  catch(e){console.error("Nexum enviar:",e);toast(e.code==="duplicada"?e.message:"Não foi possível salvar. Tente de novo. [Detalhe: "+String(e&&(e.message||e.code)||e).slice(0,160)+"]",true)}
 }
 $("btnEnviar").onclick=()=>enviar("em_andamento");
 $("btnChegada").onclick=()=>enviar("sem_acao");
