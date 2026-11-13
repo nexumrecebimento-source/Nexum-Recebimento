@@ -69,6 +69,10 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px))}
 .dt-btns button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .dt-btns input{flex:1;min-width:140px}
 .rm-hint{display:block;font-size:.78rem;color:var(--muted);margin-top:4px}
+.dlq{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.dl-it .dlq input{width:84px;height:auto;min-height:36px;margin:0;appearance:auto;-webkit-appearance:none;border-radius:8px;padding:6px 8px;border:1.5px solid var(--accent);border-radius:8px;font:700 .9rem inherit;color:var(--ink);background:var(--surface)}
+.dl-it .dlq input.dif{border-color:var(--warn);background:var(--warn-bg)}.dlq em{font-style:normal;font-weight:500;opacity:.75}
+.dlq-av{color:var(--warn);font-weight:700}.dlq-av:empty{display:none}
 .pcbox{display:grid;gap:8px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);margin:10px 0}
 .cg{display:grid;gap:10px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px;background:var(--surface);margin-bottom:12px}
 .cg-h{display:grid;gap:3px}.cg-h b{font-size:.98rem}.cg-h span{font-size:.8rem;color:var(--muted)}
@@ -877,9 +881,15 @@ function mostrarDilig(){
   dlSel=new Set(r.itens.map((_,i)=>i).filter(i=>enc||false));
   $("dl").innerHTML=`<div class="dl-st ${enc?"ok":"warn"}"><span>${enc?`<b>${r.itens.length} ${r.itens.length===1?"item encontrado":"itens encontrados"}</b> para a NF ${esc($("nf").value)} · ${esc(r.fornecedor.nomeForn)}`:`<b>NF ainda não lançada no Diligenciamento</b> (sem pré-nota). Marque os itens que chegaram, entre os ${r.itens.length} pendentes de ${esc(r.fornecedor.nomeForn)}.`}${ft}</span></div>
     <div class="dl-list">${r.itens.map((it,i)=>`<label class="dl-it"><input type="checkbox" data-dl="${i}" ${dlSel.has(i)?"checked":""}><span class="d">${esc(it.descricao)}${it.descComp?" — "+esc(it.descComp):""}</span>
-      <span class="m"><span><b>${esc(it.codigo)}</b></span><span>PC ${esc(it.pc)}/${esc(it.itemPc)}</span><span>${enc?"Recebido":"Pedido"}: <b>${fmtQ(enc?(it.qtdReceb||it.qtd):it.qtd)} ${esc(it.un)}</b></span>${!enc&&it.qtdPend?`<span>Pendente: <b>${fmtQ(it.qtdPend)} ${esc(it.un)}</b></span>`:""}<span>${esc(it.status)}</span>${it.pedeCertificado?'<span style="color:var(--warn);font-weight:600">Exige certificado</span>':""}</span></label>`).join("")}</div>
+      <span class="m"><span><b>${esc(it.codigo)}</b></span><span>PC ${esc(it.pc)}/${esc(it.itemPc)}</span>${enc?`<span class="dlq">Chegou: <input type="number" inputmode="decimal" min="0" step="any" data-dlq="${i}" value="${esc(String(+(it.qtdReceb||it.qtd)||""))}" aria-label="Quantidade que chegou"> ${esc(it.un)}<em>nota: ${fmtQ(it.qtdReceb||it.qtd)}</em></span>`:`<span>Pedido: <b>${fmtQ(it.qtd)} ${esc(it.un)}</b></span><span class="dlq">Chegou: <input type="number" inputmode="decimal" min="0" step="any" data-dlq="${i}" value="" placeholder="?" aria-label="Quantidade que chegou"> ${esc(it.un)}</span>`}<span class="dlq-av" data-dlqd="${i}"></span>${!enc&&it.qtdPend?`<span>Pendente: <b>${fmtQ(it.qtdPend)} ${esc(it.un)}</b></span>`:""}<span>${esc(it.status)}</span>${it.pedeCertificado?'<span style="color:var(--warn);font-weight:600">Exige certificado</span>':""}</span></label>`).join("")}</div>
     <button class="btn primary" type="button" id="btnUsarDl">Preencher itens selecionados</button>`;
   $("dl").querySelectorAll("[data-dl]").forEach(c=>c.onchange=()=>{const i=+c.dataset.dl;c.checked?dlSel.add(i):dlSel.delete(i)});
+  /* quantidade que realmente chegou, direto no item: digitar marca o item e mostra a diferença com a nota */
+  $("dl").querySelectorAll("[data-dlq]").forEach(q=>{q.onclick=e=>{e.stopPropagation();e.preventDefault();q.focus()};
+    q.oninput=()=>{const i=+q.dataset.dlq,it=r.itens[i],nf=enc?+(it.qtdReceb||it.qtd)||0:null,v=parseFloat(String(q.value).replace(",","."));
+      const cb=$("dl").querySelector(`[data-dl="${i}"]`);if(q.value!==""&&cb&&!cb.checked){cb.checked=true;dlSel.add(i)}
+      const d=$("dl").querySelector(`[data-dlqd="${i}"]`),dif=nf!=null&&!isNaN(v)&&v!==nf;q.classList.toggle("dif",dif);
+      if(d)d.textContent=dif?(v<nf?`Faltou ${fmtQ(nf-v)} ${it.un}`:`Veio ${fmtQ(v-nf)} ${it.un} a mais`):""}});
   $("btnUsarDl").onclick=usarDilig;
 }
 function lembrarCodigo(cod){
@@ -892,9 +902,14 @@ function usarDilig(){
   const sel=[...dlSel].sort((a,b)=>a-b).map(i=>dlRes.itens[i]);
   if(!sel.length){toast("Marque pelo menos um item.",true);return}
   const enc=dlRes.situacao==="encontrada",local=$("localPadrao").value.trim().toUpperCase()||localLembrado();
-  const novos=sel.map(it=>{const qn=enc?+(it.qtdReceb||it.qtd)||"":"";
-    return {descricao:A.norm(it.descricao+(it.descComp?" - "+it.descComp:"")),tag:it.codigo,und:A.normUnd(it.un),qtd:qn===""?"":String(qn),certificado:"",local,conf:"C",
+  const idxSel=[...dlSel].sort((a,b)=>a-b),difs=[];
+  const qtdDig=i=>{const q=$("dl").querySelector(`[data-dlq="${i}"]`);if(!q||q.value==="")return null;const v=parseFloat(String(q.value).replace(",","."));return isNaN(v)?null:v};
+  const novos=sel.map((it,k)=>{const qn=enc?+(it.qtdReceb||it.qtd)||"":"",qd=qtdDig(idxSel[k]),q=qd!=null?qd:qn,dif=enc&&qd!=null&&qn!==""&&qd!==qn;
+    if(dif)difs.push(`${A.norm(it.descricao).slice(0,45)}: chegou ${fmtQ(qd)} de ${fmtQ(qn)} ${it.un} da nota`);
+    return {descricao:A.norm(it.descricao+(it.descComp?" - "+it.descComp:"")),tag:it.codigo,und:A.normUnd(it.un),qtd:q===""?"":String(q),qtdNF:dif?qn:undefined,divergenciaQtd:dif||undefined,certificado:"",local,conf:"C",
     pc:it.pc,itemPc:it.itemPc,conferirNF:true,pedidoPedeCertificado:!!it.pedidoPedeCertificado,exigeCertificado:!!it.pedeCertificado,origem:"diligenciamento",qtdPedido:it.qtd,undPedido:A.norm(it.un)}});
+  /* diferença entre o que chegou e a nota vai para a Observação, para o escritório tratar */
+  if(difs.length){const o=$("obs");if(o){const txt="Quantidade diferente da NF: "+difs.join("; ")+".";o.value=(o.value.replace(/Quantidade diferente da NF:[^\n]*\n?/,"").trim()+"\n"+txt).trim()}}
   const vazios=itens.every(x=>!x.descricao&&!x.tag);
   itens=vazios?novos:[...itens,...novos];
   if(dlRes.itens[0]&&!$("romaneio").value)$("romaneio").value=String(+dlRes.itens[0].pc)+"-REV-00";
