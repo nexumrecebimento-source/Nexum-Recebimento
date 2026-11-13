@@ -829,7 +829,7 @@ const D=window.DILIG;
 function dlStatus(html,cls,spin){$("dl").innerHTML=`<div class="dl-st ${cls||""}">${spin?'<span class="spin"></span>':""}<span>${html}</span></div>`}
 function fonteTxt(f){if(!f)return"";const quando=f.modificado?new Date(f.modificado).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}):"";return `${f.tipo==="local"?"Cópia local":f.tipo==="pasta"?"Pasta do escritório":"SharePoint"} · ${esc(f.nome)}${quando?" · atualizada em "+quando:""}`}
 function fmtQ(n){return n===""||n==null?"—":Number(n).toLocaleString("pt-BR",{maximumFractionDigits:3})}
-function resetDilig(){dlRes=null;dlSel=new Set();if(!D){$("dlBlock").hidden=true;return}$("lblDlArq").hidden=D.configurado();
+function resetDilig(){dlRes=null;dlSel=new Set();dlUlt="";if(!D){$("dlBlock").hidden=true;return}$("lblDlArq").hidden=D.configurado();
   const fa=D.fonteAtual();$("lblDlArq").textContent=fa?"Trocar planilha":"Carregar planilha do dia";
   dlStatus(D.configurado()?"Escaneie ou digite a NF e o fornecedor para buscar os itens na planilha de Diligenciamento."
     :fa?"✓ Planilha de hoje já carregada ("+fonteTxt(fa)+"). Escaneie ou digite a NF. Ela só será pedida de novo amanhã."
@@ -892,6 +892,13 @@ function usarDilig(){
   $("itens").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("btnDl").onclick=()=>buscarDilig(false);
+/* busca automática ao digitar o nº da NF (não só pelo código de barras) */
+var dlT=null,dlUlt="";
+function dlAuto(){clearTimeout(dlT);dlT=setTimeout(()=>{const nf=$("nf").value.trim(),chave=nf+"|"+$("fornecedor").value.trim();
+  if(nf.replace(/\D/g,"").length<3||chave===dlUlt||tipo!=="NF")return;
+  if(!D||(!D.configurado()&&!D.fonteAtual())){dlStatus("Para buscar os itens desta NF, carregue a planilha de Diligenciamento do dia (botão abaixo). Ela fica guardada até amanhã.","warn");return}
+  dlUlt=chave;buscarDilig(true)},900)}
+$("nf").addEventListener("input",dlAuto);$("nf").addEventListener("change",dlAuto);$("fornecedor").addEventListener("change",dlAuto);
 /* A Lista de materiais NÃO fica no celular: o escritório completa os itens da RM sozinho.
    Apaga qualquer cópia que tenha ficado guardada aqui por versões anteriores. */
 try{indexedDB.deleteDatabase("nx_listamat")}catch(e){}
