@@ -10,18 +10,47 @@
   const USUARIOS = {}; Object.entries(C.USUARIOS || {}).forEach(([k, v]) => USUARIOS[k.trim().toLowerCase()] = v);
 
   firebase.initializeApp(C.FIREBASE);
-  const auth = firebase.auth(), db = firebase.firestore();
-  db.settings({ ignoreUndefinedProperties: true, merge: true });
-  if (C.EMULADOR) { auth.useEmulator(C.EMULADOR.auth); db.useEmulator(C.EMULADOR.host, C.EMULADOR.port); }
+  const auth = firebase.auth();
+  let db = firebase.firestore();
+  const ajustarBanco = () => { db.settings({ ignoreUndefinedProperties: true, merge: true }); if (C.EMULADOR) db.useEmulator(C.EMULADOR.host, C.EMULADOR.port); };
+  ajustarBanco();
+  if (C.EMULADOR) auth.useEmulator(C.EMULADOR.auth);
   /* alguns navegadores não conseguem abrir o IndexedDB (perfil corrompido, disco cheio, política da empresa).
      Nesse caso o Nexum segue sem cache local: o login vale até fechar o navegador. */
   const idbOk = new Promise(r => { try { const q = indexedDB.open("nx-teste"); q.onsuccess = () => { try { q.result.close(); } catch (e) { } r(true); }; q.onerror = () => r(false); q.onblocked = () => r(true); setTimeout(() => r(false), 4000); } catch (e) { r(false); } });
   const sessaoSimples = () => auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.NONE)).catch(() => { });
-  idbOk.then(ok => { if (ok) db.enablePersistence({ synchronizeTabs: true }).catch(() => { }); else sessaoSimples(); });
-  const FICHAS = db.collection("fichas"), ANEXOS = db.collection("anexos"), CONFIG = db.collection("config");
+  /* no celular o cache é de uma aba só: a sincronização entre abas do SDK é o ponto que mais dava
+     "INTERNAL ASSERTION FAILED: Unexpected state" depois que o app voltava da câmera/galeria */
+  let bancoNovo = false;
+  idbOk.then(ok => { if (bancoNovo) return; if (ok) db.enablePersistence({ synchronizeTabs: APP !== "campo" }).catch(() => { }); else sessaoSimples(); });
+  let FICHAS, ANEXOS, CONFIG, USERS;
+  const refs = () => { FICHAS = db.collection("fichas"); ANEXOS = db.collection("anexos"); CONFIG = db.collection("config"); USERS = db.collection("usuarios"); };
+  refs();
+
+  /* ---------- recuperação: se o Firestore travar por erro interno, troca por uma instância nova sem recarregar a página ---------- */
+  const quebrado = e => /INTERNAL ASSERTION FAILED|AsyncQueue is already failed|client has already been terminated/i.test(String(e && (e.message || e.code) || e));
+  let reiniciando = null;
+  function reiniciarBanco() {
+    if (reiniciando) return reiniciando;
+    reiniciando = (async () => {
+      console.warn("Nexum: Firestore travou, reiniciando a conexão");
+      try { paradas.forEach(p => { try { p(); } catch (e) { } }); paradas = []; } catch (e) { }
+      try { if (paraUsuario) paraUsuario(); } catch (e) { } paraUsuario = null;
+      const velho = db;
+      try { velho.terminate().catch(() => { }); } catch (e) { }
+      bancoNovo = true;
+      db = firebase.firestore();
+      if (db === velho) { const app = firebase.initializeApp(C.FIREBASE, "nx" + Date.now()); db = app.firestore(); }
+      ajustarBanco(); refs();
+      if (usuario) { ouvirUsuario(usuario); assinar(); }
+    })().finally(() => setTimeout(() => { reiniciando = null; }, 3000));
+    return reiniciando;
+  }
+  const verificarErro = e => { if (quebrado(e)) reiniciarBanco(); };
+  window.addEventListener("unhandledrejection", ev => verificarErro(ev.reason));
+  window.addEventListener("error", ev => verificarErro(ev.error || ev.message));
 
   let usuario = null, perfil = "", fotoPerfil = "";
-  const USERS = db.collection("usuarios");
   const PODE_EDITAR = () => perfil === "admin" || perfil === "escritorio" || perfil === "campo";
   const soLeitura = () => { const e = new Error("Seu acesso é só de consulta: não é possível alterar."); e.code = "consulta"; return e; };
   const nomeUsuario = () => usuario ? (USUARIOS[usuario.email.toLowerCase()] || {}).nome || usuario.email : "";
@@ -38,7 +67,7 @@
   function assinar() {
     paradas.forEach(p => p()); paradas = [];
     const ok = () => { if (!pronto) { pronto = true; liberar(); } avisar(); };
-    const erro = e => { console.error(e); toastN("Sem acesso aos dados: " + (e.code === "permission-denied" ? "seu usuário não tem permissão" : e.message), true); };
+    const erro = e => { console.error(e); if (quebrado(e)) { reiniciarBanco(); return; } toastN("Sem acesso aos dados: " + (e.code === "permission-denied" ? "seu usuário não tem permissão" : e.message), true); };
     if (APP === "campo") {
       /* celular: só o que interessa no campo — fichas de hoje e certificados pendentes */
       const partes = { hoje: new Map(), cert: new Map() };
@@ -126,10 +155,19 @@
     catch (e) { return lista.filter(o => A.chaveDoc(o) === k); }
   }
 
+  const salvarUma = f => store._salvarUma(f), salvarVariasUma = l => store._salvarVariasUma(l);
   const store = {
     modo: "nuvem", carregado, carregarAnexo, carregarAnexos,
     ouvir(fn) { ouvintes.add(fn); if (pronto) fn(lista.slice()); return () => ouvintes.delete(fn); },
     async salvar(f) {
+      try { return await salvarUma(f); }
+      catch (e) { if (!quebrado(e)) throw e; await reiniciarBanco(); return await salvarUma(f); }
+    },
+    async salvarVarias(l) {
+      try { return await salvarVariasUma(l); }
+      catch (e) { if (!quebrado(e)) throw e; await reiniciarBanco(); return await salvarVariasUma(l); }
+    },
+    async _salvarUma(f) {
       await carregado; if (!PODE_EDITAR()) throw soLeitura();
       f = A.autoStatus(limpo(f)); f.contrato = A.ctrDe(f);
       const dup = A.duplicada(f, await mesmaChave(f));
@@ -148,10 +186,10 @@
       f.atualizadoEm = agora; f.atualizadoPor = nomeUsuario();
       f.chave = A.chaveDoc(f) || null;
       const g = guardarAnexos(f);
-      FICHAS.doc(g.id).set(g).catch(e => toastN("Não consegui gravar no servidor: " + e.message, true));
+      FICHAS.doc(g.id).set(g).catch(e => { if (quebrado(e)) return; toastN("Não consegui gravar no servidor: " + e.message, true); });
       return g;
     },
-    async salvarVarias(l) {
+    async _salvarVariasUma(l) {
       await carregado; if (!PODE_EDITAR() || perfil === "campo") return; const agora = new Date().toISOString();
       for (let i = 0; i < l.length; i += 400) {
         const b = db.batch();
@@ -369,7 +407,12 @@ service cloud.firestore {
     document.body.classList.toggle("consulta", perfil === "consulta");
     try { fotoPerfil = localStorage.getItem("nx_foto_" + u.email.toLowerCase()) || ""; } catch (e) { }
     window.dispatchEvent(new CustomEvent("nx-perfil", { detail: perfil }));
-    USERS.doc(u.email.toLowerCase()).onSnapshot(d => { const f = d.exists ? d.data().foto || "" : ""; if (f !== fotoPerfil) { fotoPerfil = f; try { localStorage.setItem("nx_foto_" + u.email.toLowerCase(), f); } catch (e) { } window.dispatchEvent(new CustomEvent("nx-foto")); } }, () => { });
+    ouvirUsuario(u);
     assinar();
   });
+  let paraUsuario = null;
+  function ouvirUsuario(u) {
+    if (paraUsuario) try { paraUsuario(); } catch (e) { }
+    paraUsuario = USERS.doc(u.email.toLowerCase()).onSnapshot(d => { const f = d.exists ? d.data().foto || "" : ""; if (f !== fotoPerfil) { fotoPerfil = f; try { localStorage.setItem("nx_foto_" + u.email.toLowerCase(), f); } catch (e) { } window.dispatchEvent(new CustomEvent("nx-foto")); } }, () => { });
+  }
 })();
