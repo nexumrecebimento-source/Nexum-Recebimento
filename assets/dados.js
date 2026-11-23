@@ -29,7 +29,7 @@
   /* Condição do recebimento: só C ou NC. "N/A" antigo vira C (o N/A pertence ao certificado, não ao recebimento) */
   const CONF_REC = { C: "Conforme", NC: "Não conforme" };
   const confRec = i => i.conf === "NA" ? "C" : (i.conf || "");
-  const UNIDADES = ["PÇ", "PC", "UND", "UN", "M", "KG", "T", "GL", "LT", "L", "CJ", "PAR", "CX", "M²", "M³", "M3", "VB", "TB", "SC", "RL", "BR", "PT"];
+  const UNIDADES = ["PÇ", "PC", "UND", "UN", "M", "KG", "TO", "GL", "LT", "L", "CJ", "PAR", "CX", "M²", "M³", "M3", "VB", "TB", "SC", "RL", "BR", "PT"];
   const MOTIVOS = {
     foto: "Foto ilegível ou incompleta",
     doc_divergente: "Dados do documento divergentes (nº, fornecedor, data)",
@@ -54,7 +54,8 @@
   const hoje = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
   const fmtData = s => s ? s.slice(0, 10).split("-").reverse().join("/") : "—";
   /* unidade: grafias de tonelada viram "T" (padrão do sistema) */
-  const normUnd = u => { const x = norm(u); return /^(T|TN|TON|TONS|TONELADAS?)\.?$/.test(x) ? "T" : x; };
+  /* tonelada = "TO" (sigla padrão); grafias antigas (T, TN, TON, TONELADA) viram TO */
+  const normUnd = u => { const x = norm(u); return /^(T|TN|TO|TON|TONS|TONELADAS?)\.?$/.test(x) ? "TO" : x; };
   const fmtQtd = n => (n === "" || n == null) ? "" : Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 3 });
 
   /* ---------- Chave de acesso da NF-e (código de barras de 44 dígitos do DANFE) ---------- */
@@ -270,7 +271,7 @@
       const its = itensValidos(f);
       const base = [STATUS[f.status]?.rotulo || "", String(f.numero)];
       if (!its.length) { out.push([...base, "", "", "", f.tipo === "ROM" ? "N/A" : f.nf, f.romaneio, "", "", "", "", fmtData(f.dataRecebimento), f.fornecimento, f.fornecedor, "", ""]); return; }
-      its.forEach((i, n) => out.push([...base, n + 1, i.descricao, i.tag, f.tipo === "ROM" ? "N/A" : f.nf, f.romaneio, textoCert(f, i), certSit(f, i), i.und, fmtQtd(i.qtd), fmtData(f.dataRecebimento), f.fornecimento, f.fornecedor, i.local, confRec(i)]));
+      its.forEach((i, n) => out.push([...base, n + 1, i.descricao, i.tag, f.tipo === "ROM" ? "N/A" : f.nf, f.romaneio, textoCert(f, i), certSit(f, i), normUnd(i.und), fmtQtd(i.qtd), fmtData(f.dataRecebimento), f.fornecimento, f.fornecedor, i.local, confRec(i)]));
     });
     return out.map(limpa);
   }
