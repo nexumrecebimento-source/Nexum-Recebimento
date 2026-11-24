@@ -88,7 +88,8 @@ Se não conseguir ler nenhum certificado, responda {"certificados":[],"cobertura
     else if (/high demand|overloaded|UNAVAILABLE|\[50[03]\s*\]|\b50[03]\b|try again later/i.test(m)) { x.code = "ia_ocupada"; x.message = "Os servidores da IA do Google estão sobrecarregados agora. Toque em “↻ Ler de novo com IA” em alguns minutos, ou marque os itens manualmente."; }
     else if (/has not been used|is disabled|SERVICE_DISABLED|API has not been|PERMISSION_DENIED|\[403\s*\]/i.test(m)) { x.code = "ia_desligada"; x.message = "A leitura automática ainda não está ativada no Firebase (AI Logic). Marque os itens manualmente por enquanto."; }
     else if (/quota|RESOURCE_EXHAUSTED|429/i.test(m)) { x.code = "ia_cota"; x.message = "A cota gratuita de leitura automática do dia acabou. Marque os itens manualmente."; }
-    else if (/network|Failed to fetch|offline/i.test(m) || !navigator.onLine) { x.code = "ia_offline"; x.message = "Sem internet para a leitura automática. Marque os itens manualmente ou tente de novo com sinal."; }
+    else if (!navigator.onLine) { x.code = "ia_offline"; x.message = "Sem internet para a leitura automática. Marque os itens manualmente ou tente de novo com sinal."; }
+    else if (/Load failed|network|Failed to fetch|fetch failed|timed? ?out|aborted/i.test(m)) { x.code = "ia_rede"; x.message = "A conexão caiu durante a leitura (sinal fraco ou rede instável). Tentei de novo algumas vezes. Toque em “↻ Ler de novo com IA” ou marque os itens manualmente."; }
     x.original = m;
     /* detalhe técnico curto no fim da mensagem, para saber exatamente o que o Google respondeu */
     const det = m.replace(/^FirebaseError:\s*/i, "").replace(/\s+/g, " ").slice(0, 220);
@@ -96,13 +97,26 @@ Se não conseguir ler nenhum certificado, responda {"certificados":[],"cobertura
     try { console.warn("NXIA erro:", m); } catch (_) { }
     return x;
   }
+  /* conexão que caiu no meio (no iPhone aparece como "Load failed"): vale tentar de novo */
+  const REDE = /Load failed|Failed to fetch|NetworkError|network error|fetch failed|Network request failed|timed? ?out|aborted|ERR_[A-Z_]+/i;
+  /* foto grande demais pesa no envio com sinal fraco: reduz só a cópia que vai para a IA */
+  function reduzir(a) {
+    const url = a.img || "";
+    if (!url || url.length < 450000) return Promise.resolve(a);
+    return new Promise(ok => {
+      const im = new Image();
+      im.onload = () => { try { const s = Math.min(1, 1600 / Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s);
+        c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); const d = c.toDataURL("image/jpeg", .7); ok(d.length < url.length ? { ...a, img: d } : a); } catch (e) { ok(a); } };
+      im.onerror = () => ok(a); im.src = url;
+    });
+  }
   async function lerCertificados(arquivos, itens) {
-    const partes = arquivos.map(parte).filter(Boolean);
+    const partes = (await Promise.all(arquivos.map(reduzir))).map(parte).filter(Boolean);
     if (!partes.length) return [];
     let a; try { a = iniciar(); } catch (e) { throw e; }
     const S = window.NXAI_SDK, lista = [...new Set([modeloOk, ...modelos()].filter(Boolean))];
-    let ultimo = null;
-    for (const nome of lista) {
+    let ultimo = null, quedas = 0;
+    for (const nome of lista) for (let tentativa = 0; tentativa < 3; tentativa++) {
       try {
         const model = S.getGenerativeModel(a, { model: nome, generationConfig: { responseMimeType: "application/json", temperature: 0.1 } });
         const r = await model.generateContent([{ text: prompt(itens) }, ...partes]);
@@ -110,11 +124,13 @@ Se não conseguir ler nenhum certificado, responda {"certificados":[],"cobertura
         return interpretar(r.response.text(), itens.length, partes.length);
       } catch (e) {
         ultimo = e; const m = String(e && e.message || e);
+        /* queda de conexão: espera e repete no mesmo modelo (até 3 vezes), depois tenta o próximo */
+        if (REDE.test(m)) { if (++quedas >= 4 || !navigator.onLine) throw traduzErro(e); await new Promise(z => setTimeout(z, 2000 * (tentativa + 1))); continue; }
         /* modelo inexistente ou cota do dia esgotada nesse modelo: cada modelo tem a sua cota, tenta o próximo */
-        if (/not found|404|is not supported|unknown model/i.test(m)) continue;
-        if (/quota|RESOURCE_EXHAUSTED|429/i.test(m)) { if (modeloOk === nome) modeloOk = null; continue; }
+        if (/not found|404|is not supported|unknown model/i.test(m)) break;
+        if (/quota|RESOURCE_EXHAUSTED|429/i.test(m)) { if (modeloOk === nome) modeloOk = null; break; }
         /* modelo sobrecarregado (erro 500/503 do Google): espera um pouco e tenta o próximo modelo */
-        if (/high demand|overloaded|UNAVAILABLE|\[50[03]\s*\]|\b50[03]\b|try again later/i.test(m)) { if (modeloOk === nome) modeloOk = null; await new Promise(z => setTimeout(z, 1500)); continue; }
+        if (/high demand|overloaded|UNAVAILABLE|\[50[03]\s*\]|\b50[03]\b|try again later/i.test(m)) { if (modeloOk === nome) modeloOk = null; await new Promise(z => setTimeout(z, 1500)); break; }
         throw traduzErro(e);
       }
     }

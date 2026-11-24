@@ -33,6 +33,19 @@
       document.body.appendChild(inp); inp.click();
     });
   }
+  /* várias fotos de uma vez, da galeria (sem câmera) */
+  function daGaleria() {
+    return new Promise(res => {
+      const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true; inp.setAttribute("multiple", "");
+      inp.style.cssText = "position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+      let feito = false;
+      inp.onchange = () => { if (feito) return; feito = true; const fs = [...inp.files]; setTimeout(() => inp.remove(), 500); res(fs); };
+      /* no iPhone, com muitas fotos o "change" pode chegar segundos depois do foco voltar: espera mais */
+      const volta = () => setTimeout(() => { if (!feito) { feito = true; inp.remove(); res([]); } window.removeEventListener("focus", volta); }, 6000);
+      window.addEventListener("focus", volta);
+      document.body.appendChild(inp); inp.click();
+    });
+  }
   function carregar(file) {
     return new Promise((ok, err) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => { URL.revokeObjectURL(u); err(new Error("imagem")); }; im.src = u; });
   }
@@ -135,9 +148,10 @@
           prev = retificar(foto, cantos, modo); handles.forEach(h => h.remove()); handles = []; q("[data-svg]").style.display = "none";
           cvv.width = prev.width; cvv.height = prev.height; cvv.getContext("2d").drawImage(prev, 0, 0);
           q("[data-seg]").hidden = false; q("[data-st]").textContent = `Página ${pags.length + 1} pronta. Tem mais páginas? Escaneie a próxima.`;
-          bar(`<button type="button" data-volta>Ajustar recorte</button><button type="button" data-mais>+ Outra página</button><button type="button" class="pri" data-fim>Concluir (${pags.length + 1} pág.)</button>`);
+          bar(`<button type="button" data-volta>Ajustar recorte</button><button type="button" data-mais>+ Outra página</button><button type="button" data-gal>🖼 + Da galeria</button><button type="button" class="pri" data-fim>Concluir (${pags.length + 1} pág.)</button>`);
           q("[data-volta]").onclick = editar;
-          q("[data-mais]").onclick = async () => { await guardar(); nova(); };
+          q("[data-mais]").onclick = async () => { await guardar(); prev = null; foto = null; cantos = null; nova(); };
+          q("[data-gal]").onclick = async () => { await guardar(); prev = null; foto = null; cantos = null; galeria(); };
           q("[data-fim]").onclick = async () => { await guardar(); fim(pags); };
         }, 30);
       }
@@ -146,10 +160,35 @@
         return new Promise(ok => prev.toBlob(bl => { const f = new File([bl], `certificado-pag${pags.length + 1}.jpg`, { type: "image/jpeg" }); pags.push(f);
           const th = document.createElement("img"); th.src = URL.createObjectURL(bl); q("[data-pags]").appendChild(th); ok(); }, "image/jpeg", .85));
       }
+      /* tela de escolha: câmera ou galeria (aparece quando a câmera é fechada sem foto, ou depois de importar) */
+      function escolha(msg) {
+        handles.forEach(h => h.remove()); handles = []; q("[data-svg]").style.display = "none"; q("[data-seg]").hidden = true;
+        q("[data-st]").textContent = msg;
+        bar(`<button type="button" data-cam>📷 Tirar foto</button><button type="button" data-gal>🖼 Escolher da galeria (várias)</button>${pags.length ? `<button type="button" class="pri" data-fim>Concluir (${pags.length} pág.)</button>` : ""}`);
+        q("[data-cam]").onclick = nova; q("[data-gal]").onclick = galeria;
+        const bf = q("[data-fim]"); if (bf) bf.onclick = () => fim(pags);
+      }
+      async function galeria() {
+        const fs = await daGaleria();
+        if (!fs.length) return escolha(pags.length ? `${pags.length} página(s) prontas. Adicione mais ou conclua.` : "Nenhuma foto escolhida. Tire uma foto ou escolha da galeria.");
+        let ok = 0;
+        for (let i = 0; i < fs.length; i++) {
+          q("[data-st]").textContent = `Preparando foto ${i + 1} de ${fs.length}…`;
+          try {
+            const im = await carregar(fs[i]), s = Math.min(1, 2400 / Math.max(im.width, im.height)), c = document.createElement("canvas");
+            c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+            await new Promise(r => c.toBlob(bl => { pags.push(new File([bl], `certificado-pag${pags.length + 1}.jpg`, { type: "image/jpeg" }));
+              const th = document.createElement("img"); th.src = URL.createObjectURL(bl); q("[data-pags]").appendChild(th); r(); }, "image/jpeg", .85));
+            cvv.width = c.width; cvv.height = c.height; cvv.getContext("2d").drawImage(c, 0, 0); ok++;
+          } catch (e) { }
+        }
+        foto = null; cantos = null; prev = null;
+        escolha(`${ok} foto(s) da galeria adicionada(s)${ok < fs.length ? ` (${fs.length - ok} não abriu)` : ""}. Total: ${pags.length} página(s).`);
+      }
       async function nova() {
         q("[data-st]").textContent = "Abrindo a câmera… Fotografe a folha inteira sobre um fundo escuro, com boa luz.";
         const f = await tirarFoto();
-        if (!f) { if (!foto) return fim(pags); q("[data-st]").textContent = "Nenhuma foto tirada."; if (prev) mostrar(); else editar(); return; }
+        if (!f) { if (!foto) return escolha(pags.length ? `${pags.length} página(s) prontas. Adicione mais ou conclua.` : "Câmera fechada. Tire a foto ou escolha várias da galeria."); q("[data-st]").textContent = "Nenhuma foto tirada."; if (prev) mostrar(); else editar(); return; }
         try {
           const im = await carregar(f), s = Math.min(1, 2400 / Math.max(im.width, im.height)), c = document.createElement("canvas");
           c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);

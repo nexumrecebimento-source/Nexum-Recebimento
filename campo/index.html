@@ -559,7 +559,7 @@ let arqAtual=null;
 function escolherArquivo(camera,cb){
   if(arqAtual)arqAtual.remove();
   const inp=document.createElement("input");inp.type="file";inp.accept=camera?"image/*":"image/*,application/pdf";
-  if(camera)inp.setAttribute("capture","environment");else inp.multiple=true;
+  if(camera)inp.setAttribute("capture","environment");else{inp.multiple=true;inp.setAttribute("multiple","")}
   inp.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
   inp.onchange=()=>{const fs=[...inp.files];setTimeout(()=>{inp.remove();if(arqAtual===inp)arqAtual=null},500);if(fs.length)cb(fs)};
   document.body.appendChild(inp);arqAtual=inp;inp.click();

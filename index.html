@@ -363,9 +363,9 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
       <div class="box rel"><h4>Mapa de recebimento (FP-11)</h4><p class="hint">Uma linha por item, no layout do 447.QUA.FP-11. Arquivo Excel (.xlsx).</p>
         <label class="hint" for="relMapaPer">Período</label><select id="relMapaPer"></select>
         <button class="btn primary" type="button" id="relMapa">Baixar mapa (.xlsx)</button></div>
-      <div class="box rel"><h4>Fichas FP-01 em lote (PDF)</h4><p class="hint">Todas as fichas do intervalo num único PDF, no modelo 447.OPE.FP-01. Até 150 fichas por vez.</p>
+      <div class="box rel"><h4>Fichas FP-01 em lote (PDF ou Excel)</h4><p class="hint">Todas as fichas do intervalo num único PDF, no modelo 447.OPE.FP-01, ou num Excel com uma aba por ficha. Até 150 fichas por vez.</p>
         <div class="row2"><div><label class="hint" for="relDe">Da ficha</label><input id="relDe" type="number" min="1" inputmode="numeric"></div><div><label class="hint" for="relAte">Até a ficha</label><input id="relAte" type="number" min="1" inputmode="numeric"></div></div>
-        <button class="btn primary" type="button" id="relFichas">Gerar PDF das fichas</button><span class="hint" id="relFichasInfo"></span></div>
+        <button class="btn primary" type="button" id="relFichas">Gerar PDF das fichas</button><button class="btn" type="button" id="relFichasXl">Baixar em Excel (.xlsx)</button><span class="hint" id="relFichasInfo"></span></div>
       <div class="box rel"><h4>Pendências (.xlsx)</h4><p class="hint">Certificados pendentes, informações faltantes, preenchimentos automáticos a revisar e números sem ficha, em abas separadas.</p>
         <button class="btn primary" type="button" id="relPend">Baixar pendências (.xlsx)</button></div>
       <div class="box rel"><h4>Resumo das fichas (.xlsx)</h4><p class="hint">Uma linha por ficha: documento, fornecedor, data, itens, status, conferência e pendências.</p>
@@ -541,7 +541,8 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
       <div class="soon">
         <button class="btn primary" type="button" id="btnPdfVer">Ver Ficha FP-01 (PDF)</button>
         <button class="btn" type="button" id="btnPdfBaixar">Baixar PDF</button>
-        <button class="btn" type="button" disabled>Baixar pacote</button>
+        <button class="btn" type="button" id="btnXlBaixar">Baixar Excel</button>
+        <button class="btn" type="button" id="btnPacote" title="Ficha em PDF e Excel + fotos da nota e certificados num arquivo .zip">Baixar pacote</button>
         
       </div>
       <div class="actions">
@@ -579,6 +580,8 @@ table.ft .al span{display:inline-flex;gap:4px;align-items:center}
 <script src="assets/listamat.js"></script>
 <script src="assets/importar.js"></script>
 <script src="assets/planilhas.js"></script>
+<script src="assets/ficha-xlsx.js"></script>
+<script src="assets/pacote.js"></script>
 <script>
 (function(){
 const A=window.AMR,$=id=>document.getElementById(id);
@@ -1005,6 +1008,15 @@ function gerarPdf(){
   catch(e){toast(e.message||"Não foi possível gerar o PDF.",true);return null}
 }
 $("btnPdfVer").onclick=()=>{const g=gerarPdf();if(!g)return;const url=g.doc.output("bloburl");const w=window.open(url,"_blank");if(!w){g.doc.save(g.nome);toast("O navegador bloqueou a nova aba; o PDF foi baixado.")}};
+$("btnXlBaixar").onclick=async()=>{const f=coletar();if(!A.itensValidos(f).length){toast("A ficha não tem itens.",true);return}
+  const b=$("btnXlBaixar");b.disabled=true;
+  try{const nome=window.FICHA_PDF.nomeArquivo(A,f).replace(/\.pdf$/,".xlsx");await window.FICHA_XLSX.gerar(A,[f],{...A.cadastros.documento(),ctr:CT()},nome);toast("Excel baixado: "+nome)}
+  catch(e){toast(e.message||"Não foi possível gerar o Excel.",true)}finally{b.disabled=false}};
+$("btnPacote").onclick=async()=>{const f=coletar();if(!A.itensValidos(f).length){toast("A ficha não tem itens.",true);return}
+  const b=$("btnPacote");b.disabled=true;
+  try{const r=await window.NXPACOTE.baixar(A,f,{...A.cadastros.documento(),ctr:CT()},A.store.carregarAnexo,t=>b.textContent=t);
+    toast(`Pacote baixado: ${r.arquivos} arquivo(s)${r.falhas.length?" · não consegui incluir: "+r.falhas.slice(0,3).join(", "):""}`,!!r.falhas.length)}
+  catch(e){toast(e.message||"Não foi possível montar o pacote.",true)}finally{b.disabled=false;b.textContent="Baixar pacote"}};
 $("btnPdfBaixar").onclick=()=>{const g=gerarPdf();if(!g)return;g.doc.save(g.nome);toast("PDF baixado: "+g.nome)};
 $("btnCfgDoc").onclick=async()=>{await A.cadastros.salvarDocumento({responsavel:$("cfgResp").value,projetoCliente:$("cfgProj").value});toast("Dados da ficha salvos")};
 
@@ -1354,6 +1366,14 @@ $("relFichas").onclick=async()=>{
     doc.setProperties({title:`Fichas FP-01 ${l[0].numero} a ${l.at(-1).numero} - ${CT().nome}`,creator:"Nexum"});
     let nome=`447.OPE.FP-01 - Fichas ${l[0].numero} a ${l.at(-1).numero} - ${CT().nome}.pdf`;nome=semAcentoArq(nome);doc.save(nome);toast("PDF gerado: "+nome)}
   catch(e){toast(e.message||"Não foi possível gerar o PDF.",true)}finally{b.disabled=false;b.textContent="Gerar PDF das fichas"}
+};
+$("relFichasXl").onclick=async()=>{
+  const l=loteSel();if(!l.length){toast("Nenhuma ficha com itens nesse intervalo.",true);return}
+  if(l.length>150){toast("São "+l.length+" fichas. Gere em lotes de até 150.",true);return}
+  const b=$("relFichasXl");b.disabled=true;b.textContent="Gerando Excel…";
+  try{const nome=semAcentoArq(`447.OPE.FP-01 - Fichas ${l[0].numero} a ${l.at(-1).numero} - ${CT().nome}.xlsx`);
+    await window.FICHA_XLSX.gerar(A,l,{...A.cadastros.documento(),ctr:CT()},nome);toast(`Excel gerado: ${l.length} ficha(s), uma por aba`)}
+  catch(e){toast(e.message||"Não foi possível gerar o Excel.",true)}finally{b.disabled=false;b.textContent="Baixar em Excel (.xlsx)"}
 };
 $("relPend").onclick=()=>{
   const cert=fichas.flatMap(f=>A.itensValidos(f).map(i=>({f,i,n:f.itens.indexOf(i)})).filter(x=>A.certSituacao(x.f,x.i)==="pendente")).sort((a,b)=>a.f.numero-b.f.numero||a.n-b.n)

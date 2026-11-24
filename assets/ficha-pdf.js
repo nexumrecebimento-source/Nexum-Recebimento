@@ -188,5 +188,5 @@
     const doc = f.tipo === "ROM" ? "Romaneio " + f.romaneio : "NF " + f.nf + " - " + f.fornecedor;
     return limpo(`447.OPE.FP-01 - Ficha ${f.numero} - ${doc}`).slice(0, 150) + ".pdf";
   }
-  window.FICHA_PDF = { gerar, nomeArquivo, ITENS_POR_FOLHA };
+  window.FICHA_PDF = { gerar, nomeArquivo, linhas: linhasDaFicha, observacao, ITENS_POR_FOLHA };
 })();
