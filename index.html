@@ -902,16 +902,18 @@ function renderCobranca(f){
   $("cobPill").textContent=pend.length?`${pend.length} a cobrar`:sem.length?"Todos já cobrados":"Sem pendências";
   $("cobLista").innerHTML=sem.length?sem.map(x=>`<li><span>${esc(x.i.descricao||x.i.tag)}${x.i.tag&&x.i.descricao?" · "+esc(x.i.tag):""}</span><span class="code">${A.fmtQtd(x.i.qtd)} ${esc(x.i.und)}</span>${ja.has(x.k)?`<span class="pill finalizado">Cobrado${ult?" em "+A.fmtData(ult.em):""}</span>`:'<span class="pill cert_pendente">A cobrar</span>'}</li>`).join(""):'<li class="hint">Nenhum item sem certificado.</li>';
   const dest=A.destinatariosCertPendente(f);
-  $("cobDest").textContent=dest.length?`Destinatários: ${dest.length} (fornecedor + Suprimentos, Logística, Qualidade e Planejamento, conforme Cadastros).`:"Nenhum destinatário cadastrado. Cadastre os e-mails do fornecedor e dos grupos em Cadastros.";
+  const nF=A.emailsFornecedor(f.fornecedor).length,nI=A.emailsInternos().length;
+  $("cobDest").textContent=!dest.length?"Nenhum e-mail cadastrado: o e-mail abre no Outlook para você escolher os destinatários. Cadastre a equipe interna (Suprimentos, Logística, Qualidade e Planejamento) em Cadastros.":
+    nF?`Destinatários: fornecedor (${nF}) + equipe interna (${nI}), conforme Cadastros.`:`Fornecedor sem e-mail: vai só para a equipe interna (${nI}), pedindo a Suprimentos que solicite ao vendedor.`;
   $("btnCobVer").disabled=!pend.length;$("btnCobVer").textContent=pend.length?"Ver e-mail de cobrança":"Nada novo a cobrar";
   if(!pend.length)$("cobMail").hidden=true;
 }
 $("btnCobVer").onclick=()=>{
   const f=coletar(),pend=A.pendentesDeCobranca(f);if(!pend.length)return;
   cobEmail=A.montarEmailCobranca(f,pend);
-  $("cobPara").textContent=cobEmail.para.join("; ")||"(sem destinatários cadastrados)";
+  $("cobPara").textContent=cobEmail.para.join("; ")||"(nenhum e-mail cadastrado: escolha no Outlook)";
   $("cobAssunto").textContent=cobEmail.assunto;$("cobCorpo").textContent=cobEmail.corpo;
-  $("btnCobOutlook").onclick=e=>{e.preventDefault();if(!cobEmail.para.length){toast("Fornecedor sem e-mail no cadastro (aba Cadastros).",true);return}abrirOutlook(cobEmail)};
+  $("btnCobOutlook").onclick=e=>{e.preventDefault();abrirOutlook(cobEmail);if(!cobEmail.para.length)toast("Nenhum e-mail cadastrado: escolha os destinatários no Outlook.")};
   $("cobMail").hidden=false;$("cobMail").scrollIntoView({behavior:"smooth",block:"nearest"});
 };
 $("btnCobCopiar").onclick=async()=>{const t=`Para: ${cobEmail.para.join("; ")}\nAssunto: ${cobEmail.assunto}\n\n${cobEmail.corpo}`;
@@ -1095,12 +1097,11 @@ function renderCobGrupos(){
     <b class="nm">${esc(g.fornecedor)}</b>
     <span class="mt">${g.itens} ${g.itens===1?"item":"itens"} em ${nf} ${nf===1?"NF":"NFs"} (${g.fichas.map(y=>"NF "+esc(y.f.nf)).slice(0,4).join(", ")}${nf>4?"…":""}) · mais antigo há ${g.maisAntigo} ${g.maisAntigo===1?"dia":"dias"}</span>
     <span class="tg">${g.novos?`<span>${g.novos} ${g.novos===1?"novo":"novos"}</span>`:""}${g.reforco?`<span class="rf">${g.reforco} para reforçar</span>`:""}</span>
-    ${g.semEmail?`<span class="cob-em"><input type="email" data-cob-em placeholder="E-mail do fornecedor (fica salvo no cadastro)" autocomplete="off"><button class="btn small" type="button" data-cob-emsal>Salvar</button></span>`:""}
+    ${g.semEmail?`<span class="cob-em"><input type="email" data-cob-em placeholder="E-mail do fornecedor (opcional: sem ele vai só para a equipe interna)" autocomplete="off"><button class="btn small" type="button" data-cob-emsal>Salvar</button></span>`:""}
     <span class="bt"><button class="btn small primary" type="button" data-cob-out>✉ Abrir no Outlook</button><button class="btn small" type="button" data-cob-reg>Registrar envio</button><button class="btn ghost small" type="button" data-cob-cp title="Copia o e-mail completo">Copiar</button></span></div>`}).join("");
   $("cobGrid").querySelectorAll(".cob").forEach(el=>{const g=gs[+el.dataset.k],m=A.montarEmailCobrancaFornecedor(g);
     el.querySelector("[data-cob-out]").onclick=()=>{
-      if(!m.para.length){toast("Informe o e-mail do fornecedor no campo acima e toque em Salvar.",true);el.querySelector("[data-cob-em]")?.focus();return}
-      abrirOutlook(m);
+      abrirOutlook(m);if(!m.para.length)toast("Nenhum e-mail cadastrado: escolha os destinatários no Outlook.");
       /* o envio é feito pela Thaynara no Outlook; aqui só lembra de registrar */
       setTimeout(()=>toast("Depois de enviar no Outlook, toque em “Registrar envio”."),1200)};
     el.querySelector("[data-cob-cp]").onclick=()=>copiarCob(m);
